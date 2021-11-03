@@ -1,0 +1,330 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-conf
+data:
+  nova.conf: |
+    [DEFAULT]
+    #my_ip = 192.168.1.228
+    pybasedir = /usr/lib/python3/dist-packages
+    bindir = /usr/bin
+    state_path = /var/lib/nova
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [api]
+    auth_strategy = keystone
+    [api_database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/nova_api
+    os_region_name = RegionOne
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/nova
+    [glance]
+    api_servers = http://glance.{{.domain}}
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [neutron]
+    default_floating_pool = ext-net
+    service_metadata_proxy = true
+    metadata_proxy_shared_secret = {{.password}}
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = neutron
+    user_domain_name = Default
+    password = {{.password}}
+    service_name = network
+    url = http://neutron.{{.domain}}
+    region_name = RegionOne
+    [oslo_concurrency]
+    lock_path = /var/lib/nova/tmp
+    [oslo_policy]
+    policy_dirs = /etc/nova/policy.d
+    [placement]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    [scheduler]
+    discover_hosts_in_cells_interval = 60
+    [serial_console]
+    enabled = true
+    [spice]
+    enabled = true
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+    [vnc]
+    enabled = True
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-api
+spec:
+  selector:
+    app: nova-api
+  ports:
+  - port: 8774
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-metadata-api
+spec:
+  selector:
+    app: nova-metadata-api
+  ports:
+  - port: 8775
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nova-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: nova.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nova-api
+            port:
+              number: 8774
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-api-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "api_db", "sync"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-cell0-map
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "cell_v2", "map_cell0"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-cell1-create
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "cell_v2", "create_cell", "--name=cell1", "--verbose"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "db", "sync"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-api
+  labels:
+    app: nova-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-api
+  template:
+    metadata:
+      labels:
+        app: nova-api
+    spec:
+      containers:
+      - name: nova-api
+        image: arnaudmorin/openstack-nova-api:victoria
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 8774
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-metadata-api
+  labels:
+    app: nova-metadata-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-metadata-api
+  template:
+    metadata:
+      labels:
+        app: nova-metadata-api
+    spec:
+      containers:
+      - name: nova-metadata-api
+        image: arnaudmorin/openstack-nova-metadata-api:victoria
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 8775
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-conductor
+  labels:
+    app: nova-conductor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-conductor
+  template:
+    metadata:
+      labels:
+        app: nova-conductor
+    spec:
+      containers:
+      - name: nova-conductor
+        image: arnaudmorin/openstack-nova-conductor:victoria
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-scheduler
+  labels:
+    app: nova-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-scheduler
+  template:
+    metadata:
+      labels:
+        app: nova-scheduler
+    spec:
+      containers:
+      - name: nova-scheduler
+        image: arnaudmorin/openstack-nova-scheduler:victoria
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf

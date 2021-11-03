@@ -1,0 +1,112 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: placement-conf
+data:
+  placement.conf: |
+    [DEFAULT]
+    pybasedir = /usr/lib/python3/dist-packages
+    [api]
+    auth_strategy = keystone
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [oslo_policy]
+    policy_dirs = /etc/placement/policy.d
+    [placement_database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/placement
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: placement
+spec:
+  selector:
+    app: placement
+  ports:
+  - port: 8778
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: placement-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: placement.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: placement
+            port:
+              number: 8778
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: placement-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: placement
+        image: arnaudmorin/openstack-placement:victoria
+        command: ["placement-manage", "db", "sync"]
+        volumeMounts:
+        - name: placement-conf
+          mountPath: "/etc/placement/placement.conf"
+          subPath: "placement.conf"
+      volumes:
+      - name: placement-conf
+        configMap:
+          name: placement-conf
+  backoffLimit: 4
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: placement
+  labels:
+    app: placement
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: placement
+  template:
+    metadata:
+      labels:
+        app: placement
+    spec:
+      containers:
+      - name: placement
+        image: arnaudmorin/openstack-placement:victoria
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 8778
+        volumeMounts:
+        - name: placement-conf
+          mountPath: "/etc/placement/placement.conf"
+          subPath: "placement.conf"
+      volumes:
+      - name: placement-conf
+        configMap:
+          name: placement-conf

@@ -1,0 +1,51 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbit-conf
+data:
+  rabbitmq.conf: |
+    default_pass = {{.password}}
+    default_user = openstack
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit
+spec:
+  selector:
+    app: rabbit
+  ports:
+  - port: 5672
+  # Rabbit service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by neutron/nova agents)
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbit
+spec:
+  selector:
+    matchLabels:
+      app: rabbit
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: rabbit
+    spec:
+      containers:
+      - image: rabbitmq:3
+        name: rabbit
+        ports:
+        - containerPort: 5672
+          name: rabbit
+        volumeMounts:
+        - name: rabbit-conf
+          mountPath: "/etc/rabbitmq/rabbitmq.conf"
+          subPath: "rabbitmq.conf"
+      volumes:
+      - name: rabbit-conf
+        configMap:
+          name: rabbit-conf

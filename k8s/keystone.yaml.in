@@ -1,0 +1,158 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keystone-conf
+data:
+  keystone.conf: |
+    [DEFAULT]
+    log_file = keystone.log
+    log_dir = /var/log/keystone
+    [database]
+    connection = mysql+pymysql://root:{{ .password }}@mysql/keystone
+    [catalog]
+    template_file = /etc/keystone/default_catalog.templates
+    [oslo_policy]
+    policy_dirs = /etc/keystone/policy.d
+    [token]
+    provider = fernet
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keystone-fernet
+data:
+  0: |
+    {{ index .keystone.fernet 0 }}
+  1: |
+    {{ index .keystone.fernet 1 }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keystone
+spec:
+  selector:
+    app: keystone
+  ports:
+  - port: 5000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keystone-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: keystone.{{ .domain }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keystone
+            port:
+              number: 5000
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keystone-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: keystone
+        image: arnaudmorin/openstack-keystone:victoria
+        command: ["keystone-manage", "db_sync"]
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: "/etc/keystone/keystone.conf"
+          subPath: "keystone.conf"
+        - name: fernet-keys
+          mountPath: "/etc/keystone/fernet-keys/"
+      volumes:
+      - name: keystone-conf
+        configMap:
+          name: keystone-conf
+      - name: fernet-keys
+        configMap:
+          name: keystone-fernet
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keystone-bootstrap
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: keystone
+        image: arnaudmorin/openstack-keystone:victoria
+        command: ["keystone-manage", "bootstrap", 
+          "--bootstrap-password", "{{.password}}",
+          "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-internal-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-public-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-region-id", "RegionOne"]
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: "/etc/keystone/keystone.conf"
+          subPath: "keystone.conf"
+        - name: fernet-keys
+          mountPath: "/etc/keystone/fernet-keys/"
+      volumes:
+      - name: keystone-conf
+        configMap:
+          name: keystone-conf
+      - name: fernet-keys
+        configMap:
+          name: keystone-fernet
+  backoffLimit: 4
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keystone
+  labels:
+    app: keystone
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: keystone
+  template:
+    metadata:
+      labels:
+        app: keystone
+    spec:
+      containers:
+      - name: keystone
+        image: arnaudmorin/openstack-keystone:victoria
+        #imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: "/etc/keystone/keystone.conf"
+          subPath: "keystone.conf"
+        - name: fernet-keys
+          mountPath: "/etc/keystone/fernet-keys/"
+      volumes:
+      - name: keystone-conf
+        configMap:
+          name: keystone-conf
+      - name: fernet-keys
+        configMap:
+          name: keystone-fernet

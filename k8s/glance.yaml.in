@@ -1,0 +1,132 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: glance-conf
+data:
+  glance-api.conf: |
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/glance
+    [glance_store]
+    stores = file,http
+    default_store = file
+    filesystem_store_datadir = /var/lib/glance/images/
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [oslo_concurrency]
+    lock_path = /var/lock/glance
+    [paste_deploy]
+    flavor = keystone
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: glance-pv-claim
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: glance
+spec:
+  selector:
+    app: glance
+  ports:
+  - port: 9292
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: glance-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: glance.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: glance
+            port:
+              number: 9292
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: glance-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: glance
+        image: arnaudmorin/openstack-glance:victoria
+        command: ["glance-manage", "db_sync"]
+        volumeMounts:
+        - name: glance-conf
+          mountPath: "/etc/glance/glance-api.conf"
+          subPath: "glance-api.conf"
+      volumes:
+      - name: glance-conf
+        configMap:
+          name: glance-conf
+  backoffLimit: 4
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: glance
+  labels:
+    app: glance
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glance
+  template:
+    metadata:
+      labels:
+        app: glance
+    spec:
+      containers:
+      - name: glance
+        image: arnaudmorin/openstack-glance:victoria
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 9292
+        volumeMounts:
+        - name: glance-conf
+          mountPath: "/etc/glance/glance-api.conf"
+          subPath: "glance-api.conf"
+        - name: glance-persistent-storage
+          mountPath: /var/lib/glance
+      volumes:
+      - name: glance-conf
+        configMap:
+          name: glance-conf
+      - name: glance-persistent-storage
+        persistentVolumeClaim:
+          claimName: glance-pv-claim

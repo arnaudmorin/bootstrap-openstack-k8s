@@ -1,0 +1,199 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neutron-conf
+data:
+  neutron.conf: |
+    [DEFAULT]
+    auth_strategy = keystone
+    core_plugin = ml2
+    service_plugins = router,segments,port_forwarding
+    allow_overlapping_ips = true
+    notify_nova_on_port_status_changes = true
+    notify_nova_on_port_data_changes = true
+    interface_driver = openvswitch
+    router_distributed = true
+    l3_ha = true
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/neutron
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [nova]
+    region_name = RegionOne
+    auth_url = http://keystone.{{.domain}}/v3
+    auth_type = password
+    password = {{.password}}
+    project_domain_name = Default
+    project_name = service
+    user_domain_name = Default
+    username = nova
+    [oslo_concurrency]
+    lock_path = /var/lib/neutron/tmp
+    [oslo_policy]
+    policy_file = /etc/neutron/policy.json
+    policy_dirs = /etc/neutron/policy.d
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neutron-ml2-conf
+data:
+  ml2_conf.ini: |
+    [ml2]
+    type_drivers = flat,vlan,vxlan
+    tenant_network_types = vxlan
+    mechanism_drivers = openvswitch,l2population
+    extension_drivers = port_security
+    [ml2_type_flat]
+    flat_networks = provider
+    [ml2_type_vxlan]
+    vni_ranges = 1:1000
+    [securitygroup]
+    enable_ipset = true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neutron
+spec:
+  selector:
+    app: neutron-api
+  ports:
+  - port: 9696
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: neutron-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: neutron.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: neutron
+            port:
+              number: 9696
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: neutron-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: neutron
+        image: arnaudmorin/openstack-neutron-api:victoria
+        command: ["neutron-db-manage", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini", "upgrade", "head"]
+        volumeMounts:
+        - name: neutron-conf
+          mountPath: "/etc/neutron/neutron.conf"
+          subPath: "neutron.conf"
+        - name: neutron-ml2-conf
+          mountPath: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+          subPath: "ml2_conf.ini"
+      volumes:
+      - name: neutron-conf
+        configMap:
+          name: neutron-conf
+      - name: neutron-ml2-conf
+        configMap:
+          name: neutron-ml2-conf
+  backoffLimit: 4
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neutron-api
+  labels:
+    app: neutron-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neutron-api
+  template:
+    metadata:
+      labels:
+        app: neutron-api
+    spec:
+      containers:
+      - name: neutron-api
+        image: arnaudmorin/openstack-neutron-api:victoria
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 9696
+        volumeMounts:
+        - name: neutron-conf
+          mountPath: "/etc/neutron/neutron.conf"
+          subPath: "neutron.conf"
+        - name: neutron-ml2-conf
+          mountPath: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+          subPath: "ml2_conf.ini"
+      volumes:
+      - name: neutron-conf
+        configMap:
+          name: neutron-conf
+      - name: neutron-ml2-conf
+        configMap:
+          name: neutron-ml2-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neutron-rpc
+  labels:
+    app: neutron-rpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neutron-rpc
+  template:
+    metadata:
+      labels:
+        app: neutron-rpc
+    spec:
+      containers:
+      - name: neutron-rpc
+        image: arnaudmorin/openstack-neutron-rpc:victoria
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: neutron-conf
+          mountPath: "/etc/neutron/neutron.conf"
+          subPath: "neutron.conf"
+        - name: neutron-ml2-conf
+          mountPath: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+          subPath: "ml2_conf.ini"
+      volumes:
+      - name: neutron-conf
+        configMap:
+          name: neutron-conf
+      - name: neutron-ml2-conf
+        configMap:
+          name: neutron-ml2-conf
+

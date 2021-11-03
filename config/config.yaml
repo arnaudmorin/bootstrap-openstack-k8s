@@ -1,0 +1,21 @@
+---
+# Global password used everywhere
+# NOTE(arnaud) this is not very secure but we dont want to prove security for now
+password: password42
+
+# Domain used for your OpenStack deployment
+# Make sure to point this domain and all subdomains to
+# a worker IP
+# keystone.{{domain}}
+# glance.{{domain}}
+# nova.{{domain}}
+# placement.{{domain}}
+# neutron.{{domain}}
+domain: k8s.opensteak.fr
+
+# Keystone fernet
+keystone:
+  fernet:
+    - "IytEr50hW0rsmA9dfhPc6vBJe1KN8MoPFJxy2ARv_S0="
+    - "kcDENFZQ6cLCvMliOgZjZB4y1Tf0AyX6Oed7HP0ylf8="
+
