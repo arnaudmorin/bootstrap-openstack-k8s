@@ -17,6 +17,7 @@
   - name: install packages
     apt:
       name: ["neutron-openvswitch-agent", "neutron-l3-agent", "neutron-dhcp-agent", "neutron-metadata-agent", "nova-compute", "tcpdump", "ifupdown", "lnav", "ccze", "tmux", "crudini"]
+      update_cache: yes
       state: latest
 
   - name: "[workaround] install dnspython==1.16.0 from pip"
