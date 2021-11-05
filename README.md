@@ -1,3 +1,13 @@
+Table of Contents
+=================
+
+* [Introduction](#introduction)
+* [Bootstrap](#bootstrap)
+* [k8s\-1](#k8s-1)
+* [Install OpenStack (control plane)](#install-openstack-control-plane)
+* [compute\-1](#compute-1)
+* [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
+
 
 # Introduction
 TODO
