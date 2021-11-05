@@ -1,0 +1,125 @@
+#!/bin/bash
+
+function create_flavors(){(
+    openstack flavor create --vcpus 1 --ram 256  --disk 10 nano
+    openstack flavor create --vcpus 1 --ram 1024 --disk 10 small
+    openstack flavor create --vcpus 2 --ram 2048 --disk 20 medium
+    openstack flavor create --vcpus 4 --ram 4086 --disk 50 large
+)}
+
+function create_image_cirros(){(
+    [ -f cirros-0.4.0-x86_64-disk.img ] || wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+    openstack image create \
+     --file cirros-0.4.0-x86_64-disk.img \
+     --disk-format qcow2 \
+     --container-format bare \
+     --public \
+     "cirros"
+)}
+
+function create_image_ubuntu(){(
+    [ -f xenial-server-cloudimg-amd64-disk1.img ] || wget https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
+    openstack image create \
+     --file xenial-server-cloudimg-amd64-disk1.img \
+     --disk-format qcow2 \
+     --container-format bare \
+     --public \
+     "Ubuntu 16.04"
+)}
+
+function create_image_debian(){(
+    [ -f debian-10-openstack-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/OpenStack/current/debian-10-openstack-amd64.qcow2
+    openstack image create \
+     --file debian-10-openstack-amd64.qcow2 \
+     --disk-format qcow2 \
+     --container-format bare \
+     --public \
+     "Debian 10"
+)}
+
+function create_key(){(
+    openstack keypair create --public-key ~/.ssh/authorized_keys zob
+)}
+
+function create_rules(){(
+    openstack security group rule create --ingress --protocol any default
+    # Already supposed to exist
+    #openstack security group rule create --egress  --protocol any default
+)}
+
+function create_server_private(){(
+    openstack server create \
+     --flavor nano \
+     --image cirros \
+     --net private \
+     --key-name zob \
+     n1
+)}
+
+function create_server_public(){(
+    openstack server create \
+     --flavor nano \
+     --image cirros \
+      --net public \
+      --key-name zob \
+     p1
+)}
+
+function create_floating(){(
+    openstack floating ip create public
+)}
+
+function attach_floating(){(
+    NAME=$1
+    IP=$2
+    openstack server add floating ip $NAME $IP
+)}
+
+function create_network_public(){(
+    RANGE=$1
+    GATEWAY=$2
+
+    openstack network create \
+     --share \
+     --external \
+     --provider-physical-network provider \
+     --provider-network-type flat \
+     public
+
+    openstack subnet create \
+     --network public \
+     --subnet-range "$RANGE" \
+     --gateway $GATEWAY \
+     --dns-nameserver 8.8.8.8 \
+     "$RANGE"
+
+    # Add a private subnet in this public network
+    # The service-type network:floatingip_agent_gateway
+    # will let IPAM give IP from this subnet for FIP namespaces
+    # This is used to reduce number of public IP on neutron DVR
+    # Note that we still need to set a valid next-hop gateway
+    # ($GATEWAY here)
+    openstack subnet create \
+     --network public \
+     --subnet-range 172.31.0.0/17 \
+     --gateway $GATEWAY \
+     --no-dhcp \
+     --service-type 'network:floatingip_agent_gateway' \
+     _internal_fip_subnet
+)}
+
+function create_network_private(){(
+    openstack network create private
+    openstack subnet create \
+     --network private \
+     --subnet-range "192.168.42.0/24" \
+     --gateway 192.168.42.1 \
+     --dns-nameserver 8.8.8.8 \
+     "192.168.42.0/24"
+)}
+
+function create_router(){(
+    openstack router create router
+    openstack router set --external-gateway public router
+    openstack router add subnet router 192.168.42.0/24
+)}

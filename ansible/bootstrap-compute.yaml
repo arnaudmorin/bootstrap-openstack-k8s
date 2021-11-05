@@ -1,0 +1,284 @@
+---
+- name: Install
+  hosts: localhost
+  vars_files:
+    - ../config/config.yaml
+  tasks:
+  - name: install plik
+    get_url:
+      url: https://plik.arno.ovh/clients/linux-amd64/plik
+      dest: /usr/local/bin/plik
+      mode: '0755'
+
+  - name: configure plik
+    copy:
+      dest: "/root/.plikrc"
+      content: |
+        Url = "https://plik.arno.ovh"
+
+  - name: install extrepo
+    apt:
+      name: ["extrepo"]
+      state: latest
+
+  - name: enable extrepo
+    command:
+      cmd: "extrepo enable openstack_victoria"
+      creates: /etc/apt/sources.list.d/extrepo_openstack_victoria.sources
+
+  - name: install packages
+    apt:
+      name: ["neutron-openvswitch-agent", "neutron-l3-agent", "neutron-dhcp-agent", "neutron-metadata-agent", "nova-compute", "tcpdump", "ifupdown", "lnav", "ccze", "tmux", "crudini"]
+      state: latest
+
+  - name: "[workaround] install dnspython==1.16.0 from pip"
+    pip:
+      name: dnspython==1.16.0
+
+  - name: create br-ex ovs bridge
+    openvswitch_bridge:
+      bridge: br-ex
+      fail_mode: standalone
+      state: present
+
+  - name: add eth2 in br-ex
+    openvswitch_port:
+      bridge: br-ex
+      port: ens4
+      state: present
+
+  - name: configure nova
+    ini_file:
+      path: /etc/nova/nova.conf
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@rabbit.{{domain}}:30672" }
+      - { section: "DEFAULT", option: "my_ip", value: "{{ansible_default_ipv4['address']}}" }
+      - { section: "DEFAULT", option: "use_neutron", value: "true" }
+      - { section: "DEFAULT", option: "firewall_driver", value: "nova.virt.firewall.NoopFirewallDriver" }
+      - { section: "api", option: "auth_strategy", value: "keystone" }
+      - { section: "vnc", option: "enabled", value: "True" }
+      - { section: "vnc", option: "server_listen", value: "0.0.0.0" }
+      - { section: "vnc", option: "server_proxyclient_address", value: "$my_ip" }
+      - { section: "vnc", option: "novncproxy_base_url", value: "http://nova.{{domain}}:6080/vnc_auto.html" }
+      - { section: "serial_console", option: "enabled", value: "true" }
+      - { section: "serial_console", option: "base_url", value: "ws://nova.{{domain}}:6083" }
+      - { section: "serial_console", option: "proxyclient_address", value: "{{ansible_default_ipv4['address']}}" }
+      - { section: "glance", option: "api_servers", value: "http://glance.{{domain}}" }
+      - { section: "oslo_concurrency", option: "lock_path", value: "/var/lib/nova/tmp" }
+      - { section: "keystone_authtoken", option: "www_authenticate_uri", value: "http://keystone.{{domain}}" }
+      - { section: "keystone_authtoken", option: "auth_url", value: "http://keystone.{{domain}}" }
+        #      - { section: "keystone_authtoken", option: "memcached_servers", value: "keystone:11211" }
+      - { section: "keystone_authtoken", option: "auth_type", value: "password" }
+      - { section: "keystone_authtoken", option: "project_domain_name", value: "Default" }
+      - { section: "keystone_authtoken", option: "user_domain_name", value: "Default" }
+      - { section: "keystone_authtoken", option: "project_name", value: "service" }
+      - { section: "keystone_authtoken", option: "username", value: "nova" }
+      - { section: "keystone_authtoken", option: "password", value: "{{password}}" }
+      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }      # NOTE debian package is overwritting with regionOne (this is a bug IMO)
+      - { section: "placement", option: "region_name", value: "RegionOne" }
+      - { section: "placement", option: "project_domain_name", value: "Default" }
+      - { section: "placement", option: "project_name", value: "service" }
+      - { section: "placement", option: "auth_type", value: "password" }
+      - { section: "placement", option: "user_domain_name", value: "Default" }
+      - { section: "placement", option: "auth_url", value: "http://keystone.{{domain}}" }
+      - { section: "placement", option: "username", value: "placement" }
+      - { section: "placement", option: "password", value: "{{password}}" }
+      - { section: "neutron", option: "url", value: "http://neutron.{{domain}}" }
+      - { section: "neutron", option: "auth_url", value: "http://keystone.{{domain}}" }
+      - { section: "neutron", option: "auth_type", value: "password" }
+      - { section: "neutron", option: "project_domain_name", value: "Default" }
+      - { section: "neutron", option: "user_domain_name", value: "Default" }
+      - { section: "neutron", option: "region_name", value: "RegionOne" }
+      - { section: "neutron", option: "project_name", value: "service" }
+      - { section: "neutron", option: "username", value: "neutron" }
+      - { section: "neutron", option: "password", value: "{{password}}" }
+      - { section: "neutron", option: "service_name", value: "network" }          # NOTE debian package is overwritting this to neutron, which is wrong. So get it back to network
+    notify:
+      - restart nova
+  - name: configure nova (delete some lines)
+    ini_file: path=/etc/nova/nova.conf section={{item.section}} option={{item.option}} state=absent
+    with_items:
+      - { section: "DEFAULT", option: "log_dir" }
+    notify:
+      - restart nova
+
+  - name: configure libvirt
+    ini_file:
+      path: /etc/libvirt/libvirtd.conf
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: null, option: "listen_tls", value: "0" }
+      - { section: null, option: "listen_tcp", value: "1" }
+      - { section: null, option: "auth_tcp", value: "\"none\"" }
+    notify:
+      - restart libvirt
+      - restart nova
+
+  - name: configure libvirt default
+    ini_file:
+      path: /etc/default/libvirtd
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: null, option: "libvirtd_opts", value: "\"-l\"" }
+    notify:
+      - restart libvirt
+      - restart nova
+
+  - name: configure neutron
+    ini_file:
+      path: /etc/neutron/neutron.conf
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@rabbit.{{domain}}:30672" }
+      - { section: "DEFAULT", option: "auth_strategy", value: "keystone" }
+      - { section: "oslo_concurrency", option: "lock_path", value: "/var/lib/neutron/tmp" }
+      - { section: "keystone_authtoken", option: "www_authenticate_uri", value: "http://keystone.{{domain}}" }
+      - { section: "keystone_authtoken", option: "auth_url", value: "http://keystone.{{domain}}" }
+        #      - { section: "keystone_authtoken", option: "memcached_servers", value: "keystone:11211" }
+      - { section: "keystone_authtoken", option: "auth_type", value: "password" }
+      - { section: "keystone_authtoken", option: "project_domain_name", value: "Default" }
+      - { section: "keystone_authtoken", option: "user_domain_name", value: "Default" }
+      - { section: "keystone_authtoken", option: "project_name", value: "service" }
+      - { section: "keystone_authtoken", option: "username", value: "neutron" }
+      - { section: "keystone_authtoken", option: "password", value: "{{password}}" }
+      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }      # NOTE debian package is overwritting with regionOne (this is a bug IMO)
+    notify:
+      - restart neutron
+  - name: configure neutron l2 agent
+    ini_file:
+      path: /etc/neutron/plugins/ml2/openvswitch_agent.ini
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "agent", option: "tunnel_types", value: "vxlan" }
+      - { section: "agent", option: "l2_population", value: "true" }
+      - { section: "agent", option: "arp_responder", value: "true" }
+      - { section: "agent", option: "enable_distributed_routing", value: "true" }
+      - { section: "ovs", option: "local_ip", value: "{{ansible_default_ipv4['address']}}" }
+      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex" }
+      - { section: "securitygroup", option: "enable_security_group", value: "true" }
+      - { section: "securitygroup", option: "firewall_driver", value: "openvswitch" }
+    notify:
+      - restart neutron
+  - name: configure neutron l3 agent
+    ini_file:
+      path: /etc/neutron/l3_agent.ini
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "DEFAULT", option: "interface_driver", value: "openvswitch" }
+      - { section: "DEFAULT", option: "agent_mode", value: "dvr_snat" }
+      - { section: "DEFAULT", option: "extensions", value: "port_forwarding" }
+      - { section: "DEFAULT", option: "ha_vrrp_auth_password", value: "{{password}}" }
+      - { section: "DEFAULT", option: "ha_vrrp_health_check_interval", value: "30" }
+    notify:
+      - restart neutron
+  - name: configure neutron dhcp agent
+    ini_file:
+      path: /etc/neutron/dhcp_agent.ini
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "DEFAULT", option: "interface_driver", value: "openvswitch" }
+      - { section: "DEFAULT", option: "dhcp_driver", value: "neutron.agent.linux.dhcp.Dnsmasq" }
+      - { section: "DEFAULT", option: "enable_isolated_metadata", value: "true" }
+    notify:
+      - restart neutron
+  - name: configure neutron metadata agent
+    ini_file:
+      path: /etc/neutron/metadata_agent.ini
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "DEFAULT", option: "nova_metadata_host", value: "nova.{{domain}}" }
+      - { section: "DEFAULT", option: "nova_metadata_port", value: "30775" }
+      - { section: "DEFAULT", option: "metadata_proxy_shared_secret", value: "{{password}}" }
+    notify:
+      - restart neutron
+
+  - name: set nova shell to bash
+    user:
+      name: nova
+      shell: /bin/bash
+
+  - name: create ssh folder
+    file:
+      path: /var/lib/nova/.ssh/
+      state: directory
+      recurse: yes
+      owner: nova
+      group: nova
+
+  - name: install ssh key for migration between computes
+    copy:
+      src: files/zob
+      dest: /var/lib/nova/.ssh/id_rsa
+      mode: 0600
+      owner: nova
+      group: nova
+
+  - name: install ssh public key for migration between computes
+    copy:
+      src: files/zob.pub
+      dest: /var/lib/nova/.ssh/authorized_keys
+      owner: nova
+      group: nova
+
+  - name: install ssh config
+    copy:
+      dest: /var/lib/nova/.ssh/config
+      owner: nova
+      group: nova
+      mode: 0600
+      content: |
+        Host *
+          UserKnownHostsFile /dev/null
+          StrictHostKeyChecking no
+
+  - name: start services
+    service:
+      name: "{{item}}"
+      state: started
+    with_items:
+      - "nova-compute"
+      - "libvirtd"
+      - "neutron-dhcp-agent"
+      - "neutron-metadata-agent"
+      - "neutron-l3-agent"
+      - "neutron-openvswitch-agent"
+
+  handlers:
+  - name: restart nova
+    service:
+      name: "{{item}}"
+      state: restarted
+    with_items:
+      - "nova-compute"
+  - name: restart libvirt
+    service:
+      name: "{{item}}"
+      state: restarted
+    with_items:
+      - "libvirtd"
+  - name: restart neutron
+    service:
+      name: "{{item}}"
+      state: restarted
+    with_items:
+      - "neutron-dhcp-agent"
+      - "neutron-metadata-agent"
+      - "neutron-l3-agent"
+      - "neutron-openvswitch-agent"
