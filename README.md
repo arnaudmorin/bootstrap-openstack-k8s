@@ -1,12 +1,48 @@
-# Start debian 11
+# Introduction
+TODO
 
-# Install k3s
-
-
+# Bootstrap
+## Clone the repo
+```bash
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+cd bootstrap-openstack-k8s
 ```
+
+## Source your openrc
+You need an OpenStack account to continue, source the `openrc` file now:
+```bash
+source openrc
+```
+
+## Start instances
+The `bootstrap.sh` script will start 2 instances:
+* k8s-1
+* compute-1
+```bash
+# Execute this
+bootstrap.sh
+
+# List instances
+nova list
+```
+
+## SSH into instances
+At the end, you should be able to ssh both instances using the `zob` key:
+```bash
+chmod 600 ansible/files/zob
+ssh debian@ip -i ansible/files/zob		# replace ip with the real server IP
+```
+
+# k3s
+ On the k8s-1 instance, we will install k3s.
+ See https://k3s.io/ for more info.
+
+## Installation
+```bash
 curl -sfL https://get.k3s.io | sh -
 ```
 
+## Configuration
 Alias
 ```
 alias k='kubectl'
