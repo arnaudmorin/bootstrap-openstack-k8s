@@ -7,17 +7,21 @@
   - name: install openstack client
     apt:
       name: python3-openstackclient
+      update_cache: yes
       state: latest
+
   - name: create bash_completion.d
     file:
       path: /etc/bash_completion.d/
       state: directory
       mode: 0755
+
   - name: install openstack client bash completion
     shell: |
       openstack complete > /etc/bash_completion.d/openstack
     args:
       creates: /etc/bash_completion.d/openstack
+
   - name: create openrc_admin file
     vars:
       openrc_user: admin
@@ -25,8 +29,9 @@
       openrc_project: admin
       openrc_auth_url: "http://keystone.{{domain}}/v3"
     template:
-      src: ./config/openrc.j2
+      src: ./files/openrc.j2
       dest: /root/openrc_admin
+
   - name: create openrc_demo file
     vars:
       openrc_user: demo
@@ -34,8 +39,13 @@
       openrc_project: demo
       openrc_auth_url: "http://keystone.{{domain}}/v3"
     template:
-      src: ./config/openrc.j2
+      src: ./files/openrc.j2
       dest: /root/openrc_demo
+
+  - name: copy helper script
+    copy:
+      src: ./files/helper
+      dest: /root/helper
 
   - name: create project service
     shell: |
