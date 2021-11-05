@@ -83,3 +83,10 @@ Nova
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
+
+
+
+bootstrap-compute
+```
+ansible-playbook ansible/bootstrap-compute.yaml
+```
