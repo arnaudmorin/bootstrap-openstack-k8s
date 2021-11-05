@@ -54,7 +54,7 @@
       option: "{{item.option}}"
       value: "{{item.value}}"
     with_items:
-      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@rabbit.{{domain}}:30672" }
+      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@{{domain}}:30672" }
       - { section: "DEFAULT", option: "my_ip", value: "{{ansible_default_ipv4['address']}}" }
       - { section: "DEFAULT", option: "use_neutron", value: "true" }
       - { section: "DEFAULT", option: "firewall_driver", value: "nova.virt.firewall.NoopFirewallDriver" }
@@ -138,7 +138,7 @@
       option: "{{item.option}}"
       value: "{{item.value}}"
     with_items:
-      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@rabbit.{{domain}}:30672" }
+      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@{{domain}}:30672" }
       - { section: "DEFAULT", option: "auth_strategy", value: "keystone" }
       - { section: "oslo_concurrency", option: "lock_path", value: "/var/lib/neutron/tmp" }
       - { section: "keystone_authtoken", option: "www_authenticate_uri", value: "http://keystone.{{domain}}" }
