@@ -1,7 +1,7 @@
 ---
 # Global password used everywhere
 # NOTE(arnaud) this is not very secure but we dont want to prove security for now
-password: password42
+password: changeme
 
 # Domain used for your OpenStack deployment
 # Make sure to point this domain and all subdomains to
@@ -11,9 +11,12 @@ password: password42
 # nova.{{domain}}
 # placement.{{domain}}
 # neutron.{{domain}}
-domain: k8s.opensteak.fr
+domain: somewhere.net
 
 # Keystone fernet
+# These are the keys keystone will use to generate tokens
+# It can generated with:
+# kubectl run -it --rm keystone-fernet-gen --image=arnaudmorin/openstack-keystone:victoria --restart=Never -- bash -c 'keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone ; echo "fernet:" ; echo "  - \"$(cat /etc/keystone/fernet-keys/0)\"" ; echo "  - \"$(cat /etc/keystone/fernet-keys/1)\""'
 keystone:
   fernet:
     - "IytEr50hW0rsmA9dfhPc6vBJe1KN8MoPFJxy2ARv_S0="
