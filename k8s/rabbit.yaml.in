@@ -17,6 +17,8 @@ spec:
     app: rabbit
   ports:
   - port: 5672
+    nodePort: 30672
+    name: rabbit
   # Rabbit service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by neutron/nova agents)
   type: LoadBalancer
 ---

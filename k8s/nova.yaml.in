@@ -92,12 +92,61 @@ spec:
     app: nova-metadata-api
   ports:
   - port: 8775
+    nodePort: 30775
+    name: nova-metadata-api
+  # Nova metadata service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by neutron metadata agents)
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-vnc
+spec:
+  selector:
+    app: nova-vnc
+  ports:
+  - port: 6080
+    nodePort: 30080
+    name: nova-vnc
+  # Nova vnc service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by clients)
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-spice
+spec:
+  selector:
+    app: nova-spice
+  ports:
+  - port: 6082
+    nodePort: 30082
+    name: nova-spice
+  # Nova spice service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by clients)
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-serial
+spec:
+  selector:
+    app: nova-serial
+  ports:
+  - port: 6083
+    nodePort: 30083
+    name: nova-serial
+  # Nova serial service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by clients)
+  type: LoadBalancer
 
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nova-api-ingress
+  name: nova-api
   annotations:
     kubernetes.io/ingress.class: traefik
 spec:
@@ -319,6 +368,96 @@ spec:
       containers:
       - name: nova-scheduler
         image: arnaudmorin/openstack-nova-scheduler:victoria
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-vnc
+  labels:
+    app: nova-vnc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-vnc
+  template:
+    metadata:
+      labels:
+        app: nova-vnc
+    spec:
+      containers:
+      - name: nova-vnc
+        image: arnaudmorin/openstack-nova-vncproxy:victoria
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-spice
+  labels:
+    app: nova-spice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-spice
+  template:
+    metadata:
+      labels:
+        app: nova-spice
+    spec:
+      containers:
+      - name: nova-spice
+        image: arnaudmorin/openstack-nova-spiceproxy:victoria
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-serial
+  labels:
+    app: nova-serial
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nova-serial
+  template:
+    metadata:
+      labels:
+        app: nova-serial
+    spec:
+      containers:
+      - name: nova-serial
+        image: arnaudmorin/openstack-nova-serialproxy:victoria
         # imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf

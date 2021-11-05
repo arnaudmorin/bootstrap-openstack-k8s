@@ -40,7 +40,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: placement-ingress
+  name: placement
   annotations:
     kubernetes.io/ingress.class: traefik
 spec:
