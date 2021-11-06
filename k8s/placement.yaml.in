@@ -57,29 +57,6 @@ spec:
               number: 8778
 
 ---
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: placement-db-sync
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: placement
-        image: arnaudmorin/openstack-placement:victoria
-        command: ["placement-manage", "db", "sync"]
-        volumeMounts:
-        - name: placement-conf
-          mountPath: "/etc/placement/placement.conf"
-          subPath: "placement.conf"
-      volumes:
-      - name: placement-conf
-        configMap:
-          name: placement-conf
-  backoffLimit: 4
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

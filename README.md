@@ -125,10 +125,19 @@ plik -s config/config.yaml
 ```
 
 ## MariaDB
+### Install and create empty databases
 ```bash
 frep k8s/mysql.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
+
+### Pupulate databases
+It's time now to sync (create structures / tables) all `OpenStack` services databases.
+
+```bash
+frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
+Databases for all `OpenStack` services are now populated with empty tables.
 
 ## Rabbit
 ```bash
@@ -168,15 +177,6 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 Nova will take longer than others, this is the more complex.
-
-## Rollout restart everything
-The `kubernetes` manifests that you executed in the previous steps are very simple and some of them lack scheduling.
-As a result,  it can happen that some of the `OpenStack`services were started before the database was populated and needs to be restarted (this is especially true for `nova`).
-
-In order to do that for all the services, here is a one-liner:
-```bash
-kubectl get deploy | egrep 'glance|placement|neutron|nova' | awk '{print $1}' | xargs -n 1 kubectl rollout restart deploy
-```
 
 ## Test your OpenStack deployment
 ### openrc_admin

@@ -1,0 +1,243 @@
+---
+#
+# KEYSTONE JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keystone-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: keystone
+        image: arnaudmorin/openstack-keystone:victoria
+        command: ["keystone-manage", "db_sync"]
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: "/etc/keystone/keystone.conf"
+          subPath: "keystone.conf"
+        - name: fernet-keys
+          mountPath: "/etc/keystone/fernet-keys/"
+      volumes:
+      - name: keystone-conf
+        configMap:
+          name: keystone-conf
+      - name: fernet-keys
+        configMap:
+          name: keystone-fernet
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: keystone-bootstrap
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: keystone
+        image: arnaudmorin/openstack-keystone:victoria
+        command: ["keystone-manage", "bootstrap", 
+          "--bootstrap-password", "{{.password}}",
+          "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-internal-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-public-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-region-id", "RegionOne"]
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: "/etc/keystone/keystone.conf"
+          subPath: "keystone.conf"
+        - name: fernet-keys
+          mountPath: "/etc/keystone/fernet-keys/"
+      volumes:
+      - name: keystone-conf
+        configMap:
+          name: keystone-conf
+      - name: fernet-keys
+        configMap:
+          name: keystone-fernet
+  backoffLimit: 4
+
+---
+#
+# GLANCE JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: glance-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: glance
+        image: arnaudmorin/openstack-glance:victoria
+        command: ["glance-manage", "db_sync"]
+        volumeMounts:
+        - name: glance-conf
+          mountPath: "/etc/glance/glance-api.conf"
+          subPath: "glance-api.conf"
+      volumes:
+      - name: glance-conf
+        configMap:
+          name: glance-conf
+  backoffLimit: 4
+
+---
+#
+# NEUTRON JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: neutron-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: neutron
+        image: arnaudmorin/openstack-neutron-api:victoria
+        command: ["neutron-db-manage", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini", "upgrade", "head"]
+        volumeMounts:
+        - name: neutron-conf
+          mountPath: "/etc/neutron/neutron.conf"
+          subPath: "neutron.conf"
+        - name: neutron-ml2-conf
+          mountPath: "/etc/neutron/plugins/ml2/ml2_conf.ini"
+          subPath: "ml2_conf.ini"
+      volumes:
+      - name: neutron-conf
+        configMap:
+          name: neutron-conf
+      - name: neutron-ml2-conf
+        configMap:
+          name: neutron-ml2-conf
+  backoffLimit: 4
+
+---
+#
+# PLACEMENT JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: placement-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: placement
+        image: arnaudmorin/openstack-placement:victoria
+        command: ["placement-manage", "db", "sync"]
+        volumeMounts:
+        - name: placement-conf
+          mountPath: "/etc/placement/placement.conf"
+          subPath: "placement.conf"
+      volumes:
+      - name: placement-conf
+        configMap:
+          name: placement-conf
+  backoffLimit: 4
+
+---
+#
+# NOVA JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-api-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "api_db", "sync"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-cell0-map
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "cell_v2", "map_cell0"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-cell1-create
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "cell_v2", "create_cell", "--name=cell1", "--verbose"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: nova
+        image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-manage", "db", "sync"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: "/etc/nova/nova.conf"
+          subPath: "nova.conf"
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+  backoffLimit: 4
+

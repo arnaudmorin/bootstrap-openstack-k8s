@@ -72,29 +72,6 @@ spec:
               number: 9292
 
 ---
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: glance-db-sync
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: glance
-        image: arnaudmorin/openstack-glance:victoria
-        command: ["glance-manage", "db_sync"]
-        volumeMounts:
-        - name: glance-conf
-          mountPath: "/etc/glance/glance-api.conf"
-          subPath: "glance-api.conf"
-      volumes:
-      - name: glance-conf
-        configMap:
-          name: glance-conf
-  backoffLimit: 4
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
