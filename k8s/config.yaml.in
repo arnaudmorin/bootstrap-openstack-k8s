@@ -1,0 +1,224 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keystone-conf
+data:
+  keystone.conf: |
+    [DEFAULT]
+    log_file = keystone.log
+    log_dir = /var/log/keystone
+    [database]
+    connection = mysql+pymysql://root:{{ .password }}@mysql/keystone
+    [catalog]
+    template_file = /etc/keystone/default_catalog.templates
+    [oslo_policy]
+    policy_dirs = /etc/keystone/policy.d
+    [token]
+    provider = fernet
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keystone-fernet
+data:
+  0: |
+    {{ index .keystone.fernet 0 }}
+  1: |
+    {{ index .keystone.fernet 1 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: glance-conf
+data:
+  glance-api.conf: |
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/glance
+    [glance_store]
+    stores = file,http
+    default_store = file
+    filesystem_store_datadir = /var/lib/glance/images/
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [oslo_concurrency]
+    lock_path = /var/lock/glance
+    [paste_deploy]
+    flavor = keystone
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neutron-conf
+data:
+  neutron.conf: |
+    [DEFAULT]
+    auth_strategy = keystone
+    core_plugin = ml2
+    service_plugins = router,segments,port_forwarding
+    allow_overlapping_ips = true
+    notify_nova_on_port_status_changes = true
+    notify_nova_on_port_data_changes = true
+    interface_driver = openvswitch
+    router_distributed = true
+    l3_ha = true
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/neutron
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [nova]
+    region_name = RegionOne
+    auth_url = http://keystone.{{.domain}}/v3
+    auth_type = password
+    password = {{.password}}
+    project_domain_name = Default
+    project_name = service
+    user_domain_name = Default
+    username = nova
+    [oslo_concurrency]
+    lock_path = /var/lib/neutron/tmp
+    [oslo_policy]
+    policy_file = /etc/neutron/policy.json
+    policy_dirs = /etc/neutron/policy.d
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neutron-ml2-conf
+data:
+  ml2_conf.ini: |
+    [ml2]
+    type_drivers = flat,vlan,vxlan
+    tenant_network_types = vxlan
+    mechanism_drivers = openvswitch,l2population
+    extension_drivers = port_security
+    [ml2_type_flat]
+    flat_networks = provider
+    [ml2_type_vxlan]
+    vni_ranges = 1:1000
+    [securitygroup]
+    enable_ipset = true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-conf
+data:
+  nova.conf: |
+    [DEFAULT]
+    #my_ip = 192.168.1.228
+    pybasedir = /usr/lib/python3/dist-packages
+    bindir = /usr/bin
+    state_path = /var/lib/nova
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [api]
+    auth_strategy = keystone
+    [api_database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/nova_api
+    os_region_name = RegionOne
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/nova
+    [glance]
+    api_servers = http://glance.{{.domain}}
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [neutron]
+    default_floating_pool = ext-net
+    service_metadata_proxy = true
+    metadata_proxy_shared_secret = {{.password}}
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = neutron
+    user_domain_name = Default
+    password = {{.password}}
+    service_name = network
+    url = http://neutron.{{.domain}}
+    region_name = RegionOne
+    [oslo_concurrency]
+    lock_path = /var/lib/nova/tmp
+    [oslo_policy]
+    policy_dirs = /etc/nova/policy.d
+    [placement]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    [scheduler]
+    discover_hosts_in_cells_interval = 60
+    [serial_console]
+    enabled = true
+    [spice]
+    enabled = true
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+    [vnc]
+    enabled = True
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: placement-conf
+data:
+  placement.conf: |
+    [DEFAULT]
+    pybasedir = /usr/lib/python3/dist-packages
+    [api]
+    auth_strategy = keystone
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [oslo_policy]
+    policy_dirs = /etc/placement/policy.d
+    [placement_database]
+    connection = mysql+pymysql://root:{{.password}}@mysql/placement
+

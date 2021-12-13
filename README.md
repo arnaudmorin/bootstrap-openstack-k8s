@@ -131,6 +131,12 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
 
+### Create all configmaps
+```bash
+frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
+All config files for all services are created during this step.
+
 ### Pupulate databases
 It's time now to sync (create structures / tables) all `OpenStack` services databases.
 
