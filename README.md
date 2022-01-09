@@ -234,6 +234,37 @@ openstack server list
 ```
 If this is answering an empty line, you're good! (you don't have any instance yet)
 
+## In case of error - debugging
+
+If something failed, this is perhaps due to a race condition during deployment.
+
+So you can rollout restart some services.
+
+Most of the issue will appear on nova side:
+
+```bash
+k rollout restart deployment/nova-api
+k rollout restart deployment/nova-metadata-api
+```
+
+You may also have to replace some jobs, such as `nova db sync`.
+
+You can either do it from nova-api pod, or delete and recreate the related job.
+
+To make sure that this is the root cause of your issue, you can connect on the DB:
+
+```bash
+k exec -it mysql-89d76b8-qtx2j -- mysql -u root -p
+```
+
+You can also check the logs:
+
+```bash
+k exec -it nova-api-b6995b597-xmvfm -- bash
+# and then
+tail -F /var/log/nova/nova-api.log
+```
+
 # compute-1
 Now that the `OpenStack` control plane is ready, you can install your compute.
 Like you did for  `k3s-1`, now SSH in `compute-1` and login as `root`.
