@@ -31,8 +31,10 @@ The `bootstrap.sh` script will start 2 instances:
 * compute-1
 ```bash
 # Execute this
-bootstrap.sh
+./bootstrap.sh
+```
 
+```bash
 # List instances you have to retrieve the IPs
 openstack server list
 ```
