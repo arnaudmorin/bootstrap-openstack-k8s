@@ -28,7 +28,7 @@ function create_image_ubuntu(){(
 )}
 
 function create_image_debian(){(
-    [ -f debian-10-openstack-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/OpenStack/current/debian-10-openstack-amd64.qcow2
+    [ -f debian-10-openstack-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/OpenStack/current-10/debian-10-openstack-amd64.qcow2
     openstack image create \
      --file debian-10-openstack-amd64.qcow2 \
      --disk-format qcow2 \

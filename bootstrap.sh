@@ -56,3 +56,5 @@ create_keypair
 create_networks
 boot k8s-1
 boot compute-1 public
+boot compute-2 public
+boot compute-3 public
