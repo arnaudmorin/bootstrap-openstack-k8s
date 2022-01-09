@@ -3,11 +3,32 @@ Table of Contents
 
 * [Introduction](#introduction)
 * [Bootstrap](#bootstrap)
+  * [Clone the repo](#clone-the-repo)
+  * [Source your openrc](#source-your-openrc)
+  * [Start instances](#start-instances)
+  * [SSH into instances](#ssh-into-instances)
 * [k8s\-1](#k8s-1)
+  * [Install k3s](#install-k3s)
+  * [Install frep](#install-frep)
+  * [Install ansible](#install-ansible)
+  * [Install plik](#install-plik)
+  * [Clone the repo (on k8s\-1)](#clone-the-repo-on-k8s-1)
 * [Install OpenStack (control plane)](#install-openstack-control-plane)
+  * [Configuration](#configuration)
+  * [MariaDB](#mariadb)
+  * [Rabbit](#rabbit)
+  * [Keystone](#keystone)
+  * [Glance](#glance)
+  * [Placement](#placement)
+  * [Neutron](#neutron)
+  * [Nova](#nova)
+  * [Test your OpenStack deployment](#test-your-openstack-deployment)
+  * [In case of error \- debugging](#in-case-of-error---debugging)
 * [compute\-1](#compute-1)
+  * [Clone the repo (on compute\-1)](#clone-the-repo-on-compute-1)
+  * [Copy the config file from k8s\-1](#copy-the-config-file-from-k8s-1)
+  * [Run the play](#run-the-play)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
-
 
 # Introduction
 TODO
@@ -247,7 +268,7 @@ k rollout restart deployment/nova-api
 k rollout restart deployment/nova-metadata-api
 ```
 
-You may also have to replace some jobs, such as `nova db sync`.
+You may also have to re-execute some jobs, such as `nova db sync`.
 
 You can either do it from nova-api pod, or delete and recreate the related job.
 
