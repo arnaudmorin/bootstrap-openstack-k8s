@@ -74,6 +74,7 @@ data:
     interface_driver = openvswitch
     router_distributed = true
     l3_ha = true
+    max_l3_agents_per_router = 2
     transport_url = rabbit://openstack:{{.password}}@rabbit
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql/neutron
