@@ -1,0 +1,42 @@
+---
+- name: Install
+  hosts: localhost
+  vars_files:
+    - ../config/config.yaml
+  tasks:
+  - name: check if vars are given
+    assert:
+      that:
+        - project_name is defined
+
+  - name: create project
+    os_project:
+      name: "{{project_name}}"
+      description: "project {{project_name}}"
+      region_name: "RegionOne"
+      domain_id: "default"
+
+  - name: create user
+    os_user:
+      name: "{{project_name}}_user1"
+      password: "{{password}}"
+      default_project: "{{project_name}}"
+      description: "user for {{project_name}}"
+      region_name: "RegionOne"
+      domain: "default"
+
+  - name: add member role to user
+    os_user_role:
+      user: "{{project_name}}_user1"
+      project: "{{project_name}}"
+      role: member
+
+  - name: "create openrc_{{ project_name }} file"
+    vars:
+      openrc_user: "{{project_name}}_user1"
+      openrc_password: "{{password}}"
+      openrc_project: "{{project_name}}"
+      openrc_auth_url: "http://keystone.{{domain}}/v3"
+    template:
+      src: ./files/openrc.j2
+      dest: "/root/openrc_{{ project_name }}"
