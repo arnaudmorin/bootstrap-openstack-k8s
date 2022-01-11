@@ -150,7 +150,11 @@ plik -s config/config.yaml
 ## MariaDB
 ### Install and create empty databases
 ```bash
-frep k8s/mysql.yaml.in:- --load config/config.yaml | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
 

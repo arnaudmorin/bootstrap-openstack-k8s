@@ -1,22 +1,23 @@
 ---
+#
+# KEYSTONE
+#
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: initdb
+  name: initdb-{{ .db_name }}
 data:
   initdb.sql: |-
-    CREATE DATABASE keystone;
-    CREATE DATABASE nova;
-    CREATE DATABASE nova_api;
+    CREATE DATABASE {{ .db_name }};
+    {{if (eq .db_name "nova")}}
     CREATE DATABASE nova_cell0;
-    CREATE DATABASE placement;
-    CREATE DATABASE neutron;
-    CREATE DATABASE glance;
+    CREATE DATABASE nova_api;
+    {{end}}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mysql-pv-claim
+  name: mysql-pv-claim-{{ .db_name }}
 spec:
   storageClassName: local-path
   accessModes:
@@ -28,47 +29,47 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql
+  name: mysql-{{ .db_name }}
 spec:
   selector:
-    app: mysql
+    app: mysql-{{ .db_name }}
   ports:
   - port: 3306
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql
+  name: mysql-{{ .db_name }}
 spec:
   selector:
     matchLabels:
-      app: mysql
+      app: mysql-{{ .db_name }}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: mysql
+        app: mysql-{{ .db_name }}
     spec:
       containers:
       - image: mariadb:10.4-focal
-        name: mysql
+        name: mysql-{{ .db_name }}
         env:
           # Use secret in real usage
         - name: MYSQL_ROOT_PASSWORD
           value: {{ .password }}
         ports:
         - containerPort: 3306
-          name: mysql
+          name: mysql-{{ .db_name }}
         volumeMounts:
-        - name: mysql-persistent-storage
+        - name: mysql-persistent-storage-{{ .db_name }}
           mountPath: /var/lib/mysql
-        - name: mysql-initdb
+        - name: mysql-initdb-{{ .db_name }}
           mountPath: /docker-entrypoint-initdb.d
       volumes:
-      - name: mysql-persistent-storage
+      - name: mysql-persistent-storage-{{ .db_name }}
         persistentVolumeClaim:
-          claimName: mysql-pv-claim
-      - name: mysql-initdb
+          claimName: mysql-pv-claim-{{ .db_name }}
+      - name: mysql-initdb-{{ .db_name }}
         configMap:
-          name: initdb
+          name: initdb-{{ .db_name }}

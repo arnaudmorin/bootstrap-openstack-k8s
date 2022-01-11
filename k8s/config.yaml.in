@@ -9,7 +9,7 @@ data:
     log_file = keystone.log
     log_dir = /var/log/keystone
     [database]
-    connection = mysql+pymysql://root:{{ .password }}@mysql/keystone
+    connection = mysql+pymysql://root:{{ .password }}@mysql-keystone/keystone
     [catalog]
     template_file = /etc/keystone/default_catalog.templates
     [oslo_policy]
@@ -36,7 +36,7 @@ metadata:
 data:
   glance-api.conf: |
     [database]
-    connection = mysql+pymysql://root:{{.password}}@mysql/glance
+    connection = mysql+pymysql://root:{{.password}}@mysql-glance/glance
     [glance_store]
     stores = file,http
     default_store = file
@@ -77,7 +77,7 @@ data:
     max_l3_agents_per_router = 2
     transport_url = rabbit://openstack:{{.password}}@rabbit
     [database]
-    connection = mysql+pymysql://root:{{.password}}@mysql/neutron
+    connection = mysql+pymysql://root:{{.password}}@mysql-neutron/neutron
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
@@ -139,10 +139,10 @@ data:
     [api]
     auth_strategy = keystone
     [api_database]
-    connection = mysql+pymysql://root:{{.password}}@mysql/nova_api
+    connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova_api
     os_region_name = RegionOne
     [database]
-    connection = mysql+pymysql://root:{{.password}}@mysql/nova
+    connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova
     [glance]
     api_servers = http://glance.{{.domain}}
     [keystone_authtoken]
@@ -221,5 +221,5 @@ data:
     [oslo_policy]
     policy_dirs = /etc/placement/policy.d
     [placement_database]
-    connection = mysql+pymysql://root:{{.password}}@mysql/placement
+    connection = mysql+pymysql://root:{{.password}}@mysql-placement/placement
 
