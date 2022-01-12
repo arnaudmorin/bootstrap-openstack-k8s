@@ -343,3 +343,15 @@ create_key
 create_server_public
 ```
 
+
+# Notes
+
+If you decide to add more `k8s-x` and `compute-x` nodes, this is very easy, just edit the bootstrap.sh script and start again.
+
+To let k3s on other nodes join the first one, just use something like this:
+
+```
+export K3S_TOKEN='xxxyyyy'    # retrieve from master node with: cat /var/lib/rancher/k3s/server/node-token
+export K3S_URL='https://ip_first_node:6443'
+curl -sfL https://get.k3s.io | sh -
+```

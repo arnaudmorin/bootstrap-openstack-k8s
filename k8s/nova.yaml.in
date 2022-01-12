@@ -97,7 +97,7 @@ metadata:
   labels:
     app: nova-api
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: nova-api
@@ -109,6 +109,7 @@ spec:
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova-api:victoria
+        command: ["nova-api", "--config-dir", "/etc/nova/"]
         # imagePullPolicy: Always
         ports:
         - containerPort: 8774
