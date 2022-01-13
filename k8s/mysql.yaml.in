@@ -52,7 +52,7 @@ spec:
         app: mysql-{{ .db_name }}
     spec:
       containers:
-      - image: mariadb:10.4-focal
+      - image: mariadb:10.7-focal
         name: mysql-{{ .db_name }}
         env:
           # Use secret in real usage
