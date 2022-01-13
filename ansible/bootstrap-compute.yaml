@@ -113,6 +113,21 @@
       - restart libvirt
       - restart nova
 
+  - name: disable libvirt sockets
+    systemd:
+      name: "{{item}}"
+      state: stopped
+      enabled: no
+      masked: yes
+    with_items:
+     - libvirtd.socket
+     - libvirtd-ro.socket
+     - libvirtd-admin.socket
+     - libvirtd-tls.socket
+     - libvirtd-tcp.socket
+    notify:
+      - restart libvirt
+
   - name: configure libvirt default
     ini_file:
       path: /etc/default/libvirtd
@@ -120,7 +135,7 @@
       option: "{{item.option}}"
       value: "{{item.value}}"
     with_items:
-      - { section: null, option: "libvirtd_opts", value: "\"-l\"" }
+      - { section: null, option: "LIBVIRTD_ARGS", value: "\"--listen\"" }
     notify:
       - restart libvirt
       - restart nova
