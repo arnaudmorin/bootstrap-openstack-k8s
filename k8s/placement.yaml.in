@@ -54,8 +54,10 @@ spec:
         - containerPort: 8778
         volumeMounts:
         - name: placement-conf
-          mountPath: "/etc/placement/placement.conf"
-          subPath: "placement.conf"
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
       volumes:
       - name: placement-conf
         configMap:

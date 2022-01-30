@@ -5,9 +5,6 @@ metadata:
   name: keystone-conf
 data:
   keystone.conf: |
-    [DEFAULT]
-    log_file = keystone.log
-    log_dir = /var/log/keystone
     [database]
     connection = mysql+pymysql://root:{{ .password }}@mysql-keystone/keystone
     [catalog]
@@ -16,13 +13,6 @@ data:
     policy_dirs = /etc/keystone/policy.d
     [token]
     provider = fernet
-
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: keystone-fernet
-data:
   0: |
     {{ index .keystone.fernet 0 }}
   1: |
@@ -103,13 +93,6 @@ data:
     [oslo_policy]
     policy_file = /etc/neutron/policy.json
     policy_dirs = /etc/neutron/policy.d
-
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: neutron-ml2-conf
-data:
   ml2_conf.ini: |
     [ml2]
     type_drivers = flat,vlan,vxlan
@@ -131,9 +114,8 @@ metadata:
 data:
   nova.conf: |
     [DEFAULT]
-    #my_ip = 192.168.1.228
-    pybasedir = /usr/lib/python3/dist-packages
-    bindir = /usr/bin
+    pybasedir = /var/lib/kolla/venv/lib/python3.7/site-packages/
+    bindir = /var/lib/kolla/venv/bin/
     state_path = /var/lib/nova
     transport_url = rabbit://openstack:{{.password}}@rabbit
     [api]
@@ -172,8 +154,6 @@ data:
     region_name = RegionOne
     [oslo_concurrency]
     lock_path = /var/lib/nova/tmp
-    [oslo_policy]
-    policy_dirs = /etc/nova/policy.d
     [placement]
     auth_type = password
     auth_url = http://keystone.{{.domain}}/v3
@@ -191,8 +171,10 @@ data:
     enabled = true
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
+    # This does not work, I dont know why...
+    html5proxy_base_url = http://nova.{{.domain}}:6082/spice_auto.html
     [vnc]
-    enabled = True
+    enabled = true
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
 

@@ -49,19 +49,16 @@ spec:
       containers:
       - name: keystone
         image: arnaudmorin/openstack-keystone:victoria
-        #imagePullPolicy: Always
+        # imagePullPolicy: Always
         ports:
         - containerPort: 5000
         volumeMounts:
         - name: keystone-conf
-          mountPath: "/etc/keystone/keystone.conf"
-          subPath: "keystone.conf"
-        - name: fernet-keys
-          mountPath: "/etc/keystone/fernet-keys/"
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
       volumes:
       - name: keystone-conf
         configMap:
           name: keystone-conf
-      - name: fernet-keys
-        configMap:
-          name: keystone-fernet

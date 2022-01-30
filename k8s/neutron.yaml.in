@@ -37,7 +37,7 @@ metadata:
   labels:
     app: neutron-api
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: neutron-api
@@ -54,18 +54,14 @@ spec:
         - containerPort: 9696
         volumeMounts:
         - name: neutron-conf
-          mountPath: "/etc/neutron/neutron.conf"
-          subPath: "neutron.conf"
-        - name: neutron-ml2-conf
-          mountPath: "/etc/neutron/plugins/ml2/ml2_conf.ini"
-          subPath: "ml2_conf.ini"
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
       volumes:
       - name: neutron-conf
         configMap:
           name: neutron-conf
-      - name: neutron-ml2-conf
-        configMap:
-          name: neutron-ml2-conf
 
 ---
 apiVersion: apps/v1
@@ -88,18 +84,15 @@ spec:
       - name: neutron-rpc
         image: arnaudmorin/openstack-neutron-rpc:victoria
         # imagePullPolicy: Always
+        ports:
+        - containerPort: 9696
         volumeMounts:
         - name: neutron-conf
-          mountPath: "/etc/neutron/neutron.conf"
-          subPath: "neutron.conf"
-        - name: neutron-ml2-conf
-          mountPath: "/etc/neutron/plugins/ml2/ml2_conf.ini"
-          subPath: "ml2_conf.ini"
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
       volumes:
       - name: neutron-conf
         configMap:
           name: neutron-conf
-      - name: neutron-ml2-conf
-        configMap:
-          name: neutron-ml2-conf
-

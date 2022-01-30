@@ -67,10 +67,12 @@ spec:
         - containerPort: 9292
         volumeMounts:
         - name: glance-conf
-          mountPath: "/etc/glance/glance-api.conf"
-          subPath: "glance-api.conf"
+          mountPath: "/data/"
         - name: glance-persistent-storage
           mountPath: /var/lib/glance
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
       volumes:
       - name: glance-conf
         configMap:
