@@ -1,0 +1,64 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: horizon
+spec:
+  selector:
+    app: horizon
+  ports:
+  - port: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: horizon
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: horizon.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: horizon
+            port:
+              number: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: horizon
+  labels:
+    app: horizon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: horizon
+  template:
+    metadata:
+      labels:
+        app: horizon
+    spec:
+      containers:
+      - name: horizon
+        image: arnaudmorin/openstack-horizon:wallaby
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: horizon-conf
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
+      volumes:
+      - name: horizon-conf
+        configMap:
+          name: horizon-conf
