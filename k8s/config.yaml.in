@@ -93,6 +93,7 @@ data:
     [oslo_policy]
     policy_file = /etc/neutron/policy.json
     policy_dirs = /etc/neutron/policy.d
+    # TODO faire la conf placement
   ml2_conf.ini: |
     [ml2]
     type_drivers = flat,vlan,vxlan
@@ -205,3 +206,12 @@ data:
     [placement_database]
     connection = mysql+pymysql://root:{{.password}}@mysql-placement/placement
 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: horizon-conf
+data:
+  custom_local_settings: |
+    OPENSTACK_HOST = "{{.domain}}"
+    OPENSTACK_KEYSTONE_URL = "http://keystone.{{.domain}}/v3"
