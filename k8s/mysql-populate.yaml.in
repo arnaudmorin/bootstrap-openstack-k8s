@@ -16,17 +16,11 @@ spec:
         command: ["keystone-manage", "db_sync"]
         volumeMounts:
         - name: keystone-conf
-          mountPath: "/etc/keystone/keystone.conf"
-          subPath: "keystone.conf"
-        - name: fernet-keys
-          mountPath: "/etc/keystone/fernet-keys/"
+          mountPath: "/etc/keystone/"
       volumes:
       - name: keystone-conf
         configMap:
           name: keystone-conf
-      - name: fernet-keys
-        configMap:
-          name: keystone-fernet
   backoffLimit: 4
 
 ---
@@ -49,17 +43,11 @@ spec:
           "--bootstrap-region-id", "RegionOne"]
         volumeMounts:
         - name: keystone-conf
-          mountPath: "/etc/keystone/keystone.conf"
-          subPath: "keystone.conf"
-        - name: fernet-keys
-          mountPath: "/etc/keystone/fernet-keys/"
+          mountPath: "/etc/keystone/"
       volumes:
       - name: keystone-conf
         configMap:
           name: keystone-conf
-      - name: fernet-keys
-        configMap:
-          name: keystone-fernet
   backoffLimit: 4
 
 ---
