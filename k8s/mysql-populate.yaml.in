@@ -131,7 +131,7 @@ spec:
           name: neutron-conf
       - name: neutron-ml2-conf
         configMap:
-          name: neutron-ml2-conf
+          name: neutron-conf
   backoffLimit: 4
 
 ---
