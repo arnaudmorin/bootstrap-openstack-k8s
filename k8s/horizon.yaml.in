@@ -48,8 +48,8 @@ spec:
     spec:
       containers:
       - name: horizon
-        image: arnaudmorin/openstack-horizon:wallaby
-        imagePullPolicy: Always
+        image: arnaudmorin/openstack-horizon:victoria
+        #imagePullPolicy: Always
         ports:
         - containerPort: 80
         volumeMounts:
