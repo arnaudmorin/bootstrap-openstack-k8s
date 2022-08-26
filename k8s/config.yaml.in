@@ -57,7 +57,7 @@ data:
     [DEFAULT]
     auth_strategy = keystone
     core_plugin = ml2
-    service_plugins = router,segments,port_forwarding
+    service_plugins = router,segments,port_forwarding,qos
     allow_overlapping_ips = true
     notify_nova_on_port_status_changes = true
     notify_nova_on_port_data_changes = true
@@ -99,7 +99,7 @@ data:
     type_drivers = flat,vlan,vxlan
     tenant_network_types = vxlan
     mechanism_drivers = openvswitch,l2population
-    extension_drivers = port_security
+    extension_drivers = port_security,qos
     [ml2_type_flat]
     flat_networks = provider
     [ml2_type_vxlan]
