@@ -55,6 +55,7 @@ metadata:
 data:
   neutron.conf: |
     [DEFAULT]
+    # debug = True
     auth_strategy = keystone
     core_plugin = ml2
     service_plugins = router,segments,port_forwarding,qos

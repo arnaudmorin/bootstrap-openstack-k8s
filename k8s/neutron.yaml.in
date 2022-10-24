@@ -49,6 +49,8 @@ spec:
       containers:
       - name: neutron-api
         image: arnaudmorin/openstack-neutron-api:victoria
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 9696
