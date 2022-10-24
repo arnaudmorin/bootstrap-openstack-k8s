@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: keystone
-        image: arnaudmorin/openstack-keystone:victoria
+        image: arnaudmorin/openstack-keystone:wallaby
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000

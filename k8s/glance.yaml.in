@@ -63,7 +63,7 @@ spec:
     spec:
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:victoria
+        image: arnaudmorin/openstack-glance:wallaby
         # imagePullPolicy: Always
         ports:
         - containerPort: 9292

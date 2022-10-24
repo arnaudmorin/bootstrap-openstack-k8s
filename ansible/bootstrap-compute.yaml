@@ -11,8 +11,8 @@
 
   - name: enable extrepo
     command:
-      cmd: "extrepo enable openstack_victoria"
-      creates: /etc/apt/sources.list.d/extrepo_openstack_victoria.sources
+      cmd: "extrepo enable openstack_wallaby"
+      creates: /etc/apt/sources.list.d/extrepo_openstack_wallaby.sources
 
   - name: install packages
     apt:

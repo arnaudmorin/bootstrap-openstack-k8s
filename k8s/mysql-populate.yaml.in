@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: keystone
-        image: arnaudmorin/openstack-keystone:victoria
+        image: arnaudmorin/openstack-keystone:wallaby
         command: ["keystone-manage", "db_sync"]
         volumeMounts:
         - name: keystone-conf
@@ -47,7 +47,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: keystone
-        image: arnaudmorin/openstack-keystone:victoria
+        image: arnaudmorin/openstack-keystone:wallaby
         command: ["keystone-manage", "bootstrap", 
           "--bootstrap-password", "{{.password}}",
           "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
@@ -90,7 +90,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:victoria
+        image: arnaudmorin/openstack-glance:wallaby
         command: ["glance-manage", "db_sync"]
         volumeMounts:
         - name: glance-conf
@@ -116,7 +116,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: neutron
-        image: arnaudmorin/openstack-neutron-api:victoria
+        image: arnaudmorin/openstack-neutron-api:wallaby
         command: ["neutron-db-manage", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini", "upgrade", "head"]
         volumeMounts:
         - name: neutron-conf
@@ -148,7 +148,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:victoria
+        image: arnaudmorin/openstack-placement:wallaby
         command: ["placement-manage", "db", "sync"]
         volumeMounts:
         - name: placement-conf
@@ -174,7 +174,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: nova
-        image: arnaudmorin/openstack-nova-api:victoria
+        image: arnaudmorin/openstack-nova-api:wallaby
         command: ["nova-manage", "api_db", "sync"]
         volumeMounts:
         - name: nova-conf
@@ -197,7 +197,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: nova
-        image: arnaudmorin/openstack-nova-api:victoria
+        image: arnaudmorin/openstack-nova-api:wallaby
         command: ["nova-manage", "cell_v2", "map_cell0"]
         volumeMounts:
         - name: nova-conf
@@ -220,7 +220,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: nova
-        image: arnaudmorin/openstack-nova-api:victoria
+        image: arnaudmorin/openstack-nova-api:wallaby
         command: ["nova-manage", "cell_v2", "create_cell", "--name=cell1", "--verbose"]
         volumeMounts:
         - name: nova-conf
@@ -243,7 +243,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: nova
-        image: arnaudmorin/openstack-nova-api:victoria
+        image: arnaudmorin/openstack-nova-api:wallaby
         command: ["nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf

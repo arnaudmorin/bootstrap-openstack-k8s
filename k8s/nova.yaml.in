@@ -108,7 +108,7 @@ spec:
     spec:
       containers:
       - name: nova-api
-        image: arnaudmorin/openstack-nova-api:victoria
+        image: arnaudmorin/openstack-nova-api:wallaby
         # imagePullPolicy: Always
         ports:
         - containerPort: 8774
@@ -142,7 +142,7 @@ spec:
     spec:
       containers:
       - name: nova-metadata-api
-        image: arnaudmorin/openstack-nova-metadata-api:victoria
+        image: arnaudmorin/openstack-nova-metadata-api:wallaby
         # imagePullPolicy: Always
         ports:
         - containerPort: 8775
@@ -176,7 +176,7 @@ spec:
     spec:
       containers:
       - name: nova-conductor
-        image: arnaudmorin/openstack-nova-conductor:victoria
+        image: arnaudmorin/openstack-nova-conductor:wallaby
         # imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -208,7 +208,7 @@ spec:
     spec:
       containers:
       - name: nova-scheduler
-        image: arnaudmorin/openstack-nova-scheduler:victoria
+        image: arnaudmorin/openstack-nova-scheduler:wallaby
         # imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -240,7 +240,7 @@ spec:
     spec:
       containers:
       - name: nova-vnc
-        image: arnaudmorin/openstack-nova-vnc:victoria
+        image: arnaudmorin/openstack-nova-vnc:wallaby
         # imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -272,7 +272,7 @@ spec:
     spec:
       containers:
       - name: nova-spice
-        image: arnaudmorin/openstack-nova-spice:victoria
+        image: arnaudmorin/openstack-nova-spice:wallaby
         # imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -304,7 +304,7 @@ spec:
     spec:
       containers:
       - name: nova-serial
-        image: arnaudmorin/openstack-nova-serial:victoria
+        image: arnaudmorin/openstack-nova-serial:wallaby
         # imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf

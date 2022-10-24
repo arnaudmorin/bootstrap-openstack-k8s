@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:victoria
+        image: arnaudmorin/openstack-placement:wallaby
         # imagePullPolicy: Always
         ports:
         - containerPort: 8778
