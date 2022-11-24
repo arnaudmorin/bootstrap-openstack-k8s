@@ -155,6 +155,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl 
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=cinder | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
 
@@ -193,6 +194,11 @@ This will also install the `openstack` command line tool (openstack-client) and 
 ## Glance
 ```bash
 frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
+
+## Cinder
+```bash
+frep k8s/cinder.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
 ## Placement

@@ -104,6 +104,32 @@ spec:
 
 ---
 #
+# CINDER JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cinder-db-sync
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: cinder
+        image: arnaudmorin/openstack-cinder-api:wallaby
+        command: ["cinder-manage", "db", "sync"]
+        volumeMounts:
+        - name: cinder-conf
+          mountPath: "/etc/cinder/cinder.conf"
+          subPath: "cinder.conf"
+      volumes:
+      - name: cinder-conf
+        configMap:
+          name: cinder-conf
+  backoffLimit: 4
+
+---
+#
 # NEUTRON JOBS
 #
 apiVersion: batch/v1

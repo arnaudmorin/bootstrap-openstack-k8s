@@ -90,6 +90,7 @@
       - { section: "neutron", option: "username", value: "neutron" }
       - { section: "neutron", option: "password", value: "{{password}}" }
       - { section: "neutron", option: "service_name", value: "network" }          # NOTE debian package is overwritting this to neutron, which is wrong. So get it back to network
+      - { section: "cinder", option: "os_region_name", value: "RegionOne" }
     notify:
       - restart nova
   - name: configure nova (delete some lines)
