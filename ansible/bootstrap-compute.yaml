@@ -41,6 +41,12 @@
       port: ens4
       state: present
 
+  - name: create br-flat ovs bridge
+    openvswitch_bridge:
+      bridge: br-flat
+      fail_mode: standalone
+      state: present
+
   - name: add ens5 in br-flat
     openvswitch_port:
       bridge: br-flat
