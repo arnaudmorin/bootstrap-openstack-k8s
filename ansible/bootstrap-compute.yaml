@@ -35,10 +35,16 @@
       fail_mode: standalone
       state: present
 
-  - name: add eth2 in br-ex
+  - name: add ens4 in br-ex
     openvswitch_port:
       bridge: br-ex
       port: ens4
+      state: present
+
+  - name: add ens5 in br-flat
+    openvswitch_port:
+      bridge: br-flat
+      port: ens5
       state: present
 
   - name: configure nova
@@ -174,7 +180,7 @@
       - { section: "agent", option: "arp_responder", value: "true" }
       - { section: "agent", option: "enable_distributed_routing", value: "true" }
       - { section: "ovs", option: "local_ip", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex" }
+      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex,flat:br-flat" }
       - { section: "securitygroup", option: "enable_security_group", value: "true" }
       - { section: "securitygroup", option: "firewall_driver", value: "openvswitch" }
     notify:

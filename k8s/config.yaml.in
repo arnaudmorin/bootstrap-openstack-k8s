@@ -102,7 +102,7 @@ data:
     mechanism_drivers = openvswitch,l2population
     extension_drivers = port_security,qos
     [ml2_type_flat]
-    flat_networks = provider
+    flat_networks = *
     [ml2_type_vxlan]
     vni_ranges = 1:1000
     [securitygroup]
