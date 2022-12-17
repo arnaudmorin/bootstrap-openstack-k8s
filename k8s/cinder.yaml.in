@@ -125,10 +125,11 @@ spec:
       containers:
       - name: cinder-volume
         image: arnaudmorin/openstack-cinder-volume:wallaby
-        #command: [ "/bin/bash", "-c", "--" ]
-        #args: [ "while true; do sleep 30; done;" ]
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "while true; do sleep 30; done;" ]
         securityContext:
           privileged: true
+          runAsUser: 0
         # imagePullPolicy: Always
         volumeMounts:
         - name: cinder-conf
