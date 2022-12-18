@@ -1,0 +1,164 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mistral
+spec:
+  selector:
+    app: mistral-api
+  ports:
+  - port: 8989
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mistral
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: mistral.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mistral
+            port:
+              number: 8989
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mistral-api
+  labels:
+    app: mistral-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mistral-api
+  template:
+    metadata:
+      labels:
+        app: mistral-api
+    spec:
+      containers:
+      - name: mistral-api
+        image: arnaudmorin/openstack-mistral-api:wallaby
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8989
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mistral-engine
+  labels:
+    app: mistral-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mistral-engine
+  template:
+    metadata:
+      labels:
+        app: mistral-engine
+    spec:
+      containers:
+      - name: mistral-engine
+        image: arnaudmorin/openstack-mistral-engine:wallaby
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mistral-executor
+  labels:
+    app: mistral-executor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mistral-executor
+  template:
+    metadata:
+      labels:
+        app: mistral-executor
+    spec:
+      containers:
+      - name: mistral-executor
+        image: arnaudmorin/openstack-mistral-executor:wallaby
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mistral-event-engine
+  labels:
+    app: mistral-event-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mistral-event-engine
+  template:
+    metadata:
+      labels:
+        app: mistral-event-engine
+    spec:
+      containers:
+      - name: mistral-event-engine
+        image: arnaudmorin/openstack-mistral-event-engine:wallaby
+        # imagePullPolicy: Always
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/data/"
+        env:
+        - name: KOLLA_CONFIG_STRATEGY
+          value: 'COPY_ONCE'
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf

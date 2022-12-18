@@ -262,6 +262,31 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: mistral-conf
+data:
+  mistral.conf: |
+    [DEFAULT]
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = mistral
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-mistral/mistral
+    #[oslo_policy]
+    #policy_file = /etc/mistral/policy.yaml
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: horizon-conf
 data:
   custom_local_settings: |

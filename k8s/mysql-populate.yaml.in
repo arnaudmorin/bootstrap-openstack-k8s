@@ -281,3 +281,51 @@ spec:
           name: nova-conf
   backoffLimit: 4
 
+---
+#
+# MISTRAL JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mistral-db-upgrade-head
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: mistral
+        image: arnaudmorin/openstack-mistral-api:wallaby
+        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/etc/mistral/mistral.conf"
+          subPath: "mistral.conf"
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+  backoffLimit: 4
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mistral-db-populate
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: mistral
+        image: arnaudmorin/openstack-mistral-api:wallaby
+        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/etc/mistral/mistral.conf"
+          subPath: "mistral.conf"
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+  backoffLimit: 4

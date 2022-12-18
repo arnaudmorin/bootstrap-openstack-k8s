@@ -75,6 +75,7 @@
       - placement
       - glance
       - cinder
+      - mistral
   - name: add admin role to users for service project
     shell: |
       source /root/openrc_admin
@@ -92,6 +93,7 @@
       - placement
       - glance
       - cinder
+      - mistral
   - name: create services
     shell: |
       source /root/openrc_admin
@@ -109,6 +111,7 @@
       - image
       - volumev2
       - volumev3
+      - workflowv2
   - name: create services endpoints for nova
     shell: |
       source /root/openrc_admin
@@ -189,6 +192,20 @@
     args:
       executable: /bin/bash
       creates: /root/.ansible_endpoint_neutron_{{item}}
+    with_items:
+      - public
+      - admin
+      - internal
+  - name: create services endpoints for mistral (workflowv2)
+    shell: |
+      source /root/openrc_admin
+      openstack endpoint create \
+        --region RegionOne \
+        workflowv2 {{item}} http://mistral.{{domain}}/v2
+      [ $? -eq 0 ] && touch /root/.ansible_endpoint_mistral_{{item}}
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_endpoint_mistral_v2_{{item}}
     with_items:
       - public
       - admin
