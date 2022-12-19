@@ -48,52 +48,21 @@ spec:
     spec:
       containers:
       - name: neutron-api
-        image: arnaudmorin/openstack-neutron-api:wallaby
+        image: arnaudmorin/openstack-neutron:yoga
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/neutron-server" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 9696
         volumeMounts:
         - name: neutron-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
-      volumes:
-      - name: neutron-conf
-        configMap:
-          name: neutron-conf
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: neutron-rpc
-  labels:
-    app: neutron-rpc
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: neutron-rpc
-  template:
-    metadata:
-      labels:
-        app: neutron-rpc
-    spec:
-      containers:
-      - name: neutron-rpc
-        image: arnaudmorin/openstack-neutron-rpc:wallaby
-        # imagePullPolicy: Always
-        ports:
-        - containerPort: 9696
-        volumeMounts:
+          mountPath: /etc/neutron/neutron.conf
+          subPath: neutron.conf
         - name: neutron-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/neutron/plugins/ml2/ml2_conf.ini
+          subPath: ml2_conf.ini
       volumes:
       - name: neutron-conf
         configMap:

@@ -48,16 +48,24 @@ spec:
     spec:
       containers:
       - name: keystone
-        image: arnaudmorin/openstack-keystone:wallaby
+        image: arnaudmorin/openstack-keystone:yoga
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000
         volumeMounts:
         - name: keystone-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/keystone/keystone.conf
+          subPath: keystone.conf
+        - name: keystone-conf
+          mountPath: /etc/keystone/fernet-keys/0
+          subPath: "0"
+        - name: keystone-conf
+          mountPath: /etc/keystone/fernet-keys/1
+          subPath: "1"
       volumes:
       - name: keystone-conf
         configMap:

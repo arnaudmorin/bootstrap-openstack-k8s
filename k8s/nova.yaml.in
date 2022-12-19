@@ -108,16 +108,16 @@ spec:
     spec:
       containers:
       - name: nova-api
-        image: arnaudmorin/openstack-nova-api:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        imagePullPolicy: Always
         ports:
         - containerPort: 8774
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:
@@ -142,16 +142,16 @@ spec:
     spec:
       containers:
       - name: nova-metadata-api
-        image: arnaudmorin/openstack-nova-metadata-api:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        imagePullPolicy: Always
         ports:
         - containerPort: 8775
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:
@@ -176,14 +176,14 @@ spec:
     spec:
       containers:
       - name: nova-conductor
-        image: arnaudmorin/openstack-nova-conductor:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/nova-conductor" ]
+        imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:
@@ -208,14 +208,14 @@ spec:
     spec:
       containers:
       - name: nova-scheduler
-        image: arnaudmorin/openstack-nova-scheduler:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/nova-scheduler" ]
+        imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:
@@ -240,14 +240,14 @@ spec:
     spec:
       containers:
       - name: nova-vnc
-        image: arnaudmorin/openstack-nova-vnc:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/nova-novncproxy" ]
+        imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:
@@ -272,14 +272,14 @@ spec:
     spec:
       containers:
       - name: nova-spice
-        image: arnaudmorin/openstack-nova-spice:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/nova-spicehtml5proxy" ]
+        imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:
@@ -304,14 +304,14 @@ spec:
     spec:
       containers:
       - name: nova-serial
-        image: arnaudmorin/openstack-nova-serial:wallaby
-        # imagePullPolicy: Always
+        image: arnaudmorin/openstack-nova:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/nova-serialproxy" ]
+        imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
       volumes:
       - name: nova-conf
         configMap:

@@ -48,16 +48,16 @@ spec:
     spec:
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:wallaby
+        image: arnaudmorin/openstack-placement:yoga
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 8778
         volumeMounts:
         - name: placement-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/placement/placement.conf
+          subPath: placement.conf
       volumes:
       - name: placement-conf
         configMap:

@@ -63,30 +63,30 @@ spec:
     spec:
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:wallaby
-        command: [ "/bin/bash", "-c", "--" ]
-        args: [ "while true; do sleep 30; done;" ]
-        securityContext:
-          allowPrivilegeEscalation: false
-          runAsUser: 0
-        imagePullPolicy: Always
+        image: arnaudmorin/openstack-glance:yoga
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/glance-api" ]
+        #securityContext:
+        #  allowPrivilegeEscalation: false
+        #  runAsUser: 0
+        #imagePullPolicy: Always
         ports:
         - containerPort: 9292
         volumeMounts:
         - name: glance-conf
-          mountPath: "/data/"
+          mountPath: /etc/glance/glance-api.conf
+          subPath: glance-api.conf
         - name: glance-persistent-storage
           mountPath: /var/lib/glance
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
-      initContainers:
-      - name: glance-data-permission-fix
-        image: busybox
-        command: ["/bin/chmod","-R","777", "/data"]
-        volumeMounts:
-        - name: glance-persistent-storage
-          mountPath: /data
+      #initContainers:
+      #- name: glance-data-permission-fix
+      #  image: busybox
+      #  command: ["/bin/chmod","-R","777", "/data"]
+      #  volumeMounts:
+      #  - name: glance-persistent-storage
+      #    mountPath: /data
       volumes:
       - name: glance-conf
         configMap:

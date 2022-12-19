@@ -48,16 +48,16 @@ spec:
     spec:
       containers:
       - name: horizon
-        image: arnaudmorin/openstack-horizon:wallaby
-        #imagePullPolicy: Always
+        image: arnaudmorin/openstack-horizon:yoga
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
         volumeMounts:
         - name: horizon-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/openstack-dashboard/custom_local_settings
+          subPath: custom_local_settings
       volumes:
       - name: horizon-conf
         configMap:

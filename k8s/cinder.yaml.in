@@ -48,9 +48,11 @@ spec:
     spec:
       containers:
       - name: cinder
-        image: arnaudmorin/openstack-cinder-api:wallaby
+        image: arnaudmorin/openstack-cinder:yoga
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
@@ -59,10 +61,8 @@ spec:
         - containerPort: 8776
         volumeMounts:
         - name: cinder-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/cinder/cinder.conf
+          subPath: cinder.conf
       volumes:
       - name: cinder-conf
         configMap:
@@ -87,19 +87,19 @@ spec:
     spec:
       containers:
       - name: cinder-scheduler
-        image: arnaudmorin/openstack-cinder-scheduler:wallaby
+        image: arnaudmorin/openstack-cinder:yoga
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/cinder-scheduler" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
         # imagePullPolicy: Always
         volumeMounts:
         - name: cinder-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/cinder/cinder.conf
+          subPath: cinder.conf
       volumes:
       - name: cinder-conf
         configMap:
@@ -124,19 +124,19 @@ spec:
     spec:
       containers:
       - name: cinder-volume
-        image: arnaudmorin/openstack-cinder-volume:wallaby
+        image: arnaudmorin/openstack-cinder:yoga
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "while true; do sleep 30; done;" ]
+        #command: [ "dumb-init", "--single-child", "--" ]
+        #args: [ "/var/lib/kolla/venv/bin/cinder-volume" ]
         securityContext:
           privileged: true
           runAsUser: 0
         # imagePullPolicy: Always
         volumeMounts:
         - name: cinder-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: /etc/cinder/cinder.conf
+          subPath: cinder.conf
       volumes:
       - name: cinder-conf
         configMap:

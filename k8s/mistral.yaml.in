@@ -48,18 +48,17 @@ spec:
     spec:
       containers:
       - name: mistral-api
-        image: arnaudmorin/openstack-mistral-api:wallaby
+        image: arnaudmorin/openstack-mistral:yoga
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        imagePullPolicy: Always
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        #imagePullPolicy: Always
         ports:
         - containerPort: 8989
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: "/etc/mistral/"
       volumes:
       - name: mistral-conf
         configMap:
@@ -84,14 +83,13 @@ spec:
     spec:
       containers:
       - name: mistral-engine
-        image: arnaudmorin/openstack-mistral-engine:wallaby
+        image: arnaudmorin/openstack-mistral:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "engine", "--config-file", "/etc/mistral/mistral.conf" ]
         # imagePullPolicy: Always
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: "/etc/mistral/"
       volumes:
       - name: mistral-conf
         configMap:
@@ -117,14 +115,13 @@ spec:
     spec:
       containers:
       - name: mistral-executor
-        image: arnaudmorin/openstack-mistral-executor:wallaby
+        image: arnaudmorin/openstack-mistral:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "executor", "--config-file", "/etc/mistral/mistral.conf" ]
         # imagePullPolicy: Always
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: "/etc/mistral/"
       volumes:
       - name: mistral-conf
         configMap:
@@ -150,14 +147,13 @@ spec:
     spec:
       containers:
       - name: mistral-event-engine
-        image: arnaudmorin/openstack-mistral-event-engine:wallaby
+        image: arnaudmorin/openstack-mistral:yoga
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "event-engine", "--config-file", "/etc/mistral/mistral.conf" ]
         # imagePullPolicy: Always
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/data/"
-        env:
-        - name: KOLLA_CONFIG_STRATEGY
-          value: 'COPY_ONCE'
+          mountPath: "/etc/mistral/"
       volumes:
       - name: mistral-conf
         configMap:

@@ -11,8 +11,8 @@
 
   - name: enable extrepo
     command:
-      cmd: "extrepo enable openstack_wallaby"
-      creates: /etc/apt/sources.list.d/extrepo_openstack_wallaby.sources
+      cmd: "extrepo enable openstack_yoga"
+      creates: /etc/apt/sources.list.d/extrepo_openstack_yoga.sources
 
   - name: install packages
     apt:
@@ -63,7 +63,7 @@
       - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@{{domain}}:30672" }
       - { section: "DEFAULT", option: "my_ip", value: "{{ansible_default_ipv4['address']}}" }
       - { section: "DEFAULT", option: "use_neutron", value: "true" }
-      - { section: "DEFAULT", option: "firewall_driver", value: "nova.virt.firewall.NoopFirewallDriver" }
+      - { section: "DEFAULT", option: "fireeall_driver", value: "nova.virt.firewall.NoopFirewallDriver" }
       - { section: "api", option: "auth_strategy", value: "keystone" }
       - { section: "vnc", option: "enabled", value: "True" }
       - { section: "vnc", option: "server_listen", value: "0.0.0.0" }
