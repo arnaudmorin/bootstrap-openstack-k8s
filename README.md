@@ -309,6 +309,9 @@ Now try each element of your `OpenStack`
 ### Keystone
 ```bash
 openstack token issue
+```
+Which should give you something like:
+```bash
 # This command is doing an API call against `keystone` and should give you something like:
 +------------+---------------------------------------
 | Field      | Value                                 
@@ -417,7 +420,7 @@ ansible-playbook ansible/bootstrap-compute.yaml
 
 # Populate your OpenStack with default values
 
-From your `k8s-1` node, as root:
+Back on your `k8s-1` node, as root:
 ```sh
 # Source helper functions
 source /root/helper
