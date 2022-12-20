@@ -96,31 +96,31 @@ spec:
           name: glance-conf
   backoffLimit: 4
 
----
-#
-# CINDER JOBS
-#
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: cinder-db-sync
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: cinder
-        image: arnaudmorin/openstack-cinder:yoga
-        command: ["cinder-manage", "db", "sync"]
-        volumeMounts:
-        - name: cinder-conf
-          mountPath: /etc/cinder/cinder.conf
-          subPath: cinder.conf
-      volumes:
-      - name: cinder-conf
-        configMap:
-          name: cinder-conf
-  backoffLimit: 4
+#---
+##
+## CINDER JOBS
+##
+#apiVersion: batch/v1
+#kind: Job
+#metadata:
+#  name: cinder-db-sync
+#spec:
+#  template:
+#    spec:
+#      restartPolicy: Never
+#      containers:
+#      - name: cinder
+#        image: arnaudmorin/openstack-cinder:yoga
+#        command: ["cinder-manage", "db", "sync"]
+#        volumeMounts:
+#        - name: cinder-conf
+#          mountPath: /etc/cinder/cinder.conf
+#          subPath: cinder.conf
+#      volumes:
+#      - name: cinder-conf
+#        configMap:
+#          name: cinder-conf
+#  backoffLimit: 4
 
 ---
 #
@@ -272,51 +272,51 @@ spec:
           name: nova-conf
   backoffLimit: 4
 
----
+#---
+##
+## MISTRAL JOBS
+##
+#apiVersion: batch/v1
+#kind: Job
+#metadata:
+#  name: mistral-db-upgrade-head
+#spec:
+#  template:
+#    spec:
+#      restartPolicy: Never
+#      containers:
+#      - name: mistral
+#        image: arnaudmorin/openstack-mistral:yoga
+#        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
+#        volumeMounts:
+#        - name: mistral-conf
+#          mountPath: /etc/mistral/mistral.conf
+#          subPath: mistral.conf
+#      volumes:
+#      - name: mistral-conf
+#        configMap:
+#          name: mistral-conf
+#  backoffLimit: 4
 #
-# MISTRAL JOBS
-#
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: mistral-db-upgrade-head
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: mistral
-        image: arnaudmorin/openstack-mistral:yoga
-        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
-        volumeMounts:
-        - name: mistral-conf
-          mountPath: /etc/mistral/mistral.conf
-          subPath: mistral.conf
-      volumes:
-      - name: mistral-conf
-        configMap:
-          name: mistral-conf
-  backoffLimit: 4
-
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: mistral-db-populate
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: mistral
-        image: arnaudmorin/openstack-mistral:yoga
-        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
-        volumeMounts:
-        - name: mistral-conf
-          mountPath: /etc/mistral/mistral.conf
-          subPath: mistral.conf
-      volumes:
-      - name: mistral-conf
-        configMap:
-          name: mistral-conf
-  backoffLimit: 4
+#---
+#apiVersion: batch/v1
+#kind: Job
+#metadata:
+#  name: mistral-db-populate
+#spec:
+#  template:
+#    spec:
+#      restartPolicy: Never
+#      containers:
+#      - name: mistral
+#        image: arnaudmorin/openstack-mistral:yoga
+#        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
+#        volumeMounts:
+#        - name: mistral-conf
+#          mountPath: /etc/mistral/mistral.conf
+#          subPath: mistral.conf
+#      volumes:
+#      - name: mistral-conf
+#        configMap:
+#          name: mistral-conf
+#  backoffLimit: 4

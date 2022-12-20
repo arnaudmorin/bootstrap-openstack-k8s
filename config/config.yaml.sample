@@ -11,6 +11,12 @@ password: changeme
 # nova.{{domain}}
 # placement.{{domain}}
 # neutron.{{domain}}
+#
+# Or use something like this:
+# your-ip.xip.opensteak.fr
+#
+# And replace your-ip with the result of this command:
+# hostname -I | awk '{print $1}'
 domain: somewhere.net
 
 # Keystone fernet

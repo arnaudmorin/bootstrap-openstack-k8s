@@ -132,24 +132,31 @@ ssh debian@ip -i ansible/files/zob            # replace ip with the real server 
 ```
 
 # k8s-1
- On the k8s-1 instance, we will install k3s and few other tools to manage have a full `kubernetes` cluster.
+ On the `k8s-1` instance, we will install `k3s` and few other tools to manage have a full `kubernetes` cluster.
  See https://k3s.io/ for more info.
 
 ## Install k3s
-SSH into `k8s-1` and login as `root`, then:
+SSH into `k8s-1` and login as `root` and install `k3s`:
 ```bash
+sudo su -
 curl -sfL https://get.k3s.io | sh -
 ```
 
 ### Check
 Create an `alias` (this will help you saving your keyboard):
-```
+```bash
 alias k='kubectl'
 ```
 
 Test:
-```
+```bash
 k get all
+```
+
+You should have something like this:
+```bash
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   22s
 ```
 
 
@@ -188,17 +195,20 @@ cd bootstrap-openstack-k8s
 ```
 
 # Install OpenStack (control plane)
-We will use `kubectl` on `k8s-1` to install all `OpenStack` control plane (so `OpenStack` will run on top of `kubernetes`), including the `mariadb` and `rabbitmq`.
+In the following section, we will use `kubectl` on `k8s-1` to install all `OpenStack` control plane (so `OpenStack` will run on top of `kubernetes`), including the `mariadb` and `rabbitmq`.
 
 For steps where you create some `kubernetes` resources, take your time to check if the resources are well created, eventually slow down your copy paste rate :).
-You can also check the result with:
+
+You can also check the result from time to time with:
 ```bash
 k get all
 ```
 
+Let's start!
+
 ## Configuration
 ### Prepare the config
-Edit your config:
+First, you need to create a `config.yaml` file:
 ```bash
 cp config/config.yaml.sample config/config.yaml
 vim config/config.yaml
@@ -349,9 +359,7 @@ k exec -it mysql-89d76b8-qtx2j -- mysql -u root -p
 You can also check the logs:
 
 ```bash
-k exec -it nova-api-b6995b597-xmvfm -- bash
-# and then
-tail -F /var/log/nova/nova-api.log
+k logs nova-api-b6995b597-xmvfm    # replace nova-api-b6995b597-xmvfm with your pod name, you can get it with: k get pods | grep nova
 ```
 
 # compute-1
