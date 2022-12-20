@@ -31,7 +31,8 @@ wget -qO- https://github.com/stern/stern/releases/download/v1.22.0/stern_1.22.0_
 chmod +x /usr/local/bin/stern
 echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' > /etc/profile.d/stern.sh
 
-# Install tmux.conf
+# Install tmux
+apt-get -y install tmux
 wget -q -O /root/.tmux.conf https://www.arnaudmorin.fr/tmux.conf
 
 # Add useful aliases
