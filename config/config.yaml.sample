@@ -21,7 +21,7 @@ domain: somewhere.net
 
 # Keystone fernet
 # These are the keys keystone will use to generate tokens
-# It can generated with:
+# You can keep the following values, or regenerate new ones with:
 # kubectl run -it --rm keystone-fernet-gen --image=arnaudmorin/openstack-keystone:yoga --restart=Never -- bash -c 'keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone ; echo "fernet:" ; echo "  - \"$(cat /etc/keystone/fernet-keys/0)\"" ; echo "  - \"$(cat /etc/keystone/fernet-keys/1)\""'
 keystone:
   fernet:
