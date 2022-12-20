@@ -375,6 +375,7 @@ frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # compute-1
 Now that the `OpenStack` control plane is ready, you can install your compute.
+
 Like you did for  `k8s-1`, now SSH in `compute-1` and login as `root`.
 
 ## Clone the repo (on compute-1)
@@ -408,10 +409,10 @@ ansible-playbook ansible/bootstrap-compute.yaml
 From your `k8s-1` node, as root:
 ```sh
 # Source helper functions
-source helper
+source /root/helper
 
 # Following actions are done as admin
-source openrc_admin
+source /root/openrc_admin
 create_flavors
 create_image_cirros
 create_image_debian
@@ -419,7 +420,7 @@ create_image_debian
 create_network_public 5.135.0.208/28 5.135.0.222
 
 # Following actions are done as demo
-source openrc_demo
+source /root/openrc_demo
 create_network_private
 create_rules
 create_key
