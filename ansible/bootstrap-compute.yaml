@@ -275,26 +275,26 @@
       name: "{{item}}"
       state: started
     with_items:
-      - "nova-compute"
       - "libvirtd"
       - "neutron-dhcp-agent"
       - "neutron-metadata-agent"
       - "neutron-l3-agent"
       - "neutron-openvswitch-agent"
+      - "nova-compute"
 
   handlers:
-  - name: restart nova
-    service:
-      name: "{{item}}"
-      state: restarted
-    with_items:
-      - "nova-compute"
   - name: restart libvirt
     service:
       name: "{{item}}"
       state: restarted
     with_items:
       - "libvirtd"
+  - name: restart nova
+    service:
+      name: "{{item}}"
+      state: restarted
+    with_items:
+      - "nova-compute"
   - name: restart neutron
     service:
       name: "{{item}}"
