@@ -362,6 +362,17 @@ You can also check the logs:
 k logs nova-api-b6995b597-xmvfm    # replace nova-api-b6995b597-xmvfm with your pod name, you can get it with: k get pods | grep nova
 ```
 
+One of the most common race condition is the failure on nova db sync.
+
+You can restart it by deleting the jobs and do it again
+```bash
+k get jobs | grep nova
+k delete job nova-db-sync
+
+# And then apply again the mysql-populate
+frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
+
 # compute-1
 Now that the `OpenStack` control plane is ready, you can install your compute.
 Like you did for  `k8s-1`, now SSH in `compute-1` and login as `root`.
