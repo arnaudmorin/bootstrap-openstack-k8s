@@ -262,12 +262,16 @@ frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```bash
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
+Wait for the deployment to be ready:
+```bash
+k get deployment keystone
+```
 
 Keystone need also some bootstraping, which can be done using the following playbook.
-Run the playbook only when keystone is ready (check with `k get all`)
 ```bash
 ansible-playbook ansible/bootstrap-keystone.yaml
 ```
+
 This will create the endpoints for all `OpenStack` services and also two users (`admin` and `demo`).
 This will also install the `openstack` command line tool (openstack-client) and create two `openrc` file (one for each user). With this, you will then be able to manipulate your `OpenStack` cluster from `k8s-1` server.
 
