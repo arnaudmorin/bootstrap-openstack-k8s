@@ -154,34 +154,34 @@
       - public
       - admin
       - internal
-  - name: create services endpoints for cinder (volumev2)
-    shell: |
-      source /root/openrc_admin
-      openstack endpoint create \
-        --region RegionOne \
-        volumev2 {{item}} http://cinder.{{domain}}/v2/%\(project_id\)s
-      [ $? -eq 0 ] && touch /root/.ansible_endpoint_cinder_{{item}}
-    args:
-      executable: /bin/bash
-      creates: /root/.ansible_endpoint_cinder_v2_{{item}}
-    with_items:
-      - public
-      - admin
-      - internal
-  - name: create services endpoints for cinder (volumev3)
-    shell: |
-      source /root/openrc_admin
-      openstack endpoint create \
-        --region RegionOne \
-        volumev3 {{item}} http://cinder.{{domain}}/v3/%\(project_id\)s
-      [ $? -eq 0 ] && touch /root/.ansible_endpoint_cinder_{{item}}
-    args:
-      executable: /bin/bash
-      creates: /root/.ansible_endpoint_cinder_v3_{{item}}
-    with_items:
-      - public
-      - admin
-      - internal
+  #- name: create services endpoints for cinder (volumev2)
+  #  shell: |
+  #    source /root/openrc_admin
+  #    openstack endpoint create \
+  #      --region RegionOne \
+  #      volumev2 {{item}} http://cinder.{{domain}}/v2/%\(project_id\)s
+  #    [ $? -eq 0 ] && touch /root/.ansible_endpoint_cinder_{{item}}
+  #  args:
+  #    executable: /bin/bash
+  #    creates: /root/.ansible_endpoint_cinder_v2_{{item}}
+  #  with_items:
+  #    - public
+  #    - admin
+  #    - internal
+  #- name: create services endpoints for cinder (volumev3)
+  #  shell: |
+  #    source /root/openrc_admin
+  #    openstack endpoint create \
+  #      --region RegionOne \
+  #      volumev3 {{item}} http://cinder.{{domain}}/v3/%\(project_id\)s
+  #    [ $? -eq 0 ] && touch /root/.ansible_endpoint_cinder_{{item}}
+  #  args:
+  #    executable: /bin/bash
+  #    creates: /root/.ansible_endpoint_cinder_v3_{{item}}
+  #  with_items:
+  #    - public
+  #    - admin
+  #    - internal
   - name: create services endpoints for neutron
     shell: |
       source /root/openrc_admin
