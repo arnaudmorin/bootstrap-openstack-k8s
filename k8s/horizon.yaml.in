@@ -51,7 +51,7 @@ spec:
         image: arnaudmorin/openstack-horizon:yoga
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         ports:
         - containerPort: 80
         volumeMounts:

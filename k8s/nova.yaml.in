@@ -111,7 +111,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         ports:
         - containerPort: 8774
         volumeMounts:
@@ -145,7 +145,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         ports:
         - containerPort: 8775
         volumeMounts:
@@ -179,7 +179,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-conductor" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
@@ -211,7 +211,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-scheduler" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
@@ -243,7 +243,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-novncproxy" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
@@ -275,7 +275,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-spicehtml5proxy" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
@@ -307,7 +307,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-serialproxy" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
