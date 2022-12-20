@@ -246,6 +246,13 @@ frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are now populated with empty tables.
 
+Before going further, it is recommended to wait for the jobs to complete.
+
+You can check the job status with:
+```bash
+k get jobs
+```
+
 ## Rabbit
 ```bash
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
