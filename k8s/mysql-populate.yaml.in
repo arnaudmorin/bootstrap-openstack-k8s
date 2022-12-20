@@ -5,13 +5,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: keystone-db-sync
+  name: keystone-init
 spec:
   template:
     spec:
       restartPolicy: Never
-      containers:
-      - name: keystone
+      # NOTE(arnaud) using initContainer to run them sequentially
+      initContainers:
+      - name: keystone-db-sync
         image: arnaudmorin/openstack-keystone:yoga
         command: ["keystone-manage", "db_sync"]
         volumeMounts:
@@ -24,23 +25,7 @@ spec:
         - name: keystone-conf
           mountPath: /etc/keystone/fernet-keys/1
           subPath: "1"
-      volumes:
-      - name: keystone-conf
-        configMap:
-          name: keystone-conf
-  backoffLimit: 4
-
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: keystone-bootstrap
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: keystone
+      - name: keystone-bootstrap
         image: arnaudmorin/openstack-keystone:yoga
         command: ["keystone-manage", "bootstrap", 
           "--bootstrap-password", "{{.password}}",
@@ -52,23 +37,20 @@ spec:
         - name: keystone-conf
           mountPath: /etc/keystone/keystone.conf
           subPath: keystone.conf
-        - name: keystone-fernet-0
+        - name: keystone-conf
           mountPath: /etc/keystone/fernet-keys/0
           subPath: "0"
-        - name: keystone-fernet-1
+        - name: keystone-conf
           mountPath: /etc/keystone/fernet-keys/1
           subPath: "1"
+      containers:
+      - name: keystone-done
+        image: arnaudmorin/openstack-keystone:yoga
+        command: ["echo", "done"]
       volumes:
       - name: keystone-conf
         configMap:
           name: keystone-conf
-      - name: keystone-fernet-0
-        configMap:
-          name: keystone-conf
-      - name: keystone-fernet-1
-        configMap:
-          name: keystone-conf
-  backoffLimit: 4
 
 ---
 #
@@ -77,7 +59,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: glance-db-sync
+  name: glance-init
 spec:
   template:
     spec:
@@ -103,7 +85,7 @@ spec:
 #apiVersion: batch/v1
 #kind: Job
 #metadata:
-#  name: cinder-db-sync
+#  name: cinder-init
 #spec:
 #  template:
 #    spec:
@@ -129,7 +111,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: neutron-db-sync
+  name: neutron-init
 spec:
   template:
     spec:
@@ -158,7 +140,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: placement-db-sync
+  name: placement-init
 spec:
   template:
     spec:
@@ -184,93 +166,48 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: nova-api-db-sync
+  name: nova-init
 spec:
   template:
     spec:
       restartPolicy: Never
-      containers:
-      - name: nova
+      initContainers:
+      - name: nova-api-db-sync
         image: arnaudmorin/openstack-nova:yoga
         command: ["nova-manage", "api_db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
-      volumes:
-      - name: nova-conf
-        configMap:
-          name: nova-conf
-  backoffLimit: 4
-
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: nova-cell0-map
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: nova
+      - name: nova-cell0-map
         image: arnaudmorin/openstack-nova:yoga
         command: ["nova-manage", "cell_v2", "map_cell0"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
-      volumes:
-      - name: nova-conf
-        configMap:
-          name: nova-conf
-  backoffLimit: 4
-
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: nova-cell1-create
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: nova
+      - name: nova-cell1-create
         image: arnaudmorin/openstack-nova:yoga
         command: ["nova-manage", "cell_v2", "create_cell", "--name=cell1", "--verbose"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
-      volumes:
-      - name: nova-conf
-        configMap:
-          name: nova-conf
-  backoffLimit: 4
-
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: nova-db-sync
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: nova
+      - name: nova-db-sync
         image: arnaudmorin/openstack-nova:yoga
         command: ["nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
+      containers:
+      - name: nova-done
+        image: arnaudmorin/openstack-nova:yoga
+        command: ["echo", "done"]
       volumes:
       - name: nova-conf
         configMap:
           name: nova-conf
-  backoffLimit: 4
 
 #---
 ##
@@ -279,44 +216,31 @@ spec:
 #apiVersion: batch/v1
 #kind: Job
 #metadata:
-#  name: mistral-db-upgrade-head
+#  name: mistral-init
 #spec:
 #  template:
 #    spec:
 #      restartPolicy: Never
-#      containers:
-#      - name: mistral
+#      initContainers:
+#      - name: mistral-upgrade-head
 #        image: arnaudmorin/openstack-mistral:yoga
 #        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
 #        volumeMounts:
 #        - name: mistral-conf
 #          mountPath: /etc/mistral/mistral.conf
 #          subPath: mistral.conf
-#      volumes:
-#      - name: mistral-conf
-#        configMap:
-#          name: mistral-conf
-#  backoffLimit: 4
-#
-#---
-#apiVersion: batch/v1
-#kind: Job
-#metadata:
-#  name: mistral-db-populate
-#spec:
-#  template:
-#    spec:
-#      restartPolicy: Never
-#      containers:
-#      - name: mistral
+#      - name: mistral-db-populate
 #        image: arnaudmorin/openstack-mistral:yoga
 #        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
 #        volumeMounts:
 #        - name: mistral-conf
 #          mountPath: /etc/mistral/mistral.conf
 #          subPath: mistral.conf
+#      containers:
+#      - name: mistral-done
+#        image: arnaudmorin/openstack-mistral:yoga
+#        command: ["echo", "done"]
 #      volumes:
 #      - name: mistral-conf
 #        configMap:
 #          name: mistral-conf
-#  backoffLimit: 4
