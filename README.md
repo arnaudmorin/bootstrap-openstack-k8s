@@ -31,7 +31,71 @@ Table of Contents
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
 
 # Introduction
-TODO
+## Objective
+
+Main objective is to create an small OpenStack infrastructure within an OVH public cloud project (which is also run by OpenStack by the way :p So we will create an OpenStack over OpenStack).
+
+## Architecture
+
+```
+                   ┌─────────────────────────────────────────────────┐
+                   │       k8s-1  (control plane)                    │
+          ssh      ├───┐                                             │
+      ───────────► │ E │   ┌──────────┐     ┌──────────┐             │
+ you               │ N │   │ neutron  │     │ mysql    │             │
+         http      │ S │   └──────────┘     └──────────┘             │
+      ───────────► │ 3 │                                   Using:    │
+                   ├───┘   ┌──────────┐     ┌──────────┐   -kubectl  │
+                   │       │ nova     │     │ rabbit   │   -ansible  │
+                   │       └──────────┘     └──────────┘             │
+                   │                                                 │
+                   │       ┌──────────┐     ┌──────────┐             │
+                   │       │ keystone │     │ horizon  │             │
+                   │       └──────────┘     └──────────┘             │
+                   │                                                 │
+                   │       ┌──────────┐     ┌──────────┐             │
+                   │       │ glance   │     │ ...      │             │
+                   │       └──────────┘     └──────────┘             │
+                   │                                                 │
+                   └─────────────────────────────────────────────────┘
+
+                   ┌─────────────────────────────────────────────────┐
+                   │        compute-1 (data plane)                   │
+          ssh      ├───┐                                             │
+ you  ───────────► │ E │    ┌─────────────────────┐                  │
+                   │ N │    │    neutron agents   │        Using:    │
+                   │ S │    └─────────────────────┘        -ansible  │
+                   │ 3 │                                             │
+                   ├───┘    ┌─────────────────────┐                  │
+                   │        │     nova compute    │                  │
+                   │        └─────────────────────┘                  │
+         ┌───┐     │                                                 │
+         │   │     ├───┐    ┌─────────────────────┐                  │
+         │ v │     │ E │    │     openvswitch     │                  │
+inter    │ R │     │ N │    └─────────────────────┘                  │
+net ─────┤ a ├─────┤ S │                                             │
+         │ c │     │ 4 │                                             │
+         │ k │  ▲  ├───┘                                             │
+         │   │  │  │                                                 │
+         └───┘  │  └─────────────────────────────────────────────────┘
+                │
+                └─ Instances public access with /28 network block
+                                routed in vRack (vlan 0)
+```
+
+Both k8s and computes will have a public IP and be accessible from internet.
+
+`k8s` server will be used to host OpenStack control plane (mostly API, database, queues, schedulers, etc.).
+
+Each OpenStack service will be started in a docker container, orchestrated using kubernetes (k3s).
+
+`compute` server will be used to host OpenStack data plane (mostly nova compute and neutron agents (L2 and L3)).
+
+`compute` will also have an extra network interface connected to a vRack (using vlan 0).
+
+In this vRack, a routed network acquired from OVHcloud will give the possibility to create a flat external network.
+
+Instances and routers will be able to use this flat network to reach internet.
 
 # Bootstrap
 ## Clone the repo
@@ -64,7 +128,7 @@ openstack server list
 At the end, you should be able to ssh both instances using the `zob` key:
 ```bash
 chmod 600 ansible/files/zob
-ssh debian@ip -i ansible/files/zob		# replace ip with the real server IP
+ssh debian@ip -i ansible/files/zob            # replace ip with the real server IP
 ```
 
 # k8s-1
@@ -72,7 +136,7 @@ ssh debian@ip -i ansible/files/zob		# replace ip with the real server IP
  See https://k3s.io/ for more info.
 
 ## Install k3s
-SSH into `k3s-1` and login as `root`, then:
+SSH into `k8s-1` and login as `root`, then:
 ```bash
 curl -sfL https://get.k3s.io | sh -
 ```
@@ -155,7 +219,6 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl 
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=cinder | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
 
@@ -194,11 +257,6 @@ This will also install the `openstack` command line tool (openstack-client) and 
 ## Glance
 ```bash
 frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
-```
-
-## Cinder
-```bash
-frep k8s/cinder.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
 ## Placement
@@ -298,7 +356,7 @@ tail -F /var/log/nova/nova-api.log
 
 # compute-1
 Now that the `OpenStack` control plane is ready, you can install your compute.
-Like you did for  `k3s-1`, now SSH in `compute-1` and login as `root`.
+Like you did for  `k8s-1`, now SSH in `compute-1` and login as `root`.
 
 ## Clone the repo (on compute-1)
 We will need some of the `ansible` playbooks that are in the repo:
@@ -319,7 +377,7 @@ cd ..
 ```
 
 ## Run the play
-All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k3s-1` node, not on the `compute-1`).
+All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-1` node, not on the `compute-1`).
 To install them, we rely on a playbook:
 ```bash
 apt-get install -y ansible
@@ -328,7 +386,7 @@ ansible-playbook ansible/bootstrap-compute.yaml
 
 # Populate your OpenStack with default values
 
-From your `k3s-1` node, as root:
+From your `k8s-1` node, as root:
 ```sh
 # Source helper functions
 source helper
