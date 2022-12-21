@@ -10,14 +10,15 @@ function create_keypair(){(
 function create_networks(){(
     networks=$(openstack network list -c Name -f value)
     echo $networks | grep -q 'public' || {
-        openstack network create public --provider-network-type=vrack --provider-segment=0
+        openstack network create public --disable-port-security --provider-network-type=vrack --provider-segment=0
         openstack subnet create --no-dhcp --gateway none --subnet-range 192.168.1.0/24 --network public --dns-nameserver 0.0.0.0 192.168.1.0/24
     }
 )}
 
 function boot(){(
     NAME=$1
-    PUBLIC_NET=$2
+    FLAVOR=$2
+    PUBLIC_NET=$3
     USERDATA=userdata/${NAME/-[0-9]*/}
 
     echo ""
@@ -30,7 +31,8 @@ function boot(){(
     sed -i -r "s/__OS_TENANT_ID__/$OS_TENANT_ID/" /tmp/userdata__$$
     sed -i -r "s/__OS_REGION_NAME__/$OS_REGION_NAME/" /tmp/userdata__$$
 
-    [ -n "$PUBLIC_NET" ] && EXTRA="--nic net-id=$PUBLIC_NET"
+    [[ $FLAVOR == bm-* ]] && EXTNET="Ext-Net-Baremetal" || EXTNET="Ext-Net"
+    [ -n "$PUBLIC_NET" ] && EXTRA="--net $PUBLIC_NET"
 
     # Checking if instances does not already exists
     ID=$(openstack server list --name $NAME -f value -c ID)
@@ -38,9 +40,9 @@ function boot(){(
     if [ -z "$ID" ] ; then
         openstack server create \
             --key-name zob \
-            --nic net-id=Ext-Net $EXTRA \
+            --net $EXTNET $EXTRA \
             --image 'Debian 11' \
-            --flavor r2-15 \
+            --flavor $FLAVOR \
             --user-data /tmp/userdata__$$ \
             $NAME
     else
@@ -50,10 +52,10 @@ function boot(){(
 
 create_keypair
 create_networks
-boot k8s-1
+boot k8s-1 r2-15
 #boot k8s-2
 #boot k8s-3
-boot compute-1 public
+boot compute-1 r2-15 public
 #boot compute-2 public
 #boot compute-3 public
 #boot compute-4 public
