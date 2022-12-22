@@ -29,6 +29,8 @@ Table of Contents
   * [Copy the config file from k8s\-1](#copy-the-config-file-from-k8s-1)
   * [Run the play](#run-the-play)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
+* [For lazy people](#for-lazy-people)
+* [Notes](#notes)
 
 # Introduction
 ## Objective
