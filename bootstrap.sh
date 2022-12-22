@@ -32,6 +32,7 @@ function boot(){(
     sed -i -r "s/__OS_REGION_NAME__/$OS_REGION_NAME/" /tmp/userdata__$$
 
     [[ $FLAVOR == bm-* ]] && EXTNET="Ext-Net-Baremetal" || EXTNET="Ext-Net"
+    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 10" || IMAGE="Debian 11"
     [ -n "$PUBLIC_NET" ] && EXTRA="--net $PUBLIC_NET"
 
     # Checking if instances does not already exists
@@ -41,7 +42,7 @@ function boot(){(
         openstack server create \
             --key-name zob \
             --net $EXTNET $EXTRA \
-            --image 'Debian 11' \
+            --image "$IMAGE" \
             --flavor $FLAVOR \
             --user-data /tmp/userdata__$$ \
             $NAME
@@ -55,7 +56,7 @@ create_networks
 boot k8s-1 r2-15
 #boot k8s-2
 #boot k8s-3
-boot compute-1 r2-15 public
+boot compute-1 bm-l1 public
 #boot compute-2 public
 #boot compute-3 public
 #boot compute-4 public
