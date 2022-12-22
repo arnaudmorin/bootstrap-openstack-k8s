@@ -3,6 +3,8 @@
   hosts: localhost
   vars_files:
     - ../config/config.yaml
+  vars:
+    allNetworkInterfaces: "{{ ansible_facts | dict2items | selectattr('value.ipv4', 'defined') | selectattr('value.type', 'equalto', 'ether') | map(attribute='value') | list }}"
   tasks:
   - name: install extrepo
     apt:
@@ -35,10 +37,10 @@
       fail_mode: standalone
       state: present
 
-  - name: add ens4 in br-ex
+  - name: add second network card in br-ex
     openvswitch_port:
       bridge: br-ex
-      port: ens4
+      port: "{{ allNetworkInterfaces[1].device }}"
       state: present
 
   - name: create br-flat ovs bridge
@@ -47,11 +49,12 @@
       fail_mode: standalone
       state: present
 
-  - name: add ens5 in br-flat
+  - name: add third network card in br-flat
     openvswitch_port:
       bridge: br-flat
-      port: ens5
+      port: "{{ allNetworkInterfaces[2].device }}"
       state: present
+    when: allNetworkInterfaces | length > 2
 
   - name: configure nova
     ini_file:
