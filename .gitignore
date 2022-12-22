@@ -3,3 +3,4 @@ config/config.yaml
 *.swp
 order-ipfo/*.conf
 order-ipfo/order-venv/
+done-*

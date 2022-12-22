@@ -442,6 +442,12 @@ create_key
 create_server_public
 ```
 
+# For lazy people
+If you are lazy doing all the steps manually, you can use the the `run-kitty-run.sh` script just after the `bootstrap.sh` and everything should be done automatically:
+
+```bash
+./run-kitty-run.sh
+```
 
 # Notes
 
