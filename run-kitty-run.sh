@@ -89,6 +89,9 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 # Nova
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
+# Sleep few secs
+sleep 30
+
 # Source helper functions
 source /root/helper
 

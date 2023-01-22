@@ -3,8 +3,8 @@ Table of Contents
 
 * [Introduction](#introduction)
 * [Bootstrap](#bootstrap)
-  * [Clone the repo](#clone-the-repo)
   * [Source your openrc](#source-your-openrc)
+  * [Clone this repo](#clone-this-repo)
   * [Start instances](#start-instances)
   * [SSH into instances](#ssh-into-instances)
 * [k8s\-1](#k8s-1)
@@ -100,16 +100,17 @@ In this vRack, a routed network acquired from OVHcloud will give the possibility
 Instances and routers will be able to use this flat network to reach internet.
 
 # Bootstrap
-## Clone the repo
-```bash
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
-cd bootstrap-openstack-k8s
-```
 
 ## Source your openrc
 You need an OpenStack account to continue, source the `openrc` file now:
 ```bash
 source openrc
+```
+
+## Clone this repo
+```bash
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+cd bootstrap-openstack-k8s
 ```
 
 ## Start instances
