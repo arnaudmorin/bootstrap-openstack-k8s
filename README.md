@@ -35,7 +35,7 @@ Table of Contents
 # Introduction
 ## Objective
 
-Main objective is to create an small OpenStack infrastructure within an OVH public cloud project (which is also run by OpenStack by the way :p So we will create an OpenStack over OpenStack).
+Main objective is to create a small OpenStack infrastructure within an OVH public cloud project (which is also run by OpenStack by the way :p So we will create an OpenStack over OpenStack).
 
 ## Architecture
 

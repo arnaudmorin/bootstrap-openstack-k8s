@@ -119,7 +119,7 @@ t "DONE k8s-1 (${k8s_ip})"
 
 
 
-c_ip=$(openstack server show compute-1 -c addresses -f json | jq -r '.addresses["Ext-Net-Baremetal"][]' | grep -v 2001)
+c_ip=$(openstack server show compute-1 -c addresses -f json | jq -r '.addresses["Ext-Net"][]' | grep -v 2001)
 
 t "Working on compute-1 (${c_ip})"
 

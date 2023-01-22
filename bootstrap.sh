@@ -56,7 +56,7 @@ create_networks
 boot k8s-1 r2-15
 #boot k8s-2
 #boot k8s-3
-boot compute-1 bm-l1 public
+boot compute-1 r2-15 public
 #boot compute-2 public
 #boot compute-3 public
 #boot compute-4 public
