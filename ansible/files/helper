@@ -78,6 +78,8 @@ function attach_floating(){(
 function create_network_public(){(
     RANGE=$1
     GATEWAY=$2
+    START=$3
+    END=$4
 
     openstack network create \
      --share \
@@ -89,8 +91,9 @@ function create_network_public(){(
     openstack subnet create \
      --network public \
      --subnet-range "$RANGE" \
+     --allocation-pool "start=${START},end=${END}" \
      --gateway $GATEWAY \
-     --dns-nameserver 8.8.8.8 \
+     --dns-nameserver 1.1.1.1 \
      "$RANGE"
 
     # Add a private subnet in this public network
