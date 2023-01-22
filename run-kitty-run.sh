@@ -102,7 +102,7 @@ create_image_cirros
 create_image_debian
 # Before running this one, adjust the parameters with your network settings
 # If you need to buy an IPFO block, check the tool in order-ipfo/ folder
-create_network_public 51.91.90.0/25 51.91.90.126
+#create_network_public 51.91.90.0/25 51.91.90.126
 
 EOF
 

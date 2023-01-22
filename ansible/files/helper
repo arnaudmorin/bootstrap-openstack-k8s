@@ -76,10 +76,10 @@ function attach_floating(){(
 )}
 
 function create_network_public(){(
-    RANGE=$1
-    GATEWAY=$2
-    START=$3
-    END=$4
+    START=$1
+    END=$2
+    RANGE="51.91.90.0/25"
+    GATEWAY="51.91.90.126"
 
     openstack network create \
      --share \

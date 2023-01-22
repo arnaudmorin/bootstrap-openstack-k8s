@@ -99,6 +99,13 @@ In this vRack, a routed network acquired from OVHcloud will give the possibility
 
 Instances and routers will be able to use this flat network to reach internet.
 
+# Connect on jump
+```bash
+ssh vttx@jump.arno.ovh
+# Replace vttx with the username provided to you
+# The password is also provided
+```
+
 # Bootstrap
 
 ## Source your openrc
@@ -436,7 +443,7 @@ create_image_debian
 # Before running this one, adjust the parameters with your network settings
 # If you need to buy an IPFO block, check the tool in order-ipfo/ folder
 # For VeryTechTrip event, you should have received a START and END values
-create_network_public 51.91.90.0/25 51.91.90.126 START END
+create_network_public START END
 
 # Following actions are done as demo
 source /root/openrc_demo
