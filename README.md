@@ -10,7 +10,7 @@ Table of Contents
 * [k8s\-1](#k8s-1)
   * [Install k3s](#install-k3s)
   * [Install frep](#install-frep)
-  * [Install ansible](#install-ansible)
+  * [Install ansible and git](#install-ansible-and-git)
   * [Install plik](#install-plik)
   * [Clone the repo (on k8s\-1)](#clone-the-repo-on-k8s-1)
 * [Install OpenStack (control plane)](#install-openstack-control-plane)
@@ -182,10 +182,10 @@ chmod +x /usr/local/bin/frep
 
 More info here: https://github.com/subchen/frep
 
-## Install ansible
-We will need `ansible` at some point.
+## Install ansible and git
+We will need `ansible` and `git` at some point.
 ```bash
-apt-get install -y ansible
+apt-get install -y ansible git
 ```
 
 ## Install plik
@@ -199,7 +199,6 @@ It's useful to easily transfer files a from a system to another.
 ## Clone the repo (on k8s-1)
 We will need some of the `kubernetes` templates that are in the repo:
 ```bash
-apt-get install -y git
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 ```
@@ -221,7 +220,13 @@ Let's start!
 First, you need to create a `config.yaml` file:
 ```bash
 cp config/config.yaml.sample config/config.yaml
-vim config/config.yaml
+
+# Change domain - you can use this, it will create a domain automagically:
+ip=$(hostname -I | awk '{print $1}')
+sed -i -r "s/somewhere.net/${ip}.xip.opensteak.fr/" config/config.yaml
+
+# Review config, eventually amend it if you want
+cat config/config.yaml
 ```
 
 ### Plik the config
