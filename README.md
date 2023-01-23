@@ -410,7 +410,7 @@ Like you did for  `k8s-1`, now SSH in `compute-1` and login as `root`.
 ## Clone the repo (on compute-1)
 We will need some of the `ansible` playbooks that are in the repo:
 ```bash
-apt-get install -y git
+apt-get install -y git ansible
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 ```
@@ -429,7 +429,6 @@ cd ..
 All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-1` node, not on the `compute-1`).
 To install them, we rely on a playbook:
 ```bash
-apt-get install -y ansible
 ansible-playbook ansible/bootstrap-compute.yaml
 ```
 
