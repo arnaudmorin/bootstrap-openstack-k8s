@@ -32,7 +32,7 @@ function boot(){(
     sed -i -r "s/__OS_REGION_NAME__/$OS_REGION_NAME/" /tmp/userdata__$$
 
     [[ $FLAVOR == bm-* ]] && EXTNET="Ext-Net-Baremetal" || EXTNET="Ext-Net"
-    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 10" || IMAGE="Debian 11"
+    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 10" || IMAGE="debian.11.compute.vtt.2023.02"
     [ -n "$PUBLIC_NET" ] && EXTRA="--net $PUBLIC_NET"
 
     # Checking if instances does not already exists
