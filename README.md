@@ -24,6 +24,7 @@ Table of Contents
   * [Nova](#nova)
   * [Test your OpenStack deployment](#test-your-openstack-deployment)
   * [In case of error \- debugging](#in-case-of-error---debugging)
+  * [Plik the config](#plik-the-config)
 * [compute\-1](#compute-1)
   * [Clone the repo (on compute\-1)](#clone-the-repo-on-compute-1)
   * [Copy the config file from k8s\-1](#copy-the-config-file-from-k8s-1)
@@ -132,6 +133,7 @@ The `bootstrap.sh` script will start 2 instances:
 ```bash
 # List instances you have to retrieve the IPs
 openstack server list
+# Retry multiple time the previous command until the instances are ready (ACTIVE state)
 ```
 
 ## SSH into instances
@@ -227,13 +229,6 @@ sed -i -r "s/somewhere.net/${ip}.xip.opensteak.fr/" config/config.yaml
 
 # Review config, eventually amend it if you want
 cat config/config.yaml
-```
-
-### Plik the config
-You will need the `config.yaml` file on your compute, so `plik` it and copy the URL:
-```bash
-plik -s config/config.yaml
-# Copy the URL, you will need it later
 ```
 
 ## MariaDB
@@ -411,6 +406,13 @@ k delete job nova-db-sync
 frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
+## Plik the config
+You will need the `config.yaml` file on your compute, so `plik` it and copy the URL:
+```bash
+plik -s config/config.yaml
+# Copy the URL, you will need it in few secs
+```
+
 # compute-1
 Now that the `OpenStack` control plane is ready, you can install your compute.
 
@@ -449,6 +451,8 @@ ansible-playbook ansible/bootstrap-compute.yaml
 
 Back on your `k8s-1` node, as root:
 ```sh
+# Be root if not already done
+sudo su -
 # Source helper functions
 source /root/helper
 
