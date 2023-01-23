@@ -78,8 +78,16 @@ function attach_floating(){(
 function create_network_public(){(
     START=$1
     END=$2
-    RANGE="51.91.90.0/25"
-    GATEWAY="51.91.90.126"
+    if [[ $START == 51.91.90.* ]] ; then
+        # This is the only /25 that I currently have
+        # So I can hardcode the values here
+        RANGE="51.91.90.0/25"
+        GATEWAY="51.91.90.126"
+    else
+        # Try to compute from START
+        RANGE=$(ipcalc -n -b ${START}/28 | grep 'Network:' | awk '{print $2}')
+        GATEWAY=$(ipcalc -n -b ${START}/28 | grep 'HostMax:' | awk '{print $2}')
+    fi
 
     openstack network create \
      --share \
