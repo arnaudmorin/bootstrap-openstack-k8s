@@ -407,6 +407,10 @@ Now that the `OpenStack` control plane is ready, you can install your compute.
 
 Like you did for  `k8s-1`, now SSH in `compute-1` and login as `root`.
 
+```bash
+sudo su -
+```
+
 ## Clone the repo (on compute-1)
 We will need some of the `ansible` playbooks that are in the repo:
 ```bash
