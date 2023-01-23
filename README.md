@@ -459,6 +459,12 @@ create_network_private
 create_rules
 create_key
 create_server_public
+
+# After creating your first public server, you can grab it's ip with:
+openstack server list
+
+# To login:
+ssh cirros@ip_of_server         # password is gocubsgo
 ```
 
 # For lazy people
