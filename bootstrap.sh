@@ -32,8 +32,14 @@ function boot(){(
     sed -i -r "s/__OS_REGION_NAME__/$OS_REGION_NAME/" /tmp/userdata__$$
 
     [[ $FLAVOR == bm-* ]] && EXTNET="Ext-Net-Baremetal" || EXTNET="Ext-Net"
-    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 10" || IMAGE="debian.11.compute.vtt.2023.02"
+    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 10" || IMAGE="Debian 11"
     [ -n "$PUBLIC_NET" ] && EXTRA="--net $PUBLIC_NET"
+
+    # TODO(arnaud) maybe remove this after VTT
+    # Looking for the image for compute
+    if [[ $NAME == compute* ]] ; then
+        IMAGE=$(openstack image list --community --name debian.11.compute.vtt.2023.02 -c ID -f value)
+    fi
 
     # Checking if instances does not already exists
     ID=$(openstack server list --name $NAME -f value -c ID)
