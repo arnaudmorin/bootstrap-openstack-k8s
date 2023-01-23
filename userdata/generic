@@ -35,6 +35,9 @@ echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' > /etc/profile.d/stern.sh
 apt-get -y install tmux
 wget -q -O /root/.tmux.conf https://www.arnaudmorin.fr/tmux.conf
 
+# Install ipcalc
+apt-get -y install ipcalc
+
 # Add useful aliases
 echo 'alias k=kubectl' > /etc/profile.d/aliases.sh
 echo 'alias l=stern' >> /etc/profile.d/aliases.sh
