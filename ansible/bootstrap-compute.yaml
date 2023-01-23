@@ -40,7 +40,8 @@
   - name: add second network card in br-ex
     openvswitch_port:
       bridge: br-ex
-      port: "{{ allNetworkInterfaces[1].device }}"
+      # port: "{{ allNetworkInterfaces[1].device }}"
+      port: "ens4"
       state: present
 
   - name: create br-flat ovs bridge
@@ -49,12 +50,14 @@
       fail_mode: standalone
       state: present
 
-  - name: add third network card in br-flat
-    openvswitch_port:
-      bridge: br-flat
-      port: "{{ allNetworkInterfaces[2].device }}"
-      state: present
-    when: allNetworkInterfaces | length > 2
+# NOTE(arnaud): this was used for ironic
+# maybe later
+#  - name: add third network card in br-flat
+#    openvswitch_port:
+#      bridge: br-flat
+#      port: "{{ allNetworkInterfaces[2].device }}"
+#      state: present
+#    when: allNetworkInterfaces | length > 2
 
   - name: configure nova
     ini_file:
