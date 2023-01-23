@@ -268,6 +268,9 @@ You can check the job status with:
 k get jobs
 ```
 
+You should wait for the jobs to be ready (all jobs must be 1/1)
+
+
 ## Rabbit
 ```bash
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -277,7 +280,7 @@ frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```bash
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
-Wait for the deployment to be ready:
+Wait for the deployment to be ready (wait for READY 3/3):
 ```bash
 k get deployment keystone
 ```
@@ -310,6 +313,12 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 Nova will take longer than others, this is the more complex.
+
+You can wait for all pods to be ready (STATUS running or completed for all of them)
+```bash
+k get pods | grep nova
+```
+
 
 ## Test your OpenStack deployment
 ### openrc_admin
