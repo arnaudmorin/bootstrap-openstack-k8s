@@ -1,6 +1,8 @@
 #!/bin/bash
 
+
 function create_flavors(){(
+    set -xv
     openstack flavor create --vcpus 1 --ram 256  --disk 10 nano
     openstack flavor create --vcpus 1 --ram 1024 --disk 10 small
     openstack flavor create --vcpus 2 --ram 2048 --disk 20 medium
@@ -9,6 +11,7 @@ function create_flavors(){(
 
 function create_image_cirros(){(
     [ -f cirros-0.4.0-x86_64-disk.img ] || wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+    set -xv
     openstack image create \
      --file cirros-0.4.0-x86_64-disk.img \
      --disk-format qcow2 \
@@ -19,6 +22,7 @@ function create_image_cirros(){(
 
 function create_image_ubuntu(){(
     [ -f xenial-server-cloudimg-amd64-disk1.img ] || wget https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
+    set -xv
     openstack image create \
      --file xenial-server-cloudimg-amd64-disk1.img \
      --disk-format qcow2 \
@@ -29,6 +33,7 @@ function create_image_ubuntu(){(
 
 function create_image_debian(){(
     [ -f debian-10-openstack-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/OpenStack/current-10/debian-10-openstack-amd64.qcow2
+    set -xv
     openstack image create \
      --file debian-10-openstack-amd64.qcow2 \
      --disk-format qcow2 \
@@ -38,16 +43,19 @@ function create_image_debian(){(
 )}
 
 function create_key(){(
+    set -xv
     openstack keypair create --public-key ~/.ssh/authorized_keys zob
 )}
 
 function create_rules(){(
+    set -xv
     openstack security group rule create --ingress --protocol any default
     # Already supposed to exist
     #openstack security group rule create --egress  --protocol any default
 )}
 
 function create_server_private(){(
+    set -xv
     openstack server create \
      --flavor nano \
      --image cirros \
@@ -57,6 +65,7 @@ function create_server_private(){(
 )}
 
 function create_server_public(){(
+    set -xv
     openstack server create \
      --flavor nano \
      --image cirros \
@@ -66,12 +75,14 @@ function create_server_public(){(
 )}
 
 function create_floating(){(
+    set -xv
     openstack floating ip create public
 )}
 
 function attach_floating(){(
     NAME=$1
     IP=$2
+    set -xv
     openstack server add floating ip $NAME $IP
 )}
 
@@ -89,6 +100,7 @@ function create_network_public(){(
         GATEWAY=$(ipcalc -n -b ${START}/28 | grep 'HostMax:' | awk '{print $2}')
     fi
 
+    set -xv
     openstack network create \
      --share \
      --external \
@@ -120,6 +132,7 @@ function create_network_public(){(
 )}
 
 function create_network_private(){(
+    set -xv
     openstack network create private
     openstack subnet create \
      --network private \
@@ -130,6 +143,7 @@ function create_network_private(){(
 )}
 
 function create_router(){(
+    set -xv
     openstack router create router
     openstack router set --external-gateway public router
     openstack router add subnet router 192.168.42.0/24
