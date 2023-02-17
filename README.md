@@ -151,6 +151,10 @@ ssh debian@ip -i ansible/files/zob            # replace ip with the real server 
 SSH into `k8s-1` and login as `root` and install `k3s`:
 ```bash
 sudo su -
+```
+
+Then
+```bash
 curl -sfL https://get.k3s.io | sh -
 ```
 
