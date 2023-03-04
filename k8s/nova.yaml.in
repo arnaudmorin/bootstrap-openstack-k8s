@@ -111,6 +111,7 @@ spec:
         image: arnaudmorin/openstack-nova:yoga
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        #args: [ "while true; do sleep 30; done;" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
