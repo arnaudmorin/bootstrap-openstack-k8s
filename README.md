@@ -144,7 +144,7 @@ ssh debian@ip -i ansible/files/zob            # replace ip with the real server 
 ```
 
 # k8s-1
- On the `k8s-1` instance, we will install `k3s` and few other tools to manage have a full `kubernetes` cluster.
+ On the `k8s-1` instance, we will install `k3s` and few other tools to have a full `kubernetes` cluster.
  See https://k3s.io/ for more info.
 
 ## Install k3s
