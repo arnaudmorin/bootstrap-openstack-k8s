@@ -3,10 +3,9 @@
 
 function create_flavors(){(
     set -xv
-    openstack flavor create --vcpus 1 --ram 256  --disk 10 nano
-    openstack flavor create --vcpus 1 --ram 1024 --disk 10 small
-    openstack flavor create --vcpus 2 --ram 2048 --disk 20 medium
-    openstack flavor create --vcpus 4 --ram 4086 --disk 50 large
+    openstack flavor create --vcpus 1 --ram 1024 --disk 2 small
+    openstack flavor create --vcpus 2 --ram 2048 --disk 4 medium
+    openstack flavor create --vcpus 4 --ram 4086 --disk 8 large
 )}
 
 function create_image_cirros(){(
