@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nova-compute
+  labels:
+    app: nova-compute
+spec:
+  selector:
+    matchLabels:
+      app: nova-compute
+  template:
+    metadata:
+      labels:
+        app: nova-compute
+    spec:
+      #hostname: compute-8
+      nodeSelector:
+        compute: "true"
+      containers:
+      - name: nova-libvirt
+        image: arnaudmorin/openstack-nova-compute:yoga
+        securityContext:
+          privileged: true
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/usr/sbin/libvirtd", "--listen" ]
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: socket-volume
+          mountPath: /var/run/libvirt/
+      - name: nova-compute
+        image: arnaudmorin/openstack-nova-compute:yoga
+        securityContext:
+          privileged: true
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "hostname -F /etc/hostname && nova-compute" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: nova-compute-conf
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
+        - name: socket-volume
+          mountPath: /var/run/libvirt/
+        - name: var-lib-nova
+          mountPath: /var/lib/nova/
+        - name: etc-hostname
+          mountPath: /etc/hostname
+      volumes:
+      - name: nova-compute-conf
+        configMap:
+          name: nova-compute-conf
+      - name: socket-volume
+        emptyDir: {}
+      - name: var-lib-nova
+        hostPath:
+          path: /var/lib/nova/
+      - name: etc-hostname
+        hostPath:
+          path: /etc/hostname

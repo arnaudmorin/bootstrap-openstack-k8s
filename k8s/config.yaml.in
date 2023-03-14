@@ -171,8 +171,6 @@ data:
     bindir = /var/lib/kolla/venv/bin/
     state_path = /var/lib/nova
     transport_url = rabbit://openstack:{{.password}}@rabbit
-    [api]
-    auth_strategy = keystone
     [api_database]
     connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova_api
     os_region_name = RegionOne
@@ -230,6 +228,73 @@ data:
     enabled = true
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-compute-conf
+data:
+  nova.conf: |
+    [DEFAULT]
+    pybasedir = /var/lib/kolla/venv/lib/python3.7/site-packages/
+    bindir = /var/lib/kolla/venv/bin/
+    state_path = /var/lib/nova
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    compute_driver=libvirt.LibvirtDriver
+    [cinder]
+    os_region_name = RegionOne
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova
+    [glance]
+    api_servers = http://glance.{{.domain}}
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    auth_type = password
+    [neutron]
+    default_floating_pool = ext-net
+    service_metadata_proxy = true
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = neutron
+    user_domain_name = Default
+    password = {{.password}}
+    service_name = network
+    url = http://neutron.{{.domain}}
+    region_name = RegionOne
+    [oslo_concurrency]
+    lock_path = /var/lib/nova/tmp
+    [placement]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    [serial_console]
+    enabled = true
+    base_url = ws://nova.{{.domain}}:6083
+    proxyclient_address = 51.195.233.251
+    [spice]
+    enabled = true
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+    [vnc]
+    enabled = True
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+    novncproxy_base_url = http://nova.{{.domain}}:6080/vnc_auto.html
 
 ---
 apiVersion: v1
