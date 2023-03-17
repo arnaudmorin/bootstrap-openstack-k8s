@@ -1,4 +1,15 @@
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neutron-openvswitch-agent
+spec:
+  selector:
+    app: neutron-openvswitch-agent
+  ports:
+  - port: 6633
+
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -57,6 +68,178 @@ spec:
       - name: var-lib-nova
         hostPath:
           path: /var/lib/nova/
+      - name: etc-hostname
+        hostPath:
+          path: /etc/hostname
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ovs-db
+  labels:
+    app: ovs-db
+spec:
+  selector:
+    matchLabels:
+      app: ovs-db
+  template:
+    metadata:
+      labels:
+        app: ovs-db
+    spec:
+      nodeSelector:
+        compute: "true"
+      containers:
+      - name: ovs-db
+        image: arnaudmorin/openstack-openvswitch:yoga
+        securityContext:
+          privileged: true
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "ovsdb-server", "/var/lib/openvswitch/conf.db", "--remote=punix:/var/run/openvswitch/db.sock", "--pidfile"]
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        #imagePullPolicy: Always
+        volumeMounts:
+        - name: var-run-openvswitch
+          mountPath: /var/run/openvswitch/
+        - name: var-lib-openvswitch
+          mountPath: /var/lib/openvswitch/
+      volumes:
+      - name: var-run-openvswitch
+        hostPath:
+          path: /var/run/openvswitch/
+      - name: var-lib-openvswitch
+        hostPath:
+          path: /var/lib/openvswitch/
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ovs-vs
+  labels:
+    app: ovs-vs
+spec:
+  selector:
+    matchLabels:
+      app: ovs-vs
+  template:
+    metadata:
+      labels:
+        app: ovs-vs
+    spec:
+      nodeSelector:
+        compute: "true"
+      # NOTE: need hostNetwork to manage physical interfaces (ens4)
+      hostNetwork: true
+      containers:
+      - name: ovs-vs
+        image: arnaudmorin/openstack-openvswitch:yoga
+        securityContext:
+          privileged: true
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "ovs-vswitchd", "unix:/var/run/openvswitch/db.sock", "--pidfile"]
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        #imagePullPolicy: Always
+        volumeMounts:
+        - name: var-run-openvswitch
+          mountPath: /var/run/openvswitch/
+      volumes:
+      - name: var-run-openvswitch
+        hostPath:
+          path: /var/run/openvswitch/
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: neutron-openvswitch-agent
+  labels:
+    app: neutron-openvswitch-agent
+spec:
+  selector:
+    matchLabels:
+      app: neutron-openvswitch-agent
+  template:
+    metadata:
+      labels:
+        app: neutron-openvswitch-agent
+    spec:
+      nodeSelector:
+        compute: "true"
+      containers:
+      - name: neutron-openvswitch-agent
+        image: arnaudmorin/openstack-neutron:yoga
+        securityContext:
+          privileged: true
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "hostname -F /etc/hostname && neutron-openvswitch-agent --config-file=/etc/neutron/plugins/ml2/openvswitch_agent.ini --config-file=/etc/neutron/neutron.conf" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        #imagePullPolicy: Always
+        volumeMounts:
+        - name: neutron-agent-conf
+          mountPath: /etc/neutron/neutron.conf
+          subPath: neutron.conf
+        - name: neutron-agent-conf
+          mountPath: /etc/neutron/plugins/ml2/openvswitch_agent.ini
+          subPath: openvswitch_agent.ini
+        - name: etc-hostname
+          mountPath: /etc/hostname
+        - name: var-run-openvswitch
+          mountPath: /var/run/openvswitch/
+      volumes:
+      - name: neutron-agent-conf
+        configMap:
+          name: neutron-agent-conf
+      - name: etc-hostname
+        hostPath:
+          path: /etc/hostname
+      - name: var-run-openvswitch
+        hostPath:
+          path: /var/run/openvswitch/
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: neutron-l3-agent
+  labels:
+    app: neutron-l3-agent
+spec:
+  selector:
+    matchLabels:
+      app: neutron-l3-agent
+  template:
+    metadata:
+      labels:
+        app: neutron-l3-agent
+    spec:
+      nodeSelector:
+        compute: "true"
+      containers:
+      - name: neutron-l3-agent
+        image: arnaudmorin/openstack-neutron:yoga
+        securityContext:
+          privileged: true
+        command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "hostname -F /etc/hostname && neutron-l3-agent --config-file=/etc/neutron/l3_agent.ini --config-file=/etc/neutron/neutron.conf" ]
+        args: [ "while true; do sleep 30; done;" ]
+        #imagePullPolicy: Always
+        volumeMounts:
+        - name: neutron-agent-conf
+          mountPath: /etc/neutron/neutron.conf
+          subPath: neutron.conf
+        - name: neutron-agent-conf
+          mountPath: /etc/neutron/l3_agent.ini
+          subPath: l3_agent_dvr.ini
+        - name: etc-hostname
+          mountPath: /etc/hostname
+      volumes:
+      - name: neutron-agent-conf
+        configMap:
+          name: neutron-agent-conf
       - name: etc-hostname
         hostPath:
           path: /etc/hostname
