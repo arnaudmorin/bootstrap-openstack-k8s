@@ -25,21 +25,10 @@ function boot(){(
     echo "Booting $NAME..."
 
     cp $USERDATA /tmp/userdata__$$
-    sed -i -r "s/__OS_USERNAME__/$OS_USERNAME/" /tmp/userdata__$$
-    sed -i -r "s/__OS_PASSWORD__/$OS_PASSWORD/" /tmp/userdata__$$
-    sed -i -r "s/__OS_TENANT_NAME__/$OS_TENANT_NAME/" /tmp/userdata__$$
-    sed -i -r "s/__OS_TENANT_ID__/$OS_TENANT_ID/" /tmp/userdata__$$
-    sed -i -r "s/__OS_REGION_NAME__/$OS_REGION_NAME/" /tmp/userdata__$$
 
     [[ $FLAVOR == bm-* ]] && EXTNET="Ext-Net-Baremetal" || EXTNET="Ext-Net"
-    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 10" || IMAGE="Debian 11"
+    [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 12" || IMAGE="Debian 12"
     [ -n "$PUBLIC_NET" ] && EXTRA="--net $PUBLIC_NET"
-
-    # TODO(arnaud) maybe remove this after VTT
-    # Looking for the image for compute
-    if [[ $NAME == compute* ]] ; then
-        IMAGE=$(openstack image list --community --name debian.11.compute.vtt.2023.02 -c ID -f value)
-    fi
 
     # Checking if instances does not already exists
     ID=$(openstack server list --name $NAME -f value -c ID)
@@ -62,8 +51,8 @@ create_networks
 boot k8s-1 c2-15
 #boot k8s-2
 #boot k8s-3
-boot compute-1 c2-15 public
-#boot compute-2 public
-#boot compute-3 public
-#boot compute-4 public
+boot compute-1 bm-l1 public
+#boot compute-2 bm-l1 public
+#boot compute-3 bm-l1 public
+#boot compute-4 bm-l1 public
 #boot compute-5 public
