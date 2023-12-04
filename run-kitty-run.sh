@@ -122,7 +122,7 @@ t "DONE k8s-1 (${k8s_ip})"
 
 
 
-c_ip=$(openstack server show compute-1 -c addresses -f json | jq -r '.addresses["Ext-Net"][]' | grep -v 2001)
+c_ip=$(openstack server show compute-1 -c addresses -f json | jq -r '.addresses["Ext-Net-Baremetal"][]' | grep -v 2001)
 
 t "Working on compute-1 (${c_ip})"
 
@@ -131,7 +131,7 @@ if [ ! -e done-compute-1 ] ; then
 $s $c_ip << EOF
 
 apt-get install -y git ansible
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+git clone -b 2023.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 
 cp config/config.yaml.sample config/config.yaml
