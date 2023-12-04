@@ -56,7 +56,7 @@ function create_rules(){(
 function create_server_private(){(
     set -xv
     openstack server create \
-     --flavor nano \
+     --flavor small \
      --image cirros \
      --net private \
      --key-name zob \
@@ -66,7 +66,7 @@ function create_server_private(){(
 function create_server_public(){(
     set -xv
     openstack server create \
-     --flavor nano \
+     --flavor small \
      --image cirros \
       --net public \
       --key-name zob \
