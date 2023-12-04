@@ -252,3 +252,14 @@
     args:
       executable: /bin/bash
       creates: /root/.ansible_role_user_demo
+  - name: add member role to demo user for demo project
+    shell: |
+      source /root/openrc_admin
+      openstack role add \
+        --project demo \
+        --user demo \
+        member
+      [ $? -eq 0 ] && touch /root/.ansible_role_member_demo
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_role_member_demo
