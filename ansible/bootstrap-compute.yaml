@@ -273,6 +273,11 @@
           UserKnownHostsFile /dev/null
           StrictHostKeyChecking no
 
+  - name: add nova to libvirt-qemu group
+    user:
+      name: nova
+      group: libvirt-qemu
+
   - name: start services
     service:
       name: "{{item}}"
