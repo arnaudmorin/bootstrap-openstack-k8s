@@ -23,10 +23,6 @@
       update_cache: yes
       state: latest
 
-  - name: "[workaround] install dnspython==1.16.0 from pip"
-    pip:
-      name: dnspython==1.16.0
-
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
     ansible.posix.sysctl:
       name: net.ipv6.conf.all.disable_ipv6
