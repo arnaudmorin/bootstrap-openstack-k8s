@@ -63,7 +63,7 @@ spec:
     spec:
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:yoga
+        image: arnaudmorin/openstack-glance:2023.2
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]

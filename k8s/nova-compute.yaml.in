@@ -30,7 +30,7 @@ spec:
         compute: "true"
       containers:
       - name: nova-libvirt
-        image: arnaudmorin/openstack-nova-compute:yoga
+        image: arnaudmorin/openstack-nova-compute:2023.2
         securityContext:
           privileged: true
         command: [ "dumb-init", "--single-child", "--" ]
@@ -42,7 +42,7 @@ spec:
         - name: socket-volume
           mountPath: /var/run/libvirt/
       - name: nova-compute
-        image: arnaudmorin/openstack-nova-compute:yoga
+        image: arnaudmorin/openstack-nova-compute:2023.2
         securityContext:
           privileged: true
         command: [ "/bin/bash", "-c", "--" ]
@@ -92,7 +92,7 @@ spec:
         compute: "true"
       containers:
       - name: ovs-db
-        image: arnaudmorin/openstack-openvswitch:yoga
+        image: arnaudmorin/openstack-openvswitch:2023.2
         securityContext:
           privileged: true
         command: [ "dumb-init", "--single-child", "--" ]
@@ -135,7 +135,7 @@ spec:
       hostNetwork: true
       containers:
       - name: ovs-vs
-        image: arnaudmorin/openstack-openvswitch:yoga
+        image: arnaudmorin/openstack-openvswitch:2023.2
         securityContext:
           privileged: true
         command: [ "dumb-init", "--single-child", "--" ]
@@ -171,7 +171,7 @@ spec:
         compute: "true"
       containers:
       - name: neutron-openvswitch-agent
-        image: arnaudmorin/openstack-neutron:yoga
+        image: arnaudmorin/openstack-neutron:2023.2
         securityContext:
           privileged: true
         command: [ "/bin/bash", "-c", "--" ]
@@ -220,7 +220,7 @@ spec:
         compute: "true"
       containers:
       - name: neutron-l3-agent
-        image: arnaudmorin/openstack-neutron:yoga
+        image: arnaudmorin/openstack-neutron:2023.2
         securityContext:
           privileged: true
         command: [ "/bin/bash", "-c", "--" ]

@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: horizon
-        image: arnaudmorin/openstack-horizon:yoga
+        image: arnaudmorin/openstack-horizon:2023.2
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "kolla_extend_start && chmod 777 -R /var/lib/kolla/venv/lib/python3.9/site-packages/openstack_dashboard/local && source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         #imagePullPolicy: Always

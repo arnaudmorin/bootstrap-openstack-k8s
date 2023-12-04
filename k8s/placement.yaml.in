@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:yoga
+        image: arnaudmorin/openstack-placement:2023.2
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         # imagePullPolicy: Always

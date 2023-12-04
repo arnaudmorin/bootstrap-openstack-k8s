@@ -108,7 +108,7 @@ spec:
     spec:
       containers:
       - name: nova-api
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         #args: [ "while true; do sleep 30; done;" ]
@@ -143,7 +143,7 @@ spec:
     spec:
       containers:
       - name: nova-metadata-api
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         #imagePullPolicy: Always
@@ -177,7 +177,7 @@ spec:
     spec:
       containers:
       - name: nova-conductor
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-conductor" ]
         #imagePullPolicy: Always
@@ -209,7 +209,7 @@ spec:
     spec:
       containers:
       - name: nova-scheduler
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-scheduler" ]
         #imagePullPolicy: Always
@@ -241,7 +241,7 @@ spec:
     spec:
       containers:
       - name: nova-vnc
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-novncproxy" ]
         #imagePullPolicy: Always
@@ -273,7 +273,7 @@ spec:
     spec:
       containers:
       - name: nova-spice
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-spicehtml5proxy" ]
         #imagePullPolicy: Always
@@ -305,7 +305,7 @@ spec:
     spec:
       containers:
       - name: nova-serial
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/nova-serialproxy" ]
         #imagePullPolicy: Always

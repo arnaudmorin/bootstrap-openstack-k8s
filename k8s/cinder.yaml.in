@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: cinder
-        image: arnaudmorin/openstack-cinder:yoga
+        image: arnaudmorin/openstack-cinder:2023.2
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/bin/bash", "-c", "--" ]
@@ -87,7 +87,7 @@ spec:
     spec:
       containers:
       - name: cinder-scheduler
-        image: arnaudmorin/openstack-cinder:yoga
+        image: arnaudmorin/openstack-cinder:2023.2
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]
@@ -124,7 +124,7 @@ spec:
     spec:
       containers:
       - name: cinder-volume
-        image: arnaudmorin/openstack-cinder:yoga
+        image: arnaudmorin/openstack-cinder:2023.2
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "while true; do sleep 30; done;" ]
         #command: [ "dumb-init", "--single-child", "--" ]

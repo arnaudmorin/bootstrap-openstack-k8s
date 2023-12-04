@@ -13,8 +13,9 @@
 
   - name: enable extrepo
     command:
-      cmd: "extrepo enable openstack_yoga"
-      creates: /etc/apt/sources.list.d/extrepo_openstack_yoga.sources
+      # 2023.2 is bobcat
+      cmd: "extrepo enable openstack_bobcat"
+      creates: /etc/apt/sources.list.d/extrepo_openstack_bobcat.sources
 
   - name: install packages
     apt:

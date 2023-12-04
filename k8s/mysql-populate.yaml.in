@@ -13,7 +13,7 @@ spec:
       # NOTE(arnaud) using initContainer to run them sequentially
       initContainers:
       - name: keystone-db-sync
-        image: arnaudmorin/openstack-keystone:yoga
+        image: arnaudmorin/openstack-keystone:2023.2
         command: ["keystone-manage", "db_sync"]
         volumeMounts:
         - name: keystone-conf
@@ -26,7 +26,7 @@ spec:
           mountPath: /etc/keystone/fernet-keys/1
           subPath: "1"
       - name: keystone-bootstrap
-        image: arnaudmorin/openstack-keystone:yoga
+        image: arnaudmorin/openstack-keystone:2023.2
         command: ["keystone-manage", "bootstrap", 
           "--bootstrap-password", "{{.password}}",
           "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
@@ -45,7 +45,7 @@ spec:
           subPath: "1"
       containers:
       - name: keystone-done
-        image: arnaudmorin/openstack-keystone:yoga
+        image: arnaudmorin/openstack-keystone:2023.2
         command: ["echo", "done"]
       volumes:
       - name: keystone-conf
@@ -66,7 +66,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:yoga
+        image: arnaudmorin/openstack-glance:2023.2
         command: ["glance-manage", "db_sync"]
         volumeMounts:
         - name: glance-conf
@@ -92,7 +92,7 @@ spec:
 #      restartPolicy: Never
 #      containers:
 #      - name: cinder
-#        image: arnaudmorin/openstack-cinder:yoga
+#        image: arnaudmorin/openstack-cinder:2023.2
 #        command: ["cinder-manage", "db", "sync"]
 #        volumeMounts:
 #        - name: cinder-conf
@@ -118,7 +118,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: neutron
-        image: arnaudmorin/openstack-neutron:yoga
+        image: arnaudmorin/openstack-neutron:2023.2
         command: ["neutron-db-manage", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini", "upgrade", "head"]
         volumeMounts:
         - name: neutron-conf
@@ -147,7 +147,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:yoga
+        image: arnaudmorin/openstack-placement:2023.2
         command: ["placement-manage", "db", "sync"]
         volumeMounts:
         - name: placement-conf
@@ -173,28 +173,28 @@ spec:
       restartPolicy: Never
       initContainers:
       - name: nova-api-db-sync
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: ["nova-manage", "api_db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
       - name: nova-cell0-map
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: ["nova-manage", "cell_v2", "map_cell0"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
       - name: nova-cell1-create
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: ["nova-manage", "cell_v2", "create_cell", "--name=cell1", "--verbose"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
       - name: nova-db-sync
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: ["nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf
@@ -202,7 +202,7 @@ spec:
           subPath: nova.conf
       containers:
       - name: nova-done
-        image: arnaudmorin/openstack-nova:yoga
+        image: arnaudmorin/openstack-nova:2023.2
         command: ["echo", "done"]
       volumes:
       - name: nova-conf
@@ -223,14 +223,14 @@ spec:
 #      restartPolicy: Never
 #      initContainers:
 #      - name: mistral-upgrade-head
-#        image: arnaudmorin/openstack-mistral:yoga
+#        image: arnaudmorin/openstack-mistral:2023.2
 #        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
 #        volumeMounts:
 #        - name: mistral-conf
 #          mountPath: /etc/mistral/mistral.conf
 #          subPath: mistral.conf
 #      - name: mistral-db-populate
-#        image: arnaudmorin/openstack-mistral:yoga
+#        image: arnaudmorin/openstack-mistral:2023.2
 #        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
 #        volumeMounts:
 #        - name: mistral-conf
@@ -238,7 +238,7 @@ spec:
 #          subPath: mistral.conf
 #      containers:
 #      - name: mistral-done
-#        image: arnaudmorin/openstack-mistral:yoga
+#        image: arnaudmorin/openstack-mistral:2023.2
 #        command: ["echo", "done"]
 #      volumes:
 #      - name: mistral-conf

@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: neutron-api
-        image: arnaudmorin/openstack-neutron:yoga
+        image: arnaudmorin/openstack-neutron:2023.2
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]

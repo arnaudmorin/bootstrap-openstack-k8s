@@ -38,7 +38,7 @@ chmod +x /usr/local/bin/frep
 apt-get install -y ansible git
 
 # Clone bootstrap
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+git clone -b 2023.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 cp config/config.yaml.sample config/config.yaml
 ip=$(hostname -I | awk '{print $1}')

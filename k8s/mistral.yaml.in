@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: mistral-api
-        image: arnaudmorin/openstack-mistral:yoga
+        image: arnaudmorin/openstack-mistral:2023.2
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/bin/bash", "-c", "--" ]
@@ -83,7 +83,7 @@ spec:
     spec:
       containers:
       - name: mistral-engine
-        image: arnaudmorin/openstack-mistral:yoga
+        image: arnaudmorin/openstack-mistral:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "engine", "--config-file", "/etc/mistral/mistral.conf" ]
         # imagePullPolicy: Always
@@ -115,7 +115,7 @@ spec:
     spec:
       containers:
       - name: mistral-executor
-        image: arnaudmorin/openstack-mistral:yoga
+        image: arnaudmorin/openstack-mistral:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "executor", "--config-file", "/etc/mistral/mistral.conf" ]
         # imagePullPolicy: Always
@@ -147,7 +147,7 @@ spec:
     spec:
       containers:
       - name: mistral-event-engine
-        image: arnaudmorin/openstack-mistral:yoga
+        image: arnaudmorin/openstack-mistral:2023.2
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "event-engine", "--config-file", "/etc/mistral/mistral.conf" ]
         # imagePullPolicy: Always
