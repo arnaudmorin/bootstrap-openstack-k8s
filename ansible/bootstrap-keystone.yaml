@@ -98,20 +98,20 @@
     shell: |
       source /root/openrc_admin
       openstack service create \
-        --name {{item}} \
-        {{item}}
-      [ $? -eq 0 ] && touch /root/.ansible_service_{{item}}
+        --name {{item.name}} \
+        {{item.type}}
+      [ $? -eq 0 ] && touch /root/.ansible_service_{{item.type}}
     args:
       executable: /bin/bash
-      creates: /root/.ansible_service_{{item}}
+      creates: /root/.ansible_service_{{item.name}}
     with_items:
-      - compute
-      - network
-      - placement
-      - image
-      - volumev2
-      - volumev3
-      - workflowv2
+      - { name: "nova", type: "compute" }
+      - { name: "neutron", type: "network"}
+      - { name: "placement", type: "placement"}
+      - { name: "glance", type: "image"}
+      - { name: "cinderv2", type: "volumev2"}
+      - { name: "cinderv3", type: "volumev3"}
+      - { name: "mistral", type: "workflowv2"}
   - name: create services endpoints for nova
     shell: |
       source /root/openrc_admin
