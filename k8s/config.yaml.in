@@ -200,7 +200,7 @@ data:
     username = neutron
     user_domain_name = Default
     password = {{.password}}
-    service_name = network
+    service_name = neutron
     url = http://neutron.{{.domain}}
     region_name = RegionOne
     [oslo_concurrency]
@@ -268,7 +268,7 @@ data:
     username = neutron
     user_domain_name = Default
     password = {{.password}}
-    service_name = network
+    service_name = neutron
     url = http://neutron.{{.domain}}
     region_name = RegionOne
     [oslo_concurrency]
