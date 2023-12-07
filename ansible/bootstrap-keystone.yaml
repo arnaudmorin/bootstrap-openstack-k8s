@@ -105,15 +105,15 @@
       [ $? -eq 0 ] && touch /root/.ansible_service_{{item.type}}
     args:
       executable: /bin/bash
-      creates: /root/.ansible_service_{{item.name}}
+      creates: /root/.ansible_service_{{item.type}}
     with_items:
       - { name: "nova", type: "compute" }
       - { name: "neutron", type: "network"}
       - { name: "placement", type: "placement"}
       - { name: "glance", type: "image"}
-      - { name: "cinderv2", type: "volumev2"}
-      - { name: "cinderv3", type: "volumev3"}
-      - { name: "mistral", type: "workflowv2"}
+      #- { name: "cinderv2", type: "volumev2"}
+      #- { name: "cinderv3", type: "volumev3"}
+      #- { name: "mistral", type: "workflowv2"}
   - name: create services endpoints for nova
     shell: |
       source /root/openrc_admin
