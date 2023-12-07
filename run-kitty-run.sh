@@ -182,4 +182,11 @@ echo ""
 echo ""
 EOF
 
+echo "----------"
+echo "| WEB UI |"
+echo "----------"
 
+echo "http://skyline.${k8s_ip}.xip.opensteak.fr"
+echo ""
+echo ""
+echo ""

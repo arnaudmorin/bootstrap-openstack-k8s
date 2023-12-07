@@ -76,6 +76,7 @@
       - glance
       - cinder
       - mistral
+      - skyline
   - name: add admin role to users for service project
     shell: |
       source /root/openrc_admin
@@ -94,6 +95,7 @@
       - glance
       - cinder
       - mistral
+      - skyline
   - name: create services
     shell: |
       source /root/openrc_admin

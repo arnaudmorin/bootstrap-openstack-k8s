@@ -22,6 +22,7 @@ Table of Contents
   * [Placement](#placement)
   * [Neutron](#neutron)
   * [Nova](#nova)
+  * [Skyline](#skyline)
   * [Test your OpenStack deployment](#test-your-openstack-deployment)
   * [In case of error \- debugging](#in-case-of-error---debugging)
   * [Plik the config](#plik-the-config)
@@ -243,6 +244,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl 
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
 
@@ -318,6 +320,12 @@ You can wait for all pods to be ready (STATUS running or completed for all of th
 k get pods | grep nova
 ```
 
+## Skyline
+```bash
+frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
+Skyline is not mandatory, it's a web based UI for OpenStack (like horizon dashboard, but newer).
+
 
 ## Test your OpenStack deployment
 ### openrc_admin
@@ -369,6 +377,12 @@ openstack server list
 # This will do an API call against `nova` API
 ```
 If this is answering an empty line, you're good! (you don't have any instance yet)
+
+### Skyline
+
+Skyline is a web interface, so you should browse the page.
+
+http://skyline.${ip}.xip.opensteak.fr
 
 ## In case of error - debugging
 
