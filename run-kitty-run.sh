@@ -50,11 +50,13 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl 
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-neutron
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-glance
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 
 # Config
 frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -88,6 +90,9 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Nova
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Skyline
+frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Sleep few secs
 sleep 30
