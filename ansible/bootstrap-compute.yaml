@@ -276,7 +276,8 @@
   - name: add nova to libvirt-qemu group
     user:
       name: nova
-      group: libvirt-qemu
+      append: True
+      groups: libvirt-qemu
 
   - name: start services
     service:
