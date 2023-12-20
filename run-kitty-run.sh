@@ -34,6 +34,8 @@ kubectl get all
 curl -fSL https://github.com/subchen/frep/releases/download/v1.3.12/frep-1.3.12-linux-amd64 -o /usr/local/bin/frep
 chmod +x /usr/local/bin/frep
 
+apt-get update
+
 # Install ansible and git
 apt-get install -y ansible git
 
@@ -135,6 +137,7 @@ t "Working on compute-1 (${c_ip})"
 if [ ! -e done-compute-1 ] ; then
 $s $c_ip << EOF
 
+apt-get update
 apt-get install -y git ansible
 git clone -b 2023.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
