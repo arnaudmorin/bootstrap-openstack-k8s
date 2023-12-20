@@ -37,8 +37,8 @@
   - name: add second network card in br-ex
     openvswitch_port:
       bridge: br-ex
-      # port: "{{ allNetworkInterfaces[1].device }}"
-      port: "ens4"
+      port: "{{ allNetworkInterfaces[1].device }}"
+      # port: "ens4"
       state: present
 
   - name: create br-flat ovs bridge
