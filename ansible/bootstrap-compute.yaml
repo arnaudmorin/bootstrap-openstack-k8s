@@ -291,6 +291,14 @@
       - "neutron-openvswitch-agent"
       - "nova-compute"
 
+  - name: "[workaround] set guid /var/lib/neutron/external/pids/"   # NOTE(arnaud) neutron needs to have access to haproxy pid files (created by dhcp agents). By default, the pids were accessible to root only...
+    file:
+      path: /var/lib/neutron/external/pids/
+      owner: neutron
+      group: neutron
+      mode: 'u=rwx,g=rx,o=x,g+s'
+      state: directory
+
   handlers:
   - name: restart libvirt
     service:
