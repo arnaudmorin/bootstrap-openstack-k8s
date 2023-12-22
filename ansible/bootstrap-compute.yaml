@@ -108,6 +108,7 @@
       - { section: "cinder", option: "os_region_name", value: "RegionOne" }
       - { section: "libvirt", option: "cpu_mode", value: "custom" }
       - { section: "libvirt", option: "cpu_models", value: "EPYC" }
+      - { section: "libvirt", option: "live_migration_inbound_addr", value: "$my_ip" }    # NOTE by default it use hostname, painful to maintain /etc/hosts between computes
     notify:
       - restart nova
   - name: configure nova (delete some lines)
