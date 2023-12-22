@@ -106,6 +106,8 @@
       - { section: "neutron", option: "password", value: "{{password}}" }
       - { section: "neutron", option: "service_name", value: "neutron" }
       - { section: "cinder", option: "os_region_name", value: "RegionOne" }
+      - { section: "libvirt", option: "cpu_mode", value: "custom" }
+      - { section: "libvirt", option: "cpu_models", value: "EPYC" }
     notify:
       - restart nova
   - name: configure nova (delete some lines)
