@@ -37,7 +37,7 @@
   - name: add second network card in br-ex
     openvswitch_port:
       bridge: br-ex
-      port: "{{ allNetworkInterfaces[1].device }}"
+      port: "enp98s0f1"
       # port: "ens4"
       state: present
 
