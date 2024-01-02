@@ -9,36 +9,37 @@ function create_flavors(){(
 )}
 
 function create_image_cirros(){(
-    [ -f cirros-0.4.0-x86_64-disk.img ] || wget http://download.cirros-cloud.net/0.4.0/cirros-0.4.0-x86_64-disk.img
+    [ -f cirros-0.6.2-x86_64-disk.img ] || wget https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
     set -xv
     openstack image create \
-     --file cirros-0.4.0-x86_64-disk.img \
-     --disk-format qcow2 \
+     --file cirros-0.6.2-x86_64-disk.img \
      --container-format bare \
+     --disk-format qcow2 \
+     --property hw_disk_bus=scsi \
+     --property hw_scsi_model=virtio-scsi \
+     --property os_type=linux \
+     --property os_distro=cirros \
+     --property os_admin_user=cirros \
+     --property os_version='0.6.2' \
      --public \
      "cirros"
 )}
 
-function create_image_ubuntu(){(
-    [ -f xenial-server-cloudimg-amd64-disk1.img ] || wget https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
-    set -xv
-    openstack image create \
-     --file xenial-server-cloudimg-amd64-disk1.img \
-     --disk-format qcow2 \
-     --container-format bare \
-     --public \
-     "Ubuntu 16.04"
-)}
-
 function create_image_debian(){(
-    [ -f debian-10-openstack-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/OpenStack/current-10/debian-10-openstack-amd64.qcow2
+    [ -f debian-12-genericcloud-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
     set -xv
     openstack image create \
-     --file debian-10-openstack-amd64.qcow2 \
-     --disk-format qcow2 \
+     --file debian-12-genericcloud-amd64.qcow2 \
      --container-format bare \
+     --disk-format qcow2 \
+     --property hw_disk_bus=scsi \
+     --property hw_scsi_model=virtio-scsi \
+     --property os_type=linux \
+     --property os_distro=debian \
+     --property os_admin_user=debian \
+     --property os_version='12.0.0' \
      --public \
-     "Debian 10"
+     "Debian 12"
 )}
 
 function create_key(){(
