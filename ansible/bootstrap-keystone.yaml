@@ -6,7 +6,7 @@
   tasks:
   - name: install openstack client
     apt:
-      name: python3-openstackclient
+      name: python3-openstackclient python3-osc-placement
       update_cache: yes
       state: latest
 
