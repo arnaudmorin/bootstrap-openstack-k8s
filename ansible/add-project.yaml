@@ -25,11 +25,14 @@
       region_name: "RegionOne"
       domain: "default"
 
-  - name: add member role to user
+  - name: add roles to user
     os_user_role:
       user: "{{project_name}}_user1"
       project: "{{project_name}}"
-      role: member
+      role: "{{item}}"
+    with_items:
+      - member
+      - user
 
   - name: "create openrc_{{ project_name }} file"
     vars:
