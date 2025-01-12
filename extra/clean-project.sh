@@ -44,10 +44,6 @@ function delete_networks(){
     [ ! -z "$k" ] && openstack network delete $k
 }
 
-function delete_all(){
-    openstack 
-}
-
 echo -n 'Deleting servers... '
 delete_servers
 echo_green "DONE"
