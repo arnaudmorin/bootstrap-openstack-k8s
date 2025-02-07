@@ -331,7 +331,7 @@ metadata:
 data:
   mistral.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    #transport_url = rabbit://openstack:{{.password}}@rabbit
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service

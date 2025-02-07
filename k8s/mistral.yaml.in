@@ -37,6 +37,7 @@ metadata:
   labels:
     app: mistral-api
 spec:
+  # I can only have one replicas since I used pifpaf with local rabbitmq
   replicas: 1
   selector:
     matchLabels:
@@ -48,12 +49,15 @@ spec:
     spec:
       containers:
       - name: mistral-api
-        image: arnaudmorin/openstack-mistral:2023.2
-        #command: [ "/bin/bash", "-c", "--" ]
-        #args: [ "while true; do sleep 30; done;" ]
+        image: arnaudmorin/openstack-mistral:master
         command: [ "/bin/bash", "-c", "--" ]
-        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
-        #imagePullPolicy: Always
+        #args: [ "while true; do sleep 30; done;" ]
+        args: [ "/usr/local/bin/mistral-start.sh" ]
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        #command: [ "dumb-init", "--single-child", "--" ]
+        #args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "all", "--config-file", "/etc/mistral/mistral.conf" ]
+        imagePullPolicy: Always
         ports:
         - containerPort: 8989
         volumeMounts:
@@ -64,97 +68,3 @@ spec:
         configMap:
           name: mistral-conf
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mistral-engine
-  labels:
-    app: mistral-engine
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mistral-engine
-  template:
-    metadata:
-      labels:
-        app: mistral-engine
-    spec:
-      containers:
-      - name: mistral-engine
-        image: arnaudmorin/openstack-mistral:2023.2
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "engine", "--config-file", "/etc/mistral/mistral.conf" ]
-        # imagePullPolicy: Always
-        volumeMounts:
-        - name: mistral-conf
-          mountPath: "/etc/mistral/"
-      volumes:
-      - name: mistral-conf
-        configMap:
-          name: mistral-conf
-
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mistral-executor
-  labels:
-    app: mistral-executor
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mistral-executor
-  template:
-    metadata:
-      labels:
-        app: mistral-executor
-    spec:
-      containers:
-      - name: mistral-executor
-        image: arnaudmorin/openstack-mistral:2023.2
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "executor", "--config-file", "/etc/mistral/mistral.conf" ]
-        # imagePullPolicy: Always
-        volumeMounts:
-        - name: mistral-conf
-          mountPath: "/etc/mistral/"
-      volumes:
-      - name: mistral-conf
-        configMap:
-          name: mistral-conf
-
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mistral-event-engine
-  labels:
-    app: mistral-event-engine
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mistral-event-engine
-  template:
-    metadata:
-      labels:
-        app: mistral-event-engine
-    spec:
-      containers:
-      - name: mistral-event-engine
-        image: arnaudmorin/openstack-mistral:2023.2
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/mistral-server", "--server", "event-engine", "--config-file", "/etc/mistral/mistral.conf" ]
-        # imagePullPolicy: Always
-        volumeMounts:
-        - name: mistral-conf
-          mountPath: "/etc/mistral/"
-      volumes:
-      - name: mistral-conf
-        configMap:
-          name: mistral-conf
