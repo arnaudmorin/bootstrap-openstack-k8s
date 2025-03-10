@@ -48,7 +48,7 @@ spec:
     spec:
       initContainers:
       - name: skyline-init
-        image: arnaudmorin/openstack-skyline:2023.2
+        image: arnaudmorin/openstack-skyline:2024.2
         #imagePullPolicy: Always
         env:
         - name: KOLLA_BOOTSTRAP
@@ -59,7 +59,7 @@ spec:
           subPath: skyline.yaml
       containers:
       - name: skyline
-        image: arnaudmorin/openstack-skyline:2023.2
+        image: arnaudmorin/openstack-skyline:2024.2
         #imagePullPolicy: Always
         env:
         - name: LISTEN_ADDRESS

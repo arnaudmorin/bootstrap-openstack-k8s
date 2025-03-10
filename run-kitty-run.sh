@@ -40,7 +40,7 @@ apt-get update
 apt-get install -y ansible git
 
 # Clone bootstrap
-git clone -b 2023.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+git clone -b 2024.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 cp config/config.yaml.sample config/config.yaml
 ip=$(hostname -I | awk '{print $1}')
@@ -139,7 +139,7 @@ $s $c_ip << EOF
 
 apt-get update
 apt-get install -y git ansible
-git clone -b 2023.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+git clone -b 2024.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 
 cp config/config.yaml.sample config/config.yaml
