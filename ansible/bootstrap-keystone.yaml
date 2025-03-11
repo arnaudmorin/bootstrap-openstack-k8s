@@ -4,7 +4,7 @@
   vars_files:
     - ../config/config.yaml
   tasks:
-  - name: install openstack client
+  - name: install python3-venv
     apt:
       name: ["python3-venv"]
       update_cache: yes
@@ -14,17 +14,21 @@
     shell: |
       python3 -m venv /opt/oscli
       /opt/oscli/bin/pip install --upgrade pip
-    creates: /opt/oscli/
+    args:
+      executable: /bin/bash
+      creates: /opt/oscli/
 
   - name: install openstack client in os-cli venv
     shell: |
       /opt/oscli/bin/pip install python-openstackclient
-    creates: /opt/oscli/bin/openstack
+    args:
+      executable: /bin/bash
+      creates: /opt/oscli/bin/openstack
 
   - name: make symlink for openstack cli
     file:
       src: /opt/oscli/bin/openstack
-      dest: /usr/loca/bin/openstack
+      dest: /usr/local/bin/openstack
       state: link
 
   - name: create bash_completion.d
