@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenStack neutron-dhcp-agent
+After=openvswitch-switch.service network-online.target local-fs.target remote-fs.target 
+Wants=openvswitch-switch.service network-online.target 
+
+[Service]
+User=neutron
+Group=neutron
+Type=notify
+WorkingDirectory=~
+RuntimeDirectory=neutron lock/neutron
+CacheDirectory=neutron
+ExecStart=/opt/openstack/neutron/bin/neutron-dhcp-agent --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/dhcp_agent.ini --log-file /var/log/neutron-dhcp-agent.log
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

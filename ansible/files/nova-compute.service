@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenStack nova-compute
+After=libvirtd.service network-online.target local-fs.target remote-fs.target 
+Wants=libvirtd.service network-online.target 
+
+[Service]
+User=nova
+Group=nova
+Type=notify
+WorkingDirectory=~
+RuntimeDirectory=nova lock/nova
+CacheDirectory=nova
+ExecStart=/opt/openstack/nova/bin/nova-compute --config-dir /etc/nova/ --log-file /var/log/nova-compute.log
+Restart=on-failure
+LimitNOFILE=65535
+TimeoutStopSec=15
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

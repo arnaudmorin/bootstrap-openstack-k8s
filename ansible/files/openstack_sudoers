@@ -1,0 +1,2 @@
+nova ALL = (root) NOPASSWD: /opt/openstack/nova/bin/nova-rootwrap /etc/nova/rootwrap.conf *
+neutron ALL = (root) NOPASSWD: /opt/openstack/neutron/bin/neutron-rootwrap /etc/neutron/rootwrap.conf *

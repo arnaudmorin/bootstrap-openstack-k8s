@@ -6,27 +6,28 @@
   vars:
     allNetworkInterfaces: "{{ ansible_facts | dict2items | selectattr('value.ipv4', 'defined') | selectattr('value.type', 'equalto', 'ether') | map(attribute='value') | list }}"
   tasks:
-  - name: install extrepo
-    apt:
-      name: ["extrepo"]
-      state: latest
 
-  - name: enable extrepo
-    command:
-      # 2023.2 is bobcat
-      cmd: "extrepo enable openstack_bobcat"
-      creates: /etc/apt/sources.list.d/extrepo_openstack_bobcat.sources
-
-  - name: install packages
+  - name: install some dependencies
     apt:
-      name: ["neutron-openvswitch-agent", "neutron-l3-agent", "neutron-dhcp-agent", "neutron-metadata-agent", "nova-compute", "tcpdump", "ifupdown", "lnav", "ccze", "tmux", "crudini"]
+      name: ["tcpdump", "ifupdown", "lnav", "ccze", "tmux", "crudini"]
       update_cache: yes
       state: latest
+
+# TODO install nova and neutron packages
 
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
     ansible.posix.sysctl:
       name: net.ipv6.conf.all.disable_ipv6
       value: '1'
+
+  - name: check ovs manager
+    command: ovs-vsctl get-manager
+    register: ovs_manager_output
+    changed_when: false
+
+  - name: create ovs manager
+    command: ovs-vsctl set-manager ptcp:6640:127.0.0.1
+    when: "'ptcp:6640:127.0.0.1' not in ovs_manager_output.stdout"
 
   - name: create br-ex ovs bridge
     openvswitch_bridge:
@@ -37,8 +38,7 @@
   - name: add second network card in br-ex
     openvswitch_port:
       bridge: br-ex
-      port: "enp98s0f1"
-      # port: "ens4"
+      port: "ens4"
       state: present
 
   - name: create br-flat ovs bridge
@@ -56,6 +56,131 @@
 #      state: present
 #    when: allNetworkInterfaces | length > 2
 
+# TODO
+#  - name: grab nova deb
+
+# TODO
+#  - name: install nova
+
+  - name: create systemd files
+    copy:
+      src: files/{{item}}
+      dest: /etc/systemd/system/{{item}}
+      mode: 0644
+      owner: root
+      group: root
+    with_items:
+      - nova-compute.service
+      - neutron-dhcp-agent.service
+      - neutron-openvswitch-agent.service
+      - neutron-l3-agent.service
+      - neutron-metadata-agent.service
+
+  - name: create log files with correct permissions
+    file:
+      path: "{{item.path}}"
+      owner: "{{item.user}}"
+      group: "{{item.user}}"
+      state: touch
+    with_items:
+      - { path: '/var/log/nova-compute.log', user: 'nova'}
+      - { path: '/var/log/neutron-dhcp-agent.log', user: 'neutron'}
+      - { path: '/var/log/neutron-l3-agent.log', user: 'neutron'}
+      - { path: '/var/log/neutron-metadata-agent.log', user: 'neutron'}
+      - { path: '/var/log/neutron-openvswitch-agent.log', user: 'neutron'}
+
+  - name: create groups
+    group:
+      name: "{{item.name}}"
+      gid: "{{item.id}}"
+      state: present
+    with_items:
+      - { name: 'nova', id: 200 }
+      - { name: 'neutron', id: 201 }
+
+  - name: create users
+    user:
+      name: "{{item.name}}"
+      uid: "{{item.id}}"
+      group: "{{item.name}}"
+      home: "/var/lib/{{item.name}}/"
+      system: true
+      shell: /bin/bash
+    with_items:
+      - { name: 'nova', id: 200 }
+      - { name: 'neutron', id: 201 }
+
+  - name: create neutron rootwrap config
+    copy:
+      src: "/opt/openstack/neutron/etc/neutron/{{item}}"
+      dest: "/etc/neutron/"
+    with_items:
+      - rootwrap.conf
+      - rootwrap.d
+
+  - name: create nova rootwrap config
+    copy:
+      src: "/opt/openstack/nova/etc/nova/{{item}}"
+      dest: "/etc/nova/"
+    with_items:
+      - rootwrap.conf
+      - rootwrap.d
+
+  - name: create openstack sudoers
+    copy:
+      src: files/openstack_sudoers
+      dest: /etc/sudoers.d/openstack_sudoers
+
+  - name: create ssh folder
+    file:
+      path: /var/lib/nova/.ssh/
+      state: directory
+      recurse: yes
+      owner: nova
+      group: nova
+
+  - name: install ssh key for migration between computes
+    copy:
+      src: files/zob
+      dest: /var/lib/nova/.ssh/id_rsa
+      mode: 0600
+      owner: nova
+      group: nova
+
+  - name: install ssh public key for migration between computes
+    copy:
+      src: files/zob.pub
+      dest: /var/lib/nova/.ssh/authorized_keys
+      owner: nova
+      group: nova
+
+  - name: install ssh config
+    copy:
+      dest: /var/lib/nova/.ssh/config
+      owner: nova
+      group: nova
+      mode: 0600
+      content: |
+        Host *
+          UserKnownHostsFile /dev/null
+          StrictHostKeyChecking no
+
+  - name: add nova to libvirt groups
+    user:
+      name: nova
+      append: True
+      groups: "{{item}}"
+    with_items:
+      - libvirt-qemu
+      - libvirt
+
+  - name: create nova instances path
+    file:
+      path: /var/lib/nova/instances
+      owner: nova
+      group: nova
+      state: directory
+
   - name: configure nova
     ini_file:
       path: /etc/nova/nova.conf
@@ -65,9 +190,8 @@
     with_items:
       - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@{{domain}}:30672" }
       - { section: "DEFAULT", option: "my_ip", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "DEFAULT", option: "use_neutron", value: "true" }
-      - { section: "DEFAULT", option: "firewall_driver", value: "nova.virt.firewall.NoopFirewallDriver" }
-      - { section: "api", option: "auth_strategy", value: "keystone" }
+      - { section: "DEFAULT", option: "compute_driver", value: "libvirt.LibvirtDriver" }
+      - { section: "DEFAULT", option: "state_path", value: "/var/lib/nova" }
       - { section: "vnc", option: "enabled", value: "True" }
       - { section: "vnc", option: "server_listen", value: "0.0.0.0" }
       - { section: "vnc", option: "server_proxyclient_address", value: "$my_ip" }
@@ -86,7 +210,7 @@
       - { section: "keystone_authtoken", option: "project_name", value: "service" }
       - { section: "keystone_authtoken", option: "username", value: "nova" }
       - { section: "keystone_authtoken", option: "password", value: "{{password}}" }
-      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }      # NOTE debian package is overwritting with regionOne (this is a bug IMO)
+      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }
       - { section: "placement", option: "region_name", value: "RegionOne" }
       - { section: "placement", option: "project_domain_name", value: "Default" }
       - { section: "placement", option: "project_name", value: "service" }
@@ -109,12 +233,6 @@
       - { section: "libvirt", option: "cpu_mode", value: "custom" }
       - { section: "libvirt", option: "cpu_models", value: "EPYC" }
       - { section: "libvirt", option: "live_migration_inbound_addr", value: "$my_ip" }    # NOTE by default it use hostname, painful to maintain /etc/hosts between computes
-    notify:
-      - restart nova
-  - name: configure nova (delete some lines)
-    ini_file: path=/etc/nova/nova.conf section={{item.section}} option={{item.option}} state=absent
-    with_items:
-      - { section: "DEFAULT", option: "log_dir" }
     notify:
       - restart nova
 
@@ -178,7 +296,8 @@
       - { section: "keystone_authtoken", option: "project_name", value: "service" }
       - { section: "keystone_authtoken", option: "username", value: "neutron" }
       - { section: "keystone_authtoken", option: "password", value: "{{password}}" }
-      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }      # NOTE debian package is overwritting with regionOne (this is a bug IMO)
+      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }
+      - { section: "agent", option: "root_helper", value: "sudo /opt/openstack/neutron/bin/neutron-rootwrap /etc/neutron/rootwrap.conf" }
     notify:
       - restart neutron
   - name: configure neutron l2 agent
@@ -236,51 +355,6 @@
       - { section: "DEFAULT", option: "metadata_proxy_shared_secret", value: "{{password}}" }
     notify:
       - restart neutron
-
-  - name: set nova shell to bash
-    user:
-      name: nova
-      shell: /bin/bash
-
-  - name: create ssh folder
-    file:
-      path: /var/lib/nova/.ssh/
-      state: directory
-      recurse: yes
-      owner: nova
-      group: nova
-
-  - name: install ssh key for migration between computes
-    copy:
-      src: files/zob
-      dest: /var/lib/nova/.ssh/id_rsa
-      mode: 0600
-      owner: nova
-      group: nova
-
-  - name: install ssh public key for migration between computes
-    copy:
-      src: files/zob.pub
-      dest: /var/lib/nova/.ssh/authorized_keys
-      owner: nova
-      group: nova
-
-  - name: install ssh config
-    copy:
-      dest: /var/lib/nova/.ssh/config
-      owner: nova
-      group: nova
-      mode: 0600
-      content: |
-        Host *
-          UserKnownHostsFile /dev/null
-          StrictHostKeyChecking no
-
-  - name: add nova to libvirt-qemu group
-    user:
-      name: nova
-      append: True
-      groups: libvirt-qemu
 
   - name: start services
     service:
