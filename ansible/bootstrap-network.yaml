@@ -13,19 +13,17 @@
       update_cache: yes
       state: latest
 
-  - name: grab nova and neutron
+  - name: grab neutron
     get_url:
       url: "https://github.com/arnaudmorin/openstack-debian/releases/download/v2024.2-24%2B2edd2ea/{{item}}"
       dest: "/root/{{item}}"
     with_items:
-      - openstack-nova_2024.2-24+2edd2ea_all.deb
       - openstack-neutron_2024.2-24+2edd2ea_all.deb
 
-  - name: install nova and neutron
+  - name: install neutron
     apt:
       deb: "/root/{{item}}"
     with_items:
-      - openstack-nova_2024.2-24+2edd2ea_all.deb
       - openstack-neutron_2024.2-24+2edd2ea_all.deb
 
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
@@ -78,7 +76,7 @@
       owner: root
       group: root
     with_items:
-      - nova-compute.service
+      - neutron-dhcp-agent.service
       - neutron-openvswitch-agent.service
       - neutron-l3-agent.service
       - neutron-metadata-agent.service
@@ -89,7 +87,6 @@
       gid: "{{item.id}}"
       state: present
     with_items:
-      - { name: 'nova', id: 200 }
       - { name: 'neutron', id: 201 }
 
   - name: create users
@@ -101,7 +98,6 @@
       system: true
       shell: /bin/bash
     with_items:
-      - { name: 'nova', id: 200 }
       - { name: 'neutron', id: 201 }
 
   - name: create log files with correct permissions
@@ -111,7 +107,7 @@
       group: "{{item.user}}"
       state: touch
     with_items:
-      - { path: '/var/log/nova-compute.log', user: 'nova'}
+      - { path: '/var/log/neutron-dhcp-agent.log', user: 'neutron'}
       - { path: '/var/log/neutron-l3-agent.log', user: 'neutron'}
       - { path: '/var/log/neutron-metadata-agent.log', user: 'neutron'}
       - { path: '/var/log/neutron-openvswitch-agent.log', user: 'neutron'}
@@ -124,164 +120,10 @@
       - rootwrap.conf
       - rootwrap.d
 
-  - name: create nova rootwrap config
-    copy:
-      src: "/opt/openstack/nova/etc/nova/{{item}}"
-      dest: "/etc/nova/"
-    with_items:
-      - rootwrap.conf
-      - rootwrap.d
-
   - name: create openstack sudoers
     copy:
       src: files/openstack_sudoers
       dest: /etc/sudoers.d/openstack_sudoers
-
-  - name: create ssh folder
-    file:
-      path: /var/lib/nova/.ssh/
-      state: directory
-      recurse: yes
-      owner: nova
-      group: nova
-
-  - name: install ssh key for migration between computes
-    copy:
-      src: files/zob
-      dest: /var/lib/nova/.ssh/id_rsa
-      mode: 0600
-      owner: nova
-      group: nova
-
-  - name: install ssh public key for migration between computes
-    copy:
-      src: files/zob.pub
-      dest: /var/lib/nova/.ssh/authorized_keys
-      owner: nova
-      group: nova
-
-  - name: install ssh config
-    copy:
-      dest: /var/lib/nova/.ssh/config
-      owner: nova
-      group: nova
-      mode: 0600
-      content: |
-        Host *
-          UserKnownHostsFile /dev/null
-          StrictHostKeyChecking no
-
-  - name: add nova to libvirt groups
-    user:
-      name: nova
-      append: True
-      groups: "{{item}}"
-    with_items:
-      - libvirt-qemu
-      - libvirt
-
-  - name: create nova instances path
-    file:
-      path: /var/lib/nova/instances
-      owner: nova
-      group: nova
-      state: directory
-
-  - name: configure nova
-    ini_file:
-      path: /etc/nova/nova.conf
-      section: "{{item.section}}"
-      option: "{{item.option}}"
-      value: "{{item.value}}"
-    with_items:
-      - { section: "DEFAULT", option: "transport_url", value: "rabbit://openstack:{{password}}@{{domain}}:30672" }
-      - { section: "DEFAULT", option: "my_ip", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "DEFAULT", option: "compute_driver", value: "libvirt.LibvirtDriver" }
-      - { section: "DEFAULT", option: "state_path", value: "/var/lib/nova" }
-      - { section: "vnc", option: "enabled", value: "True" }
-      - { section: "vnc", option: "server_listen", value: "0.0.0.0" }
-      - { section: "vnc", option: "server_proxyclient_address", value: "$my_ip" }
-      - { section: "vnc", option: "novncproxy_base_url", value: "http://nova.{{domain}}:6080/vnc_auto.html" }
-      - { section: "serial_console", option: "enabled", value: "true" }
-      - { section: "serial_console", option: "base_url", value: "ws://nova.{{domain}}:6083" }
-      - { section: "serial_console", option: "proxyclient_address", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "glance", option: "api_servers", value: "http://glance.{{domain}}" }
-      - { section: "oslo_concurrency", option: "lock_path", value: "/var/lib/nova/tmp" }
-      - { section: "keystone_authtoken", option: "www_authenticate_uri", value: "http://keystone.{{domain}}" }
-      - { section: "keystone_authtoken", option: "auth_url", value: "http://keystone.{{domain}}" }
-        #      - { section: "keystone_authtoken", option: "memcached_servers", value: "keystone:11211" }
-      - { section: "keystone_authtoken", option: "auth_type", value: "password" }
-      - { section: "keystone_authtoken", option: "project_domain_name", value: "Default" }
-      - { section: "keystone_authtoken", option: "user_domain_name", value: "Default" }
-      - { section: "keystone_authtoken", option: "project_name", value: "service" }
-      - { section: "keystone_authtoken", option: "username", value: "nova" }
-      - { section: "keystone_authtoken", option: "password", value: "{{password}}" }
-      - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }
-      - { section: "placement", option: "region_name", value: "RegionOne" }
-      - { section: "placement", option: "project_domain_name", value: "Default" }
-      - { section: "placement", option: "project_name", value: "service" }
-      - { section: "placement", option: "auth_type", value: "password" }
-      - { section: "placement", option: "user_domain_name", value: "Default" }
-      - { section: "placement", option: "auth_url", value: "http://keystone.{{domain}}" }
-      - { section: "placement", option: "username", value: "placement" }
-      - { section: "placement", option: "password", value: "{{password}}" }
-      - { section: "neutron", option: "url", value: "http://neutron.{{domain}}" }
-      - { section: "neutron", option: "auth_url", value: "http://keystone.{{domain}}" }
-      - { section: "neutron", option: "auth_type", value: "password" }
-      - { section: "neutron", option: "project_domain_name", value: "Default" }
-      - { section: "neutron", option: "user_domain_name", value: "Default" }
-      - { section: "neutron", option: "region_name", value: "RegionOne" }
-      - { section: "neutron", option: "project_name", value: "service" }
-      - { section: "neutron", option: "username", value: "neutron" }
-      - { section: "neutron", option: "password", value: "{{password}}" }
-      - { section: "neutron", option: "service_name", value: "neutron" }
-      - { section: "cinder", option: "os_region_name", value: "RegionOne" }
-      - { section: "libvirt", option: "cpu_mode", value: "custom" }
-      - { section: "libvirt", option: "cpu_models", value: "EPYC" }
-      - { section: "libvirt", option: "live_migration_inbound_addr", value: "$my_ip" }    # NOTE by default it use hostname, painful to maintain /etc/hosts between computes
-    notify:
-      - restart nova
-
-  - name: configure libvirt
-    ini_file:
-      path: /etc/libvirt/libvirtd.conf
-      section: "{{item.section}}"
-      option: "{{item.option}}"
-      value: "{{item.value}}"
-    with_items:
-      - { section: null, option: "listen_tls", value: "0" }
-      - { section: null, option: "listen_tcp", value: "1" }
-      - { section: null, option: "auth_tcp", value: "\"none\"" }
-    notify:
-      - restart libvirt
-      - restart nova
-
-  - name: disable libvirt sockets
-    systemd:
-      name: "{{item}}"
-      state: stopped
-      enabled: no
-      masked: yes
-    with_items:
-     - libvirtd.socket
-     - libvirtd-ro.socket
-     - libvirtd-admin.socket
-     - libvirtd-tls.socket
-     - libvirtd-tcp.socket
-    notify:
-      - restart libvirt
-
-  - name: configure libvirt default
-    ini_file:
-      path: /etc/default/libvirtd
-      section: "{{item.section}}"
-      option: "{{item.option}}"
-      value: "{{item.value}}"
-    with_items:
-      - { section: null, option: "LIBVIRTD_ARGS", value: "\"--listen\"" }
-    notify:
-      - restart libvirt
-      - restart nova
 
   - name: configure neutron
     ini_file:
@@ -337,6 +179,18 @@
       - { section: "DEFAULT", option: "ha_vrrp_health_check_interval", value: "30" }
     notify:
       - restart neutron
+  - name: configure neutron dhcp agent
+    ini_file:
+      path: /etc/neutron/dhcp_agent.ini
+      section: "{{item.section}}"
+      option: "{{item.option}}"
+      value: "{{item.value}}"
+    with_items:
+      - { section: "DEFAULT", option: "interface_driver", value: "openvswitch" }
+      - { section: "DEFAULT", option: "dhcp_driver", value: "neutron.agent.linux.dhcp.Dnsmasq" }
+      - { section: "DEFAULT", option: "enable_isolated_metadata", value: "true" }
+    notify:
+      - restart neutron
   - name: configure neutron metadata agent
     ini_file:
       path: /etc/neutron/metadata_agent.ini
@@ -355,30 +209,26 @@
       name: "{{item}}"
       state: started
     with_items:
-      - "libvirtd"
+      - "neutron-dhcp-agent"
       - "neutron-metadata-agent"
       - "neutron-l3-agent"
       - "neutron-openvswitch-agent"
-      - "nova-compute"
+
+  - name: "[workaround] set guid /var/lib/neutron/external/pids/"   # NOTE(arnaud) neutron needs to have access to haproxy pid files (created by dhcp agents). By default, the pids were accessible to root only...
+    file:
+      path: /var/lib/neutron/external/pids/
+      owner: neutron
+      group: neutron
+      mode: 'u=rwx,g=rx,o=x,g+s'
+      state: directory
 
   handlers:
-  - name: restart libvirt
-    service:
-      name: "{{item}}"
-      state: restarted
-    with_items:
-      - "libvirtd"
-  - name: restart nova
-    service:
-      name: "{{item}}"
-      state: restarted
-    with_items:
-      - "nova-compute"
   - name: restart neutron
     service:
       name: "{{item}}"
       state: restarted
     with_items:
+      - "neutron-dhcp-agent"
       - "neutron-metadata-agent"
       - "neutron-l3-agent"
       - "neutron-openvswitch-agent"

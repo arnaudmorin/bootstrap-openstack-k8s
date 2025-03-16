@@ -3,33 +3,9 @@ Table of Contents
 
 * [Introduction](#introduction)
 * [Bootstrap](#bootstrap)
-  * [Source your openrc](#source-your-openrc)
-  * [Clone this repo](#clone-this-repo)
-  * [Start instances](#start-instances)
-  * [SSH into instances](#ssh-into-instances)
-* [k8s\-1](#k8s-1)
-  * [Install k3s](#install-k3s)
-  * [Install frep](#install-frep)
-  * [Install ansible and git](#install-ansible-and-git)
-  * [Install plik](#install-plik)
-  * [Clone the repo (on k8s\-1)](#clone-the-repo-on-k8s-1)
+* [Prepare k8s node](#k8s-1)
 * [Install OpenStack (control plane)](#install-openstack-control-plane)
-  * [Configuration](#configuration)
-  * [MariaDB](#mariadb)
-  * [Rabbit](#rabbit)
-  * [Keystone](#keystone)
-  * [Glance](#glance)
-  * [Placement](#placement)
-  * [Neutron](#neutron)
-  * [Nova](#nova)
-  * [Skyline](#skyline)
-  * [Test your OpenStack deployment](#test-your-openstack-deployment)
-  * [In case of error \- debugging](#in-case-of-error---debugging)
-  * [Plik the config](#plik-the-config)
-* [compute\-1](#compute-1)
-  * [Clone the repo (on compute\-1)](#clone-the-repo-on-compute-1)
-  * [Copy the config file from k8s\-1](#copy-the-config-file-from-k8s-1)
-  * [Run the play](#run-the-play)
+* [Install OpenStack (compute and network)](#compute-1)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
 * [For lazy people](#for-lazy-people)
 * [Notes](#notes)
@@ -54,7 +30,7 @@ Main objective is to create a small OpenStack infrastructure within an OVH publi
                    │       └──────────┘     └──────────┘             │
                    │                                                 │
                    │       ┌──────────┐     ┌──────────┐             │
-                   │       │ keystone │     │ horizon  │             │
+                   │       │ keystone │     │ skyline  │             │
                    │       └──────────┘     └──────────┘             │
                    │                                                 │
                    │       ┌──────────┐     ┌──────────┐             │
@@ -85,28 +61,49 @@ net ─────┤ a ├─────┤ S │                            
                 │
                 └─ Instances public access with /28 network block
                                 routed in vRack (vlan 0)
+
+                   ┌─────────────────────────────────────────────────┐
+                   │        network-1 (data plane)                   │
+          ssh      ├───┐                                             │
+ you  ───────────► │ E │    ┌─────────────────────┐                  │
+                   │ N │    │    neutron agents   │        Using:    │
+                   │ S │    └─────────────────────┘        -ansible  │
+                   │ 3 │                                             │
+                   ├───┘                                             │
+                   │                                                 │
+         ┌───┐     │                                                 │
+         │   │     ├───┐    ┌─────────────────────┐                  │
+         │ v │     │ E │    │     openvswitch     │                  │
+inter    │ R │     │ N │    └─────────────────────┘                  │
+net ─────┤ a ├─────┤ S │                                             │
+         │ c │     │ 4 │                                             │
+         │ k │  ▲  ├───┘                                             │
+         │   │  │  │                                                 │
+         └───┘  │  └─────────────────────────────────────────────────┘
+                │
+                └─ Routers public access with /28 network block
+                                routed in vRack (vlan 0)
 ```
 
-Both k8s and computes will have a public IP and be accessible from internet.
+All nodes (k8s, compute-x, network-x) will have a public IP and be accessible from internet.
 
 `k8s` server will be used to host OpenStack control plane (mostly API, database, queues, schedulers, etc.).
 
-Each OpenStack service will be started in a docker container, orchestrated using kubernetes (k3s).
+Each OpenStack service will be started in a container, orchestrated using kubernetes (k3s).
 
 `compute` server will be used to host OpenStack data plane (mostly nova compute and neutron agents (L2 and L3)).
 
 `compute` will also have an extra network interface connected to a vRack (using vlan 0).
 
+`network` server will be used for `dvr_snat` and `dhcp`. As of today, OpenStack does not support having DVR with SNAT on computes.
+
+See: https://docs.openstack.org/neutron/latest/admin/deploy-ovs-ha-dvr.html#network-node
+
+And bug: https://bugs.launchpad.net/neutron/+bug/1934666
+
 In this vRack, a routed network acquired from OVHcloud will give the possibility to create a flat external network.
 
 Instances and routers will be able to use this flat network to reach internet.
-
-# Connect on jump
-```bash
-ssh vttx@jump.arno.ovh
-# Replace vttx with the username provided to you
-# The password is also provided
-```
 
 # Bootstrap
 
@@ -123,9 +120,11 @@ cd bootstrap-openstack-k8s
 ```
 
 ## Start instances
-The `bootstrap.sh` script will start 2 instances:
+The `bootstrap.sh` script will start 3 instances:
 * k8s-1
 * compute-1
+* network-1
+
 ```bash
 # Execute this
 ./bootstrap.sh
@@ -162,7 +161,8 @@ curl -sfL https://get.k3s.io | sh -
 ### Check
 Create an `alias` (this will help you saving your keyboard):
 ```bash
-alias k='kubectl'
+# alias k='kubectl'
+# The alias is now created by postinstall, so it's supposed to already be there :)
 ```
 
 Test:
@@ -443,7 +443,6 @@ sudo su -
 ## Clone the repo (on compute-1)
 We will need some of the `ansible` playbooks that are in the repo:
 ```bash
-apt-get install -y git ansible
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 ```
@@ -463,6 +462,37 @@ All `OpenStack` services running on the compute are going to be executed outside
 To install them, we rely on a playbook:
 ```bash
 ansible-playbook ansible/bootstrap-compute.yaml
+```
+
+# network-1
+Repeat almost the same operation on `network-1`.
+
+Like you did previously, SSH in `network-1` and login as `root`.
+
+```bash
+sudo su -
+```
+
+## Clone the repo (on network-1)
+We will need some of the `ansible` playbooks that are in the repo:
+```bash
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
+cd bootstrap-openstack-k8s
+```
+
+## Copy the config file from k8s-1
+
+```bash
+cd config
+# Paste the cURL (result of `plik -s` command from k8s-1)
+# You should now have config.yaml along side with config.yaml.sample
+# Get back to previous folder
+cd ..
+```
+
+## Run the play
+```bash
+ansible-playbook ansible/bootstrap-network.yaml
 ```
 
 # Populate your OpenStack with default values
