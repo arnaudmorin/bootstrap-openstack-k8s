@@ -19,12 +19,9 @@ function boot(){(
     NAME=$1
     FLAVOR=$2
     PUBLIC_NET=$3
-    USERDATA=userdata/${NAME/-[0-9]*/}
 
     echo ""
     echo "Booting $NAME..."
-
-    cp $USERDATA /tmp/userdata__$$
 
     [[ $FLAVOR == bm-* ]] && EXTNET="Ext-Net-Baremetal" || EXTNET="Ext-Net"
     [[ $FLAVOR == bm-* ]] && IMAGE="Baremetal - Debian 12" || IMAGE="Debian 12"
@@ -39,7 +36,7 @@ function boot(){(
             --net $EXTNET $EXTRA \
             --image "$IMAGE" \
             --flavor $FLAVOR \
-            --user-data /tmp/userdata__$$ \
+            --user-data userdata/${NAME/-[0-9]*/} \
             $NAME
     else
         echo "$NAME already exists with ID $ID, nothing to do."
@@ -48,11 +45,12 @@ function boot(){(
 
 create_keypair
 create_networks
-boot k8s-1 c2-15
+boot k8s-1 r3-64
 #boot k8s-2
 #boot k8s-3
-boot compute-1 bm-l1 public
+boot compute-1 r3-64 public
 #boot compute-2 bm-l1 public
 #boot compute-3 bm-l1 public
 #boot compute-4 bm-l1 public
 #boot compute-5 public
+boot network-1 r3-64 public

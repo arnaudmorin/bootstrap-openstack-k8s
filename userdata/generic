@@ -22,7 +22,7 @@ EOF
 # Update apt cache
 apt-get update
 
-apt-get -y install tmux curl vim wget ipcalc mosh
+apt-get -y install tmux curl vim wget ipcalc mosh git ansible
 
 # Install tmux config
 curl --output /root/.tmux.conf https://www.arnaudmorin.fr/tmux.conf
