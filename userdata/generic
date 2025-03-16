@@ -19,6 +19,14 @@ cat <<EOF >/root/.ssh/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDY15cdBmIs2XOpe4EiFCsaY6bmUmK/GysMoLl4UG51JCfJwvwoWCoA+6mDIbymZxhxq9IGxilp/yTA6WQ9s/5pBag1cUMJmFuda9PjOkXl04jgqh5tR6I+GZ97AvCg93KAECis5ubSqw1xOCj4utfEUtPoF1OuzqM/lE5mY4N6VKXn+fT7pCD6cifBEs6JHhVNvs5OLLp/tO8Pa3kKYQOdyS0xc3rh+t2lrzvKUSWGZbX+dLiFiEpjsUL3tDqzkEMNUn4pdv69OJuzWHCxRWPfdrY9Wg0j3mJesP29EBht+w+EC9/kBKq+1VKdmsXUXAcjEvjovVL8l1BrX3BY0R8D zob
 EOF
 
+# Update apt cache
+apt-get update
+
+apt-get -y install tmux curl vim wget ipcalc mosh
+
+# Install tmux config
+curl --output /root/.tmux.conf https://www.arnaudmorin.fr/tmux.conf
+
 # Install plik
 curl --output /usr/local/bin/plik https://plik.arno.ovh/clients/linux-amd64/plik
 chmod +x /usr/local/bin/plik
@@ -34,14 +42,7 @@ echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' > /etc/profile.d/stern.sh
 # Update apt cache
 apt-get update
 
-# Install tmux
-apt-get -y install tmux
-wget -q -O /root/.tmux.conf https://www.arnaudmorin.fr/tmux.conf
-
-# Install ipcalc
-apt-get -y install ipcalc
-
-# Add useful aliases
+# Add useful aliases - not useful everywhere but at least we have them
 echo 'alias k=kubectl' > /etc/profile.d/aliases.sh
 echo 'alias l=stern' >> /etc/profile.d/aliases.sh
 echo 'alias os=openstack' >> /etc/profile.d/aliases.sh
