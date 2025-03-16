@@ -117,6 +117,25 @@
       - cinder
       - mistral
       - skyline
+  - name: add service role to users for service project
+    shell: |
+      source /root/openrc_admin
+      openstack role add \
+        --project service \
+        --user {{item}} \
+        service
+      [ $? -eq 0 ] && touch /root/.ansible_role_service_{{item}}
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_role_service_{{item}}
+    with_items:
+      - nova
+      - neutron
+      - placement
+      - glance
+      - cinder
+      - mistral
+      - skyline
   - name: create services
     shell: |
       source /root/openrc_admin
