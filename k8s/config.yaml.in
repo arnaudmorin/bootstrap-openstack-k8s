@@ -145,7 +145,15 @@ data:
     [oslo_policy]
     policy_file = /etc/neutron/policy.json
     policy_dirs = /etc/neutron/policy.d
-    # TODO faire la conf placement
+    [placement]
+    region_name = RegionOne
+    auth_url = http://keystone.{{.domain}}/v3
+    auth_type = password
+    password = {{.password}}
+    project_domain_name = Default
+    project_name = service
+    user_domain_name = Default
+    username = placement
   ml2_conf.ini: |
     [ml2]
     type_drivers = flat,vlan,vxlan
