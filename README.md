@@ -182,6 +182,12 @@ NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 service/kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   22s
 ```
 
+## Install k9s
+
+You may want to use k9s in the future, let's install it now
+```bash
+curl -sS https://webi.sh/k9s | sh
+```
 
 ## Install frep
 `frep` is a tool to generate files from templates. Its re-using the `go` templating language.
