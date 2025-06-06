@@ -165,6 +165,12 @@ Create an `alias` (this will help you saving your keyboard):
 # The alias is now created by postinstall, so it's supposed to already be there :)
 ```
 
+Add some bash completion to help you:
+```bash
+kubectl completion bash > /etc/bash_completion.d/kubectl
+echo 'complete -F __start_kubectl k' > /etc/profile.d/k.sh
+```
+
 Test:
 ```bash
 k get all

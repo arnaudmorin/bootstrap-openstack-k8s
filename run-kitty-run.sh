@@ -30,6 +30,10 @@ $s $k8s_ip << 'EOF'
 curl -sfL https://get.k3s.io | sh -
 kubectl get all
 
+# Enable kubectl completion
+kubectl completion bash > /etc/bash_completion.d/kubectl
+echo 'complete -F __start_kubectl k' > /etc/profile.d/k.sh
+
 # Install frep
 curl -fSL https://github.com/subchen/frep/releases/download/v1.3.12/frep-1.3.12-linux-amd64 -o /usr/local/bin/frep
 chmod +x /usr/local/bin/frep
