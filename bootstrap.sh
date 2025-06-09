@@ -49,8 +49,9 @@ boot k8s-1 r3-64
 #boot k8s-2
 #boot k8s-3
 boot compute-1 r3-64 public
-#boot compute-2 bm-l1 public
+boot compute-2 r3-64 public
 #boot compute-3 bm-l1 public
 #boot compute-4 bm-l1 public
 #boot compute-5 public
 boot network-1 r3-64 public
+boot network-2 r3-64 public
