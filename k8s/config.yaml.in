@@ -339,7 +339,7 @@ metadata:
 data:
   mistral.conf: |
     [DEFAULT]
-    #transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = rabbit://openstack:{{.password}}@rabbit
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
@@ -355,6 +355,21 @@ data:
     connection = mysql+pymysql://root:{{.password}}@mysql-mistral/mistral
     #[oslo_policy]
     #policy_file = /etc/mistral/policy.yaml
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflow-openrc
+data:
+  openrc: |
+    export OS_USERNAME=admin
+    export OS_PASSWORD={{.password}}
+    export OS_PROJECT_NAME=admin
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_AUTH_URL=http://keystone.{{.domain}}/v3
+    export OS_IDENTITY_API_VERSION=3
 
 ---
 apiVersion: v1

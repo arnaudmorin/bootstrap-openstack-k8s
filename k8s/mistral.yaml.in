@@ -10,6 +10,17 @@ spec:
   - port: 8989
 
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudflow
+spec:
+  selector:
+    app: cloudflow
+  ports:
+  - port: 80
+
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -30,6 +41,26 @@ spec:
               number: 8989
 
 ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudflow
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: cloudflow.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloudflow
+            port:
+              number: 80
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,7 +68,6 @@ metadata:
   labels:
     app: mistral-api
 spec:
-  # I can only have one replicas since I used pifpaf with local rabbitmq
   replicas: 1
   selector:
     matchLabels:
@@ -49,15 +79,15 @@ spec:
     spec:
       containers:
       - name: mistral-api
-        image: arnaudmorin/openstack-mistral:master
-        command: [ "/bin/bash", "-c", "--" ]
+        image: arnaudmorin/openstack-mistral:2025.1
+        #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        args: [ "/usr/local/bin/mistral-start.sh" ]
+        #args: [ "/usr/local/bin/mistral-start.sh" ]
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         #command: [ "dumb-init", "--single-child", "--" ]
         #args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "all", "--config-file", "/etc/mistral/mistral.conf" ]
-        imagePullPolicy: Always
+        #imagePullPolicy: Never
         ports:
         - containerPort: 8989
         volumeMounts:
@@ -68,3 +98,39 @@ spec:
         configMap:
           name: mistral-conf
 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflow
+  labels:
+    app: cloudflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflow
+  template:
+    metadata:
+      labels:
+        app: cloudflow
+    spec:
+      containers:
+      - name: cloudflow
+        image: arnaudmorin/openstack-cloudflow:2025.1
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        env:
+        - name: CF_MISTRAL_URL
+          value: http://mistral.{{.domain}}
+        volumeMounts:
+        - name: cloudflow-openrc
+          mountPath: "/etc/openrc"
+          subPath: openrc
+      volumes:
+      - name: cloudflow-openrc
+        configMap:
+          name: cloudflow-openrc

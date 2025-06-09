@@ -209,38 +209,38 @@ spec:
         configMap:
           name: nova-conf
 
-#---
-##
-## MISTRAL JOBS
-##
-#apiVersion: batch/v1
-#kind: Job
-#metadata:
-#  name: mistral-init
-#spec:
-#  template:
-#    spec:
-#      restartPolicy: Never
-#      initContainers:
-#      - name: mistral-upgrade-head
-#        image: arnaudmorin/openstack-mistral:2024.2
-#        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
-#        volumeMounts:
-#        - name: mistral-conf
-#          mountPath: /etc/mistral/mistral.conf
-#          subPath: mistral.conf
-#      - name: mistral-db-populate
-#        image: arnaudmorin/openstack-mistral:2024.2
-#        command: ["mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
-#        volumeMounts:
-#        - name: mistral-conf
-#          mountPath: /etc/mistral/mistral.conf
-#          subPath: mistral.conf
-#      containers:
-#      - name: mistral-done
-#        image: arnaudmorin/openstack-mistral:2024.2
-#        command: ["echo", "done"]
-#      volumes:
-#      - name: mistral-conf
-#        configMap:
-#          name: mistral-conf
+---
+#
+# MISTRAL JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mistral-init
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: mistral-upgrade-head
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: /etc/mistral/mistral.conf
+          subPath: mistral.conf
+      - name: mistral-db-populate
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: /etc/mistral/mistral.conf
+          subPath: mistral.conf
+      containers:
+      - name: mistral-done
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: ["echo", "done"]
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
