@@ -45,12 +45,18 @@
       bridge: br-ex
       fail_mode: standalone
       state: present
+    changed_when: false
 
   - name: add second network card in br-ex
     openvswitch_port:
       bridge: br-ex
       port: "ens4"
       state: present
+    changed_when: false
+
+  - name: setting second interface up
+    command: ip link set ens4 up
+    changed_when: false
 
   - name: create br-flat ovs bridge
     openvswitch_bridge:
