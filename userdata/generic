@@ -24,6 +24,12 @@ apt-get update
 
 apt-get -y install tmux curl vim wget ipcalc mosh git ansible
 
+# Disable vim mouse support -- this is insupportable
+cat <<'EOF' > /etc/vim/vimrc.local
+set mouse=
+set ttymouse=
+EOF
+
 # Install tmux config
 curl --output /root/.tmux.conf https://www.arnaudmorin.fr/tmux.conf
 
