@@ -53,6 +53,8 @@ echo 'alias k=kubectl' > /etc/profile.d/aliases.sh
 echo 'alias l=stern' >> /etc/profile.d/aliases.sh
 echo 'alias os=openstack' >> /etc/profile.d/aliases.sh
 echo 'export EDITOR=vim' >> /etc/profile.d/editor.sh
+echo '. /usr/share/bash-completion/completions/systemctl' >> /etc/bash_completion
+sed -i 's|PATH="\(.*\)"|PATH="\1:~/.local/bin/"|' /etc/profile # Add k9s in the path
 
 apt-get -y purge cloud-init
 

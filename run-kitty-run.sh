@@ -1,5 +1,54 @@
 #!/bin/bash
 
+###
+# Fonction
+###
+
+display_help() {
+    echo "Usage: $0 [options...]"
+    echo "Options:"
+    echo "  --deploiment-prefix <value>   Choose a prefix to have capacity to deploy multiple openstack on the same region and project. default is a random uuidgen."
+    echo "  --deploiment-type   <value>   Choose the type of deploiment you want, two types are availables: ovs (default) or ovn."
+    echo "  --help                        Print this helper message."
+    exit 0
+}
+
+# Init params
+declare -A params
+
+# Check param
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+        --help)
+            display_help
+            ;;
+        *)
+        if [[ $# -gt 1 ]]; then
+            # check if the next param is a value
+            if [[ "$2" != -* ]]; then
+                value="$2"
+                shift
+            elif [[ -n "$2" ]]; then
+                display_help
+            fi
+        fi
+        params["$key"]="$value"
+        ;;
+    esac
+    shift
+done
+
+get_value() {
+    local key="$1"
+    local default_value="$2"
+    if [[ -n "${params[$key]+1}" && -n "${params[$key]}" ]]; then
+        echo "${params[$key]}"
+    else
+        echo "$default_value"
+    fi
+}
+
 function t
 {
     local string="$1"
@@ -14,205 +63,65 @@ function t
     echo ""
 }
 
-
 s='ssh -l root -i ansible/files/zob -oStrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
 
+###
+# Get data from input of script and openstack infra
+###
 
-k8s_ip=$(openstack server show k8s-1 -c addresses -f json | jq -r '.addresses["Ext-Net"][]' | grep -v 2001)
+deploiment_prefix=$(get_value "--deploiment-prefix" "$(openssl rand -hex 4)")
+deploiment_type=$(get_value "--deploiment-type" "ovs")
 
+if [[ "$deploiment_type" == "ovs" || "$deploiment_type" == "ovn" ]]; then
+    t "You choose a deploiment-type: $deploiment_type with deploiment-prefix: $deploiment_prefix"
+else
+    t "You choose a deploiment-type: $deploiment_type not supported by this tool."
+    display_help
+fi
 
-t "Working on k8s-1 (${k8s_ip})"
+os_server_list=$(openstack server list -f json -c name -c networks --name "${deploiment_prefix}-*")
 
-if [ ! -e done-k8s-1 ] ; then
+instance_list=$(echo "$os_server_list" | jq -r '.[] | {(.Name): .Networks["Ext-Net"][1]}' | jq -s 'add')
 
-$s $k8s_ip << 'EOF'
-# Install k3s
-curl -sfL https://get.k3s.io | sh -
-kubectl get all
+###
+# Start deploy
+###
 
-# Enable kubectl completion
-kubectl completion bash > /etc/bash_completion.d/kubectl
-echo 'complete -F __start_kubectl k' > /etc/profile.d/k.sh
+k8s_name="${deploiment_prefix}-k8s-1"
+k8s_ip=$(echo "$instance_list" | jq -r --arg key "$k8s_name" '.[$key]')
 
-# Install k9s
-curl -sS https://webi.sh/k9s | sh
+t " Working on: $k8s_name with IP: $k8s_ip"
 
-# Install frep
-curl -fSL https://github.com/subchen/frep/releases/download/v1.3.12/frep-1.3.12-linux-amd64 -o /usr/local/bin/frep
-chmod +x /usr/local/bin/frep
-
-apt-get update
-
-# Install ansible and git
-apt-get install -y ansible git
-
-# Clone bootstrap
-git clone -b 2024.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
-cd bootstrap-openstack-k8s
-cp config/config.yaml.sample config/config.yaml
-ip=$(hostname -I | awk '{print $1}')
-sed -i -r "s/somewhere.net/${ip}.xip.opensteak.fr/" config/config.yaml
-
-# Mysql
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl apply -f -
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
-frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
-kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
-kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
-kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
-kubectl wait --for=condition=available --timeout=60s deployment/mysql-neutron
-kubectl wait --for=condition=available --timeout=60s deployment/mysql-glance
-kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
-
-# Config
-frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Populate
-frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
-kubectl wait --for=condition=complete --timeout=60s job/keystone-init
-kubectl wait --for=condition=complete --timeout=60s job/glance-init
-kubectl wait --for=condition=complete --timeout=60s job/neutron-init
-kubectl wait --for=condition=complete --timeout=60s job/nova-init
-kubectl wait --for=condition=complete --timeout=60s job/placement-init
-
-# Rabbit
-frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Keystone
-frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
-kubectl wait --for=condition=available --timeout=60s deployment/keystone
-
-# Keystone bootstrap
-ansible-playbook ansible/bootstrap-keystone.yaml
-
-# Glance
-frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Placement
-frep k8s/placement.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Neutron
-frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Nova
-frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Skyline
-frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Sleep few secs
-sleep 30
-
-# Source helper functions
-source /root/helper
-
-# Following actions are done as admin
-source /root/openrc_admin
-create_flavors
-create_image_cirros
-create_image_debian
-# Before running this one, adjust the parameters with your network settings
-# If you need to buy an IPFO block, check the tool in order-ipfo/ folder
-#create_network_public 51.91.90.2 51.91.90.126
-
-EOF
-
-touch done-k8s-1
-
+if [ ! -e done-$name ] ; then
+    $s $k8s_ip < ./postinstall/k8s.sh
+    touch done-$name
 else
     echo "Nothing to do, already done"
 fi
 
-t "DONE k8s-1 (${k8s_ip})"
+t "DONE $k8s_name ($k8s_ip)"
 
+echo "$instance_list" | jq -r 'to_entries[] | "\(.key) \(.value)"' | while read -r key value; do
+    name=${key//${deploiment_prefix}-/}
+    t " Working on: $name with IP: $value"
 
+    if [ ! -e done-$name ] ; then
+        if [[ "$name" =~ "k8s" ]]; then
+            echo "Already done outside the loop"
+        elif [[ "$name" =~ "compute" ]]; then
+            $s $value < ./postinstall/compute.sh
+        elif [[ "$name" =~ "network" ]]; then
+            $s $value < ./postinstall/network.sh
+        fi
+        touch done-$name
+    else
+        echo "Nothing to do, already done"
+    fi
 
-
-
-
-
-
-
-c_ip=$(openstack server show compute-1 -c addresses -f json | jq -r '.addresses["Ext-Net"][]' | grep -v 2001)
-
-t "Working on compute-1 (${c_ip})"
-
-
-if [ ! -e done-compute-1 ] ; then
-$s $c_ip << EOF
-
-apt-get update
-apt-get install -y git ansible
-git clone -b 2024.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
-cd bootstrap-openstack-k8s
-
-cp config/config.yaml.sample config/config.yaml
-sed -i -r "s/somewhere.net/${k8s_ip}.xip.opensteak.fr/" config/config.yaml
-
-ansible-playbook ansible/bootstrap-compute.yaml
-
-
-EOF
-
-touch done-compute-1
-
-else
-    echo "Nothing to do, already done"
-fi
-
-t "DONE compute-1 (${c_ip})"
-
-
-
-
-
-
-
-
-
-
-
-n_ip=$(openstack server show network-1 -c addresses -f json | jq -r '.addresses["Ext-Net"][]' | grep -v 2001)
-
-t "Working on network-1 (${n_ip})"
-
-
-if [ ! -e done-network-1 ] ; then
-$s $n_ip << EOF
-
-apt-get update
-apt-get install -y git ansible
-git clone -b 2024.2 https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
-cd bootstrap-openstack-k8s
-
-cp config/config.yaml.sample config/config.yaml
-sed -i -r "s/somewhere.net/${k8s_ip}.xip.opensteak.fr/" config/config.yaml
-
-ansible-playbook ansible/bootstrap-network.yaml
-
-
-EOF
-
-touch done-network-1
-
-else
-    echo "Nothing to do, already done"
-fi
-
-t "DONE network-1 (${n_ip})"
-
-
-
-
-
-
-
+    t "DONE $name ($value)"
+done
 
 t "Printing openrc files"
-
 
 $s $k8s_ip << 'EOF'
 echo ""
