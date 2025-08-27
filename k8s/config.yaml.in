@@ -330,6 +330,9 @@ data:
     policy_dirs = /etc/placement/policy.d
     [placement_database]
     connection = mysql+pymysql://root:{{.password}}@mysql-placement/placement
+    [placement]
+    # See https://bugs.launchpad.net/placement/+bug/2070257
+    max_allocation_candidates = 1000
 
 ---
 apiVersion: v1
