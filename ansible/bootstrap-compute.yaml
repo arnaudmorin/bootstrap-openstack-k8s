@@ -322,7 +322,7 @@
       - { section: "agent", option: "arp_responder", value: "true" }
       - { section: "agent", option: "enable_distributed_routing", value: "true" }
       - { section: "ovs", option: "local_ip", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex,flat:br-flat" }
+      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex" }
       - { section: "securitygroup", option: "enable_security_group", value: "true" }
       - { section: "securitygroup", option: "firewall_driver", value: "openvswitch" }
     notify:
