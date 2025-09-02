@@ -64,6 +64,7 @@
   - name: check physical port in br-ex
     command: ovs-vsctl port-to-br ens4
     register: ovs_br_ex_port
+    ignore_errors: true
 
   - name: set fail mode to secure on br-ex
     command: ovs-vsctl add-port br-ex ens4
