@@ -58,7 +58,7 @@
     register: ovs_br_ex_fail_mode
 
   - name: set fail mode to secure on br-ex
-    command: ovs-vsctl set-fail-mode
+    command: ovs-vsctl set-fail-mode br-ex secure
     when: ovs_br_ex_fail_mode.stdout != 'secure'
 
   - name: check physical port in br-ex
