@@ -82,14 +82,78 @@ spec:
         image: arnaudmorin/openstack-mistral:2025.1
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        #args: [ "/usr/local/bin/mistral-start.sh" ]
-        #command: [ "/bin/bash", "-c", "--" ]
-        #args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
-        #command: [ "dumb-init", "--single-child", "--" ]
-        #args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "all", "--config-file", "/etc/mistral/mistral.conf" ]
+        # Uncomment when https://review.opendev.org/c/openstack/mistral/+/959603 is ready
+        #args: [ "--ini", "/etc/uwsgi/mistral.ini" ]
+        #command: [ "/opt/openstack/mistral/bin/uwsgi" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "api" ]
         #imagePullPolicy: Never
         ports:
         - containerPort: 8989
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/etc/mistral/"
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mistral-engine
+  labels:
+    app: mistral-engine
+spec:
+  serviceName: mistral-engine
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mistral-engine
+  template:
+    metadata:
+      labels:
+        app: mistral-engine
+    spec:
+      containers:
+      - name: mistral-engine
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "engine" ]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/etc/mistral/"
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mistral-executor
+  labels:
+    app: mistral-executor
+spec:
+  serviceName: mistral-executor
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mistral-executor
+  template:
+    metadata:
+      labels:
+        app: mistral-executor
+    spec:
+      containers:
+      - name: mistral-executor
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "executor" ]
         volumeMounts:
         - name: mistral-conf
           mountPath: "/etc/mistral/"
