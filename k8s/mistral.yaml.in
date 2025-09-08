@@ -92,7 +92,11 @@ spec:
         - containerPort: 8989
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/etc/mistral/"
+          mountPath: "/etc/mistral/mistral.conf"
+          subPath: mistral.conf
+        - name: mistral-conf
+          mountPath: "/etc/uwsgi/mistral.ini"
+          subPath: uwsgi.ini
       volumes:
       - name: mistral-conf
         configMap:
@@ -124,7 +128,8 @@ spec:
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "engine" ]
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/etc/mistral/"
+          mountPath: "/etc/mistral/mistral.conf"
+          subPath: mistral.conf
       volumes:
       - name: mistral-conf
         configMap:
@@ -156,7 +161,8 @@ spec:
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "executor" ]
         volumeMounts:
         - name: mistral-conf
-          mountPath: "/etc/mistral/"
+          mountPath: "/etc/mistral/mistral.conf"
+          subPath: mistral.conf
       volumes:
       - name: mistral-conf
         configMap:

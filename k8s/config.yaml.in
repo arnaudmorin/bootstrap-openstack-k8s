@@ -358,6 +358,28 @@ data:
     connection = mysql+pymysql://root:{{.password}}@mysql-mistral/mistral
     #[oslo_policy]
     #policy_file = /etc/mistral/policy.yaml
+  uwsgi.ini: |
+    [uwsgi]
+    # Listen on port 8989 and start as a full web server
+    http-socket = 0.0.0.0:8989
+    # Stats on port 9191
+    stats = 0.0.0.0:9191
+    # App to start
+    virtualenv = /opt/openstack/mistral/
+    #env = MISTRAL_CONFIG_DIR=/etc/mistral/
+    module = mistral.wsgi:application
+    # load apps in each worker instead of the master
+    lazy-apps = true
+    # Number of processes
+    processes = 4
+    # Will kill processes that run more that 60s
+    harakiri = 60
+    # Enable threads
+    enable-threads = true
+    # Gracefully manage processes
+    master = true
+    # Thunder-lock - serialize accept() usage (if possible)
+    thunder-lock = true
 
 ---
 apiVersion: v1
