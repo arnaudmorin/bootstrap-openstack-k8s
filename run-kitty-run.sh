@@ -109,9 +109,9 @@ echo "$instance_list" | jq -r 'to_entries[] | "\(.key) \(.value)"' | while read 
         if [[ "$name" =~ "k8s" ]]; then
             echo "Already done outside the loop"
         elif [[ "$name" =~ "compute" ]]; then
-            $s $value < ./postinstall/compute.sh
+            $s $k8s_ip < ./postinstall/compute.sh
         elif [[ "$name" =~ "network" ]]; then
-            $s $value < ./postinstall/network.sh
+            $s $k8s_ip < ./postinstall/network.sh
         fi
         touch done-$name
     else
