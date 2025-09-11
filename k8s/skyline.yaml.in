@@ -15,7 +15,7 @@ kind: Ingress
 metadata:
   name: skyline
   annotations:
-    kubernetes.io/ingress.class: traefik
+    spec.ingressClassName: traefik
 spec:
   rules:
   - host: skyline.{{.domain}}
