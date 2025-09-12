@@ -28,7 +28,7 @@ kind: Ingress
 metadata:
   name: glance
   annotations:
-    kubernetes.io/ingress.class: traefik
+    spec.ingressClassName: traefik
 spec:
   rules:
   - host: glance.{{.domain}}

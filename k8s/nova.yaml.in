@@ -75,7 +75,7 @@ kind: Ingress
 metadata:
   name: nova-api
   annotations:
-    kubernetes.io/ingress.class: traefik
+    spec.ingressClassName: traefik
 spec:
   rules:
   - host: nova.{{.domain}}
