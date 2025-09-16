@@ -63,11 +63,9 @@ spec:
     spec:
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:2024.2
+        image: arnaudmorin/openstack-glance:2025.1
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/glance-api" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0

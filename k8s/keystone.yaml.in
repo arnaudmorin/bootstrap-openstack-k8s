@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: keystone
-        image: arnaudmorin/openstack-keystone:2024.2
+        image: arnaudmorin/openstack-keystone:2025.1
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/bin/bash", "-c", "--" ]
