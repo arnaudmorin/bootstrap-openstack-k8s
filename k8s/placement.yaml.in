@@ -49,8 +49,8 @@ spec:
       containers:
       - name: placement
         image: arnaudmorin/openstack-placement:2025.1
-        command: [ "/bin/bash", "-c", "--" ]
-        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        # command: [ "/bin/bash", "-c", "--" ]
+        # args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 8778

@@ -109,9 +109,8 @@ spec:
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova:2025.1
-        command: [ "/bin/bash", "-c", "--" ]
-        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
-        #args: [ "while true; do sleep 30; done;" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/nova/bin/nova-api-wsgi", "--port", "8774", "--host", "0.0.0.0" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
@@ -144,8 +143,8 @@ spec:
       containers:
       - name: nova-metadata-api
         image: arnaudmorin/openstack-nova:2025.1
-        command: [ "/bin/bash", "-c", "--" ]
-        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/nova/bin/nova-metadata-wsgi", "--port", "8775", "--host", "0.0.0.0" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8775
@@ -160,7 +159,7 @@ spec:
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: nova-conductor
   labels:
@@ -179,7 +178,7 @@ spec:
       - name: nova-conductor
         image: arnaudmorin/openstack-nova:2025.1
         command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/nova-conductor" ]
+        args: [ "/opt/openstack/nova/bin/nova-conductor" ]
         #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -192,7 +191,7 @@ spec:
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: nova-scheduler
   labels:
@@ -211,7 +210,7 @@ spec:
       - name: nova-scheduler
         image: arnaudmorin/openstack-nova:2025.1
         command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/nova-scheduler" ]
+        args: [ "/opt/openstack/nova/bin/nova-scheduler" ]
         #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -243,7 +242,7 @@ spec:
       - name: nova-vnc
         image: arnaudmorin/openstack-nova:2025.1
         command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/nova-novncproxy" ]
+        args: [ "/opt/openstack/nova/bin/nova-novncproxy" ]
         #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -275,7 +274,7 @@ spec:
       - name: nova-spice
         image: arnaudmorin/openstack-nova:2025.1
         command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/nova-spicehtml5proxy" ]
+        args: [ "/opt/openstack/nova/bin/nova-spicehtml5proxy" ]
         #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
@@ -307,7 +306,7 @@ spec:
       - name: nova-serial
         image: arnaudmorin/openstack-nova:2025.1
         command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/var/lib/kolla/venv/bin/nova-serialproxy" ]
+        args: [ "/opt/openstack/nova/bin/nova-serialproxy" ]
         #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf

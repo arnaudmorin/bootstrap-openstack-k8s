@@ -51,8 +51,8 @@ spec:
         image: arnaudmorin/openstack-keystone:2025.1
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/bin/bash", "-c", "--" ]
-        args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/keystone/bin/keystone-wsgi-public", "--port", "5000", "--host", "0.0.0.0" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000
