@@ -204,7 +204,7 @@ More info here: https://github.com/subchen/frep
 ## Install ansible and git
 We will need `ansible` and `git` at some point.
 ```bash
-apt-get install -y ansible git
+# nothing to do, it's already done at vm installation :)
 ```
 
 ## Install plik
@@ -212,7 +212,7 @@ apt-get install -y ansible git
 It's useful to easily transfer files a from a system to another.
 
 ```bash
-# nothing to do, it's already done by bootstrap.sh script :)
+# nothing to do, it's already done at vm installation :)
 ```
 
 ## Clone the repo (on k8s-1)

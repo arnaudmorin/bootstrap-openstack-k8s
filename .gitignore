@@ -4,3 +4,6 @@ config/config.yaml
 order-ipfo/*.conf
 order-ipfo/order-venv/
 done-*
+**/*.terraform
+**/*.tfstate*
+**/*.lock.hcl

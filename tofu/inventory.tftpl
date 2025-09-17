@@ -1,0 +1,21 @@
+---
+all:
+  children:
+    networks:
+      hosts:
+%{ for network in networks ~}
+        ${ network.name }:
+          ansible_host: ${ network.access_ip_v4 }
+%{ endfor ~}
+    k8s:
+      hosts:
+%{ for k8s in k8s_instances ~}
+        ${ k8s.name }:
+          ansible_host: ${ k8s.access_ip_v4 }
+%{ endfor ~}
+    computes:
+      hosts:
+%{ for compute in computes ~}
+        ${ compute.name }:
+          ansible_host: ${ compute.access_ip_v4 }
+%{ endfor ~}
