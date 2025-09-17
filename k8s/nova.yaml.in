@@ -116,10 +116,6 @@ spec:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
-        volumes:
-        - name: nova-conf
-          configMap:
-            name= nova-conf
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova:2025.1
@@ -180,6 +176,7 @@ metadata:
     app: nova-conductor
 spec:
   replicas: 1
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: nova-conductor
@@ -212,6 +209,7 @@ metadata:
     app: nova-scheduler
 spec:
   replicas: 1
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: nova-scheduler

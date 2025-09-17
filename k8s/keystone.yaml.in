@@ -49,7 +49,7 @@ spec:
       initContainers:
       - name: keystone-db-sync
         image: arnaudmorin/openstack-keystone:2025.1
-        command: ["/opt/openstack/keyston/bin/keystone-manage", "db_sync"]
+        command: ["/opt/openstack/keystone/bin/keystone-manage", "db_sync"]
         volumeMounts:
         - name: keystone-conf
           mountPath: /etc/keystone/keystone.conf
@@ -62,7 +62,7 @@ spec:
           subPath: "1"
       - name: keystone-bootstrap
         image: arnaudmorin/openstack-keystone:2025.1
-        command: ["/opt/openstack/keyston/bin/keystone-manage", "bootstrap",
+        command: ["/opt/openstack/keystone/bin/keystone-manage", "bootstrap",
           "--bootstrap-password", "{{.password}}",
           "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
           "--bootstrap-internal-url", "http://keystone.{{.domain}}/v3/",

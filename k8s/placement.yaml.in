@@ -47,7 +47,7 @@ spec:
         app: placement
     spec:
       initContainers:
-      - name: placement
+      - name: placement-init
         image: arnaudmorin/openstack-placement:2025.1
         command: ["/opt/openstack/placement/bin/placement-manage", "db", "sync"]
         volumeMounts:

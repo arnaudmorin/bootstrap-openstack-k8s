@@ -62,9 +62,9 @@ spec:
         app: glance
     spec:
       initContainers:
-      - name: glance
+      - name: glance-init
         image: arnaudmorin/openstack-glance:2025.1
-        command: ["glance-manage", "db_sync"]
+        command: ["/opt/openstack/glance/bin/glance-manage", "db_sync"]
         volumeMounts:
         - name: glance-conf
           mountPath: /etc/glance/glance-api.conf
