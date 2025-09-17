@@ -46,6 +46,38 @@ spec:
       labels:
         app: keystone
     spec:
+      initContainers:
+      - name: keystone-db-sync
+        image: arnaudmorin/openstack-keystone:2025.1
+        command: ["/opt/openstack/keyston/bin/keystone-manage", "db_sync"]
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: /etc/keystone/keystone.conf
+          subPath: keystone.conf
+        - name: keystone-conf
+          mountPath: /etc/keystone/fernet-keys/0
+          subPath: "0"
+        - name: keystone-conf
+          mountPath: /etc/keystone/fernet-keys/1
+          subPath: "1"
+      - name: keystone-bootstrap
+        image: arnaudmorin/openstack-keystone:2025.1
+        command: ["/opt/openstack/keyston/bin/keystone-manage", "bootstrap",
+          "--bootstrap-password", "{{.password}}",
+          "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-internal-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-public-url", "http://keystone.{{.domain}}/v3/",
+          "--bootstrap-region-id", "RegionOne"]
+        volumeMounts:
+        - name: keystone-conf
+          mountPath: /etc/keystone/keystone.conf
+          subPath: keystone.conf
+        - name: keystone-conf
+          mountPath: /etc/keystone/fernet-keys/0
+          subPath: "0"
+        - name: keystone-conf
+          mountPath: /etc/keystone/fernet-keys/1
+          subPath: "1"
       containers:
       - name: keystone
         image: arnaudmorin/openstack-keystone:2025.1

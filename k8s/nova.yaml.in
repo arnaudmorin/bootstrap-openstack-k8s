@@ -106,6 +106,20 @@ spec:
       labels:
         app: nova-api
     spec:
+      # Can be a problem as init containers may finished after the other deployments starts
+      # Fix would be to rollout restart after init job finished
+      initContainers:
+      - name: nova-init
+        image: arnaudmorin/openstack-nova:2025.1
+        command: ["/opt/openstack/nova/bin/init.sh"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
+        volumes:
+        - name: nova-conf
+          configMap:
+            name= nova-conf
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova:2025.1

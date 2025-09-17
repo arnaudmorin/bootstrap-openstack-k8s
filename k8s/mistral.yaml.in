@@ -77,6 +77,21 @@ spec:
       labels:
         app: mistral-api
     spec:
+      initContainers:
+      - name: mistral-upgrade-head
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: /etc /mistral/mistral.conf
+          subPath: mistral.conf
+      - name: mistral-db-populate
+        image: arnaudmorin/openstack-mistral:2025.1
+        command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: /etc/mistral/mistral.conf
+          subPath: mistral.conf
       containers:
       - name: mistral-api
         image: arnaudmorin/openstack-mistral:2025.1

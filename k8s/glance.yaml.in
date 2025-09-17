@@ -61,6 +61,14 @@ spec:
       labels:
         app: glance
     spec:
+      initContainers:
+      - name: glance
+        image: arnaudmorin/openstack-glance:2025.1
+        command: ["glance-manage", "db_sync"]
+        volumeMounts:
+        - name: glance-conf
+          mountPath: /etc/glance/glance-api.conf
+          subPath: glance-api.conf
       containers:
       - name: glance
         image: arnaudmorin/openstack-glance:2025.1
@@ -78,13 +86,6 @@ spec:
           subPath: glance-api.conf
         - name: glance-persistent-storage
           mountPath: /var/lib/glance
-      #initContainers:
-      #- name: glance-data-permission-fix
-      #  image: busybox
-      #  command: ["/bin/chmod","-R","777", "/data"]
-      #  volumeMounts:
-      #  - name: glance-persistent-storage
-      #    mountPath: /data
       volumes:
       - name: glance-conf
         configMap:

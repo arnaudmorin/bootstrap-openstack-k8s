@@ -257,6 +257,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kub
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
 ```
 Databases for all `OpenStack` services are created (empty) during this step.
 
@@ -265,24 +266,6 @@ Databases for all `OpenStack` services are created (empty) during this step.
 frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 All config files for all services are created during this step.
-
-### Populate databases
-It's time now to sync (create structures / tables) all `OpenStack` services databases.
-
-```bash
-frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
-```
-Databases for all `OpenStack` services are now populated with empty tables.
-
-Before going further, it is recommended to wait for the jobs to complete.
-
-You can check the job status with:
-```bash
-k get jobs
-```
-
-You should wait for the jobs to be ready (all jobs must be 1/1)
-
 
 ## Rabbit
 ```bash

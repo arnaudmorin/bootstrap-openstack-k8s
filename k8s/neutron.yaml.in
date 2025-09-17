@@ -46,6 +46,17 @@ spec:
       labels:
         app: neutron-api
     spec:
+      initContainers:
+      - name: neutron
+        image: arnaudmorin/openstack-neutron:2025.1
+        command: ["/opt/openstack/neutron/bin/neutron-db-manage", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini", "upgrade", "head"]
+        volumeMounts:
+        - name: neutron-conf
+          mountPath: /etc/neutron/neutron.conf
+          subPath: neutron.conf
+        - name: neutron-conf
+          mountPath: /etc/neutron/plugins/ml2/ml2_conf.ini
+          subPath: ml2_conf.ini
       containers:
       - name: neutron-api
         image: arnaudmorin/openstack-neutron:2025.1

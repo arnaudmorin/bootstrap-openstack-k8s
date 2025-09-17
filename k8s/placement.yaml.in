@@ -46,6 +46,14 @@ spec:
       labels:
         app: placement
     spec:
+      initContainers:
+      - name: placement
+        image: arnaudmorin/openstack-placement:2025.1
+        command: ["/opt/openstack/placement/bin/placement-manage", "db", "sync"]
+        volumeMounts:
+        - name: placement-conf
+          mountPath: /etc/placement/placement.conf
+          subPath: placement.conf
       containers:
       - name: placement
         image: arnaudmorin/openstack-placement:2025.1
