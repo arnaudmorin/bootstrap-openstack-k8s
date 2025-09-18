@@ -11,6 +11,17 @@ provider "openstack" {
 
 }
 
+variable "os_version" {
+  type = string
+  description = "Branch used to deploy the cluster"
+  default = "2025.1"
+}
+
+resource "random_password" "password" {
+  length = 16
+  special = false
+}
+
 resource "openstack_networking_network_v2" "public" {
   name = "public"
   port_security_enabled = false
@@ -41,7 +52,12 @@ resource "openstack_compute_instance_v2" "k8s" {
   name = "k8s-${count.index}"
   image_name = "Debian 12"
   flavor_name = "r3-64"
-  user_data = file("${path.module}/../userdata/k8s")
+  user_data = templatefile("${path.module}/userdata/k8s.tftpl",
+    {
+      path_module = path.module,
+      password = random_password.password.result
+    }
+  )
   key_pair = openstack_compute_keypair_v2.zob.name
   network {
     name = "Ext-Net"
@@ -51,10 +67,16 @@ resource "openstack_compute_instance_v2" "k8s" {
 resource "openstack_compute_instance_v2" "computes" {
   count = 2
 
-  name = "$compute-${count.index}"
+  name = "compute-${count.index}"
   image_name = "Debian 12"
   flavor_name = "r3-64"
-  user_data = file("../userdata/compute")
+  user_data = templatefile("${path.module}/userdata/compute.tftpl",
+    {
+      path_module = path.module,
+      password = random_password.password.result
+      k8s_ip = openstack_compute_instance_v2.k8s[0].access_ip_v4
+    }
+  )
   key_pair = openstack_compute_keypair_v2.zob.name
   network {
     name = "Ext-Net"
@@ -71,7 +93,13 @@ resource "openstack_compute_instance_v2" "networks" {
   name = "network-${count.index}"
   image_name = "Debian 12"
   flavor_name = "r3-64"
-  user_data = file("../userdata/compute")
+  user_data = templatefile("${path.module}/userdata/network.tftpl",
+    {
+      path_module = path.module,
+      password = random_password.password.result
+      k8s_ip = openstack_compute_instance_v2.k8s[0].access_ip_v4
+    }
+  )
   key_pair = openstack_compute_keypair_v2.zob.name
   network {
     name = "Ext-Net"
@@ -82,16 +110,14 @@ resource "openstack_compute_instance_v2" "networks" {
   }
 }
 
-resource "local_file" "inventory" {
+# resource "local_file" "test" {
+#   content = templatefile("${path.module}/userdata/compute.tftpl",
+#     {
+#       path_module = path.module,
+#       password = random_password.password.result
+#       k8s_ip = openstack_compute_instance_v2.k8s[0].access_ip_v4
+#     }
+#     )
 
-  content = templatefile("${path.module}/inventory.tftpl",
-    {
-      k8s_instances = openstack_compute_instance_v2.k8s
-      networks = openstack_compute_instance_v2.networks
-      computes = openstack_compute_instance_v2.computes
-    }
-    )
-  
-  filename = "${path.module}/../ansible//inventory.yml"
-  file_permission = "0655"
-}
+#   filename = "${path.module}/testfile"
+# }

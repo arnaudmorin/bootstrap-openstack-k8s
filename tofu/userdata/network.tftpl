@@ -1,0 +1,11 @@
+${file("${path_module}/userdata/generic")}
+
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s
+
+cd /root/bootstrap-openstack-k8s
+
+cp config/config.yaml.sample config/config.yaml
+sed -i -r "s/somewhere.net/${k8s_ip}.xip.opensteak.fr/" config/config.yaml
+sed -i -r "s/changeme/${password}/" config/config.yaml
+
+ansible-playbook ansible/bootstrap-network.yaml
