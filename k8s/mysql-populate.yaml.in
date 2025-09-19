@@ -1,3 +1,28 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nova-init
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: nova-init
+        image: arnaudmorin/openstack-nova:2025.1
+        command: ["/opt/openstack/nova/bin/init.sh"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
+      containers:
+      - name: nova-done
+        image: arnaudmorin/openstack-nova:2025.1
+        command: ["echo", "done"]
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
 
 #---
 ##

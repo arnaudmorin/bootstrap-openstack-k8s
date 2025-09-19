@@ -109,9 +109,16 @@ spec:
       # Can be a problem as init containers may finished after the other deployments starts
       # Fix would be to rollout restart after init job finished
       initContainers:
-      - name: nova-init
+      - name: nova-api-db-sync
         image: arnaudmorin/openstack-nova:2025.1
-        command: ["/opt/openstack/nova/bin/init.sh"]
+        command: ["/opt/openstack/nova/bin/nova-manage", "api_db", "sync"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
+      - name: nova-db-sync
+        image: arnaudmorin/openstack-nova:2025.1
+        command: ["/opt/openstack/nova/bin/nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
