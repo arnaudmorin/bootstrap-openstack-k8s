@@ -14,7 +14,6 @@
     command: |
       python3 -m venv /opt/oscli
     args:
-      executable: /bin/bash
       creates: /opt/oscli/
 
   - name: prepare os-cli venv (2/2)
@@ -25,7 +24,6 @@
     command: |
       /opt/oscli/bin/pip install python-openstackclient
     args:
-      executable: /bin/bash
       creates: /opt/oscli/bin/openstack
 
   - name: make symlink for openstack cli

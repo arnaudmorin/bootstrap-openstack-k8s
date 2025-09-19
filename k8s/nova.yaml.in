@@ -106,8 +106,6 @@ spec:
       labels:
         app: nova-api
     spec:
-      # Can be a problem as init containers may finished after the other deployments starts
-      # Fix would be to rollout restart after init job finished
       initContainers:
       - name: nova-api-db-sync
         image: arnaudmorin/openstack-nova:2025.1
