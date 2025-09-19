@@ -192,6 +192,8 @@ ssh debian@ip             # replace ip with the real server IP
 
 # k8s-0
 
+> NOTE: if not specified, all commands must be run as root: `sudo su -`
+
 ## k3s
 
  On the `k8s-0` instance, you will have `k3s` and few other tools to have a full `kubernetes` cluster.
