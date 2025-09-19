@@ -139,6 +139,9 @@ You can check if the scripts are finished by checking the ``/var/log/postinstall
 
 The scripts are the equivalent of the following sections up to this [one](#populate-your-openstack-with-default-values)
 
+You can take a look at what is done on the servers by throwing an eye in [tofu/userdata](/tofu/userdata)
+
+
 ```bash
 # List instances you have to retrieve the IPs
 openstack server list
