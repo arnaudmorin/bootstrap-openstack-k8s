@@ -151,6 +151,7 @@ Open the tofu folder and apply the config
 
 ```bash
 cd tofu/
+tofu init
 tofu apply
 ```
 
@@ -176,18 +177,17 @@ You can take a look at what is done on the servers by throwing an eye in [tofu/u
 
 ## SSH into instances
 
-Grab your instances
+Grab your instances:
 
 ```bash
-# List instances you have to retrieve the IPs
-openstack server list
-# Retry multiple time the previous command until the instances are ready (ACTIVE state)
+tofu output
 ```
 
-At the end, you should be able to ssh both instances using the `zob` key:
+You should be able to ssh both instances using the `zob` key:
 ```bash
-chmod 600 ansible/files/zob
-ssh debian@ip -i ansible/files/zob            # replace ip with the real server IP
+chmod 600 ../ansible/files/zob
+ssh-add ../ansible/files/zob
+ssh debian@ip             # replace ip with the real server IP
 ```
 
 # k8s-0
