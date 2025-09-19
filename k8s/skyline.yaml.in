@@ -48,7 +48,7 @@ spec:
     spec:
       initContainers:
       - name: skyline-init
-        image: arnaudmorin/openstack-skyline:2025.1
+        image: arnaudmorin/openstack-skyline:{{.openstack_version}}
         #imagePullPolicy: Always
         command: ["/usr/local/bin/skyline-db-sync"]
         volumeMounts:
@@ -57,7 +57,7 @@ spec:
           subPath: skyline.yaml
       containers:
       - name: skyline
-        image: arnaudmorin/openstack-skyline:2025.1
+        image: arnaudmorin/openstack-skyline:{{.openstack_version}}
         #imagePullPolicy: Always
         ports:
         - containerPort: 8080

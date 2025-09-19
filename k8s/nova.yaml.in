@@ -106,19 +106,24 @@ spec:
       labels:
         app: nova-api
     spec:
-      # Can be a problem as init containers may finished after the other deployments starts
-      # Fix would be to rollout restart after init job finished
       initContainers:
-      - name: nova-init
-        image: arnaudmorin/openstack-nova:2025.1
-        command: ["/opt/openstack/nova/bin/init.sh"]
+      - name: nova-api-db-sync
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["/opt/openstack/nova/bin/nova-manage", "api_db", "sync"]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
+      - name: nova-db-sync
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["/opt/openstack/nova/bin/nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
       containers:
       - name: nova-api
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-api-wsgi", "--port", "8774", "--host", "0.0.0.0" ]
         #imagePullPolicy: Always
@@ -152,7 +157,7 @@ spec:
     spec:
       containers:
       - name: nova-metadata-api
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-metadata-wsgi", "--port", "8775", "--host", "0.0.0.0" ]
         #imagePullPolicy: Always
@@ -187,7 +192,7 @@ spec:
     spec:
       containers:
       - name: nova-conductor
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-conductor" ]
         #imagePullPolicy: Always
@@ -220,7 +225,7 @@ spec:
     spec:
       containers:
       - name: nova-scheduler
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-scheduler" ]
         #imagePullPolicy: Always
@@ -252,7 +257,7 @@ spec:
     spec:
       containers:
       - name: nova-vnc
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-novncproxy" ]
         #imagePullPolicy: Always
@@ -284,7 +289,7 @@ spec:
     spec:
       containers:
       - name: nova-spice
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-spicehtml5proxy" ]
         #imagePullPolicy: Always
@@ -316,7 +321,7 @@ spec:
     spec:
       containers:
       - name: nova-serial
-        image: arnaudmorin/openstack-nova:2025.1
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-serialproxy" ]
         #imagePullPolicy: Always

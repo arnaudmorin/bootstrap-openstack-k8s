@@ -125,10 +125,16 @@ The `bootstrap.sh` script will start 3 instances:
 * compute-1
 * network-1
 
+Open the tofu folder and apply the config
 ```bash
-# Execute this
-./bootstrap.sh
+cd tofu/
+tofu apply
 ```
+
+Tofu is used to deploy the needed infra, and run on each instance the correct installation scripts.
+The postinstall scripts may take some time to run (around 5 minutes). You can check if the scripts are finished
+by checking the ``/var/log/postinstall.log`` (the last line must be a "done"). The scripts are the equivalent of the following sections up to this
+[one](#populate-your-openstack-with-default-values
 
 ```bash
 # List instances you have to retrieve the IPs
@@ -204,7 +210,7 @@ More info here: https://github.com/subchen/frep
 ## Install ansible and git
 We will need `ansible` and `git` at some point.
 ```bash
-apt-get install -y ansible git
+# nothing to do, it's already done at vm installation :)
 ```
 
 ## Install plik
@@ -212,7 +218,7 @@ apt-get install -y ansible git
 It's useful to easily transfer files a from a system to another.
 
 ```bash
-# nothing to do, it's already done by bootstrap.sh script :)
+# nothing to do, it's already done at vm installation :)
 ```
 
 ## Clone the repo (on k8s-1)
@@ -266,6 +272,12 @@ Databases for all `OpenStack` services are created (empty) during this step.
 frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 All config files for all services are created during this step.
+
+### Populate the DB
+
+```bash
+frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
 
 ## Rabbit
 ```bash
@@ -436,21 +448,13 @@ sudo su -
 ```
 
 ## Clone the repo (on compute-1)
-We will need some of the `ansible` playbooks that are in the repo:
+
+Nothing to do, config file is already deployed by installation script
 ```bash
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 ```
 
-## Copy the config file from k8s-1
-
-```bash
-cd config
-# Paste the cURL (result of `plik -s` command from k8s-1)
-# You should now have config.yaml along side with config.yaml.sample
-# Get back to previous folder
-cd ..
-```
+Nothing to do, config file is already deployed by installation script
 
 ## Run the play
 All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-1` node, not on the `compute-1`).
@@ -469,21 +473,15 @@ sudo su -
 ```
 
 ## Clone the repo (on network-1)
-We will need some of the `ansible` playbooks that are in the repo:
+
+Nothing to do, config file is already deployed by installation script
 ```bash
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 ```
 
 ## Copy the config file from k8s-1
 
-```bash
-cd config
-# Paste the cURL (result of `plik -s` command from k8s-1)
-# You should now have config.yaml along side with config.yaml.sample
-# Get back to previous folder
-cd ..
-```
+Nothing to do, config file is already deployed by installation script
 
 ## Run the play
 ```bash
@@ -523,16 +521,9 @@ openstack server list
 ssh cirros@ip_of_server         # password is gocubsgo
 ```
 
-# For lazy people
-If you are lazy doing all the steps manually, you can use the the `run-kitty-run.sh` script just after the `bootstrap.sh` and everything should be done automatically:
-
-```bash
-./run-kitty-run.sh
-```
-
 # Notes
 
-If you decide to add more `k8s-x` and `compute-x` nodes, this is very easy, just edit the bootstrap.sh script and start again.
+If you decide to add more `k8s-x` and `compute-x` nodes, this is very easy, just edit the ``tofu/main.tf`` file and run ``tofu apply`` again.
 
 To let k3s on other nodes join the first one, just use something like this:
 

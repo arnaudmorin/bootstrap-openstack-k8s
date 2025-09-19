@@ -10,19 +10,20 @@
       update_cache: yes
       state: latest
 
-  - name: prepare os-cli venv
-    shell: |
+  - name: prepare os-cli venv (1/2)
+    command: |
       python3 -m venv /opt/oscli
-      /opt/oscli/bin/pip install --upgrade pip
     args:
-      executable: /bin/bash
       creates: /opt/oscli/
 
+  - name: prepare os-cli venv (2/2)
+    command: |
+      /opt/oscli/bin/pip install --upgrade pip
+
   - name: install openstack client in os-cli venv
-    shell: |
+    command: |
       /opt/oscli/bin/pip install python-openstackclient
     args:
-      executable: /bin/bash
       creates: /opt/oscli/bin/openstack
 
   - name: make symlink for openstack cli
