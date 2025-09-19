@@ -130,10 +130,14 @@ cd tofu/
 tofu apply
 ```
 
-Tofu is used to deploy the needed infra, and run on each instance the correct installation scripts.
-The postinstall scripts may take some time to run (around 5 minutes). You can check if the scripts are finished
-by checking the ``/var/log/postinstall.log`` (the last line must be a "done"). The scripts are the equivalent of the following sections up to this
-[one](#populate-your-openstack-with-default-values
+`tofu` is used to deploy all nodes, and a cloud-init postinstall script is then executed to install everything.
+
+Welcome to my lazy world!
+
+The postinstall scripts may take some time to run (around 5 minutes).
+You can check if the scripts are finished by checking the ``/var/log/postinstall.log`` (the last line must be a "done").
+
+The scripts are the equivalent of the following sections up to this [one](#populate-your-openstack-with-default-values)
 
 ```bash
 # List instances you have to retrieve the IPs
