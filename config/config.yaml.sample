@@ -19,7 +19,10 @@ password: changeme
 # hostname -I | awk '{print $1}'
 domain: somewhere.net
 
+# OpenStack release you want to use
+# This could be something like: 2025.1
 openstack_version: "os_version"
+
 # Keystone fernet
 # These are the keys keystone will use to generate tokens
 # You can keep the following values, or regenerate new ones with:
