@@ -435,3 +435,5 @@ export K3S_TOKEN='xxxyyyy'    # retrieve from master node with: cat /var/lib/ran
 export K3S_URL='https://ip_first_node:6443'
 curl -sfL https://get.k3s.io | sh -
 ```
+
+> Note that you may need to tweak a little bit the postinstall to avoid the new `k8s` nodes to start a complete new `OpenStack` (e.g. disable the `user-data`)
