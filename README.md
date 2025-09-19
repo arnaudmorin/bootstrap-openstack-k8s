@@ -364,7 +364,7 @@ k rollout restart deployment/nova-api
 k rollout restart deployment/nova-metadata-api
 ```
 
-You may also have to re-execute some jobs, such as `nova db sync`.
+You may also have to re-execute some jobs, such as `nova init`.
 
 You can either do it from nova-api pod, or delete and recreate the related job.
 
@@ -385,7 +385,7 @@ One of the most common race condition is the failure on nova db sync.
 You can restart it by deleting the jobs and do it again
 ```bash
 k get jobs | grep nova
-k delete job nova-db-sync
+k delete job nova-init
 
 # And then apply again the mysql-populate
 frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
