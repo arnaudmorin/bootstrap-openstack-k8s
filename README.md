@@ -1,15 +1,37 @@
 Table of Contents
 =================
 
+* [Table of Contents](#table-of-contents)
 * [Introduction](#introduction)
+  * [Objective](#objective)
+  * [Architecture](#architecture)
 * [Bootstrap](#bootstrap)
-* [Prepare k8s node](#k8s-1)
-* [Install OpenStack (control plane)](#install-openstack-control-plane)
-* [Install OpenStack (compute and network)](#compute-1)
+  * [Source your openrc](#source-your-openrc)
+  * [Clone this repo](#clone-this-repo)
+  * [Start instances](#start-instances)
+  * [SSH into instances](#ssh-into-instances)
+* [k8s\-0](#k8s-0)
+  * [k3s](#k3s)
+  * [k9s](#k9s)
+  * [plik](#plik)
+  * [config\.yaml](#configyaml)
+  * [frep](#frep)
+* [compute\-x and network\-x](#compute-x-and-network-x)
+  * [logs](#logs)
+  * [playbook](#playbook)
+* [Test your OpenStack deployment](#test-your-openstack-deployment)
+  * [openrc\_admin](#openrc_admin)
+  * [Keystone](#keystone)
+  * [Glance](#glance)
+  * [Neutron](#neutron)
+  * [Nova](#nova)
+  * [Skyline](#skyline)
+  * [In case of error \- debugging](#in-case-of-error---debugging)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
 * [Notes](#notes)
 
 # Introduction
+
 ## Objective
 
 Main objective is to create a small OpenStack infrastructure within an OVH public cloud project (which is also run by OpenStack by the way :p So we will create an OpenStack over OpenStack).
@@ -18,7 +40,7 @@ Main objective is to create a small OpenStack infrastructure within an OVH publi
 
 ```
                    ┌─────────────────────────────────────────────────┐
-                   │       k8s-1  (control plane)                    │
+                   │       k8s-0  (control plane)                    │
           ssh      ├───┐                                             │
       ───────────► │ E │   ┌──────────┐     ┌──────────┐             │
  you               │ N │   │ neutron  │     │ mysql    │             │
@@ -119,16 +141,22 @@ cd bootstrap-openstack-k8s
 ```
 
 ## Start instances
-The `bootstrap.sh` script will start 3 instances:
-* k8s-1
-* compute-1
-* network-1
 
 Open the tofu folder and apply the config
+
 ```bash
 cd tofu/
 tofu apply
 ```
+
+This will create 6 instances:
+
+* k8s-0
+* compute-0
+* compute-1
+* network-0
+* network-1
+
 
 `tofu` is used to deploy all nodes, and a cloud-init postinstall script is then executed to install everything.
 
@@ -157,11 +185,11 @@ chmod 600 ansible/files/zob
 ssh debian@ip -i ansible/files/zob            # replace ip with the real server IP
 ```
 
-# k8s-1
+# k8s-0
 
 ## k3s
 
- On the `k8s-1` instance, you will have `k3s` and few other tools to have a full `kubernetes` cluster.
+ On the `k8s-0` instance, you will have `k3s` and few other tools to have a full `kubernetes` cluster.
  See https://k3s.io/ for more info.
 
 You can take a look at kube resources using:
@@ -228,7 +256,7 @@ frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
-# compute-1
+# compute-x and network-x
 
 ## logs
 You should not have anything to do on the compute or network node, but you can take a look at the agents logs:
@@ -243,7 +271,7 @@ lnav /var/log/neutron-dhcp-agent.log
 
 ## playbook
 
-All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-1` node, not on the `compute-1`).
+All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-0` node, not on the `compute-1`).
 
 To install them, we rely on a playbook.
 
@@ -358,7 +386,7 @@ frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Populate your OpenStack with default values
 
-Back on your `k8s-1` node, as root:
+Back on your `k8s-0` node, as root:
 ```sh
 # Be root if not already done
 sudo su -
