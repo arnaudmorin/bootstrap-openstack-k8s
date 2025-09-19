@@ -1,8 +1,8 @@
 ${file("${path_module}/userdata/generic")}
 echo "starting k8s postinstall"
 
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s
-git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
+git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
 # Install k3s
 curl -sfL https://get.k3s.io | sh -
@@ -22,8 +22,9 @@ cp config/config.yaml.sample config/config.yaml
 ip=$(hostname -I | awk '{print $1}')
 sed -i -r "s/somewhere.net/$${ip}.xip.opensteak.fr/" config/config.yaml
 sed -i -r "s/changeme/${password}/" config/config.yaml
+sed -i -r "s/os_version/${os_version}/" config/config.yaml
 
-Mysql
+# Mysql
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
@@ -44,6 +45,10 @@ frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# MySQL populate
+frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
+kubectl wait --for=condition=complete --timeout=60s jobs/nova-init
 
 # Keystone
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -

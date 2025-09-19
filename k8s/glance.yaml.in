@@ -63,7 +63,7 @@ spec:
     spec:
       initContainers:
       - name: glance-init
-        image: arnaudmorin/openstack-glance:2025.1
+        image: arnaudmorin/openstack-glance:{{.openstack_version}}
         command: ["/opt/openstack/glance/bin/glance-manage", "db_sync"]
         volumeMounts:
         - name: glance-conf
@@ -71,7 +71,7 @@ spec:
           subPath: glance-api.conf
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:2025.1
+        image: arnaudmorin/openstack-glance:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         #securityContext:

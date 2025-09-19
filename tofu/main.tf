@@ -11,9 +11,9 @@ provider "openstack" {
 
 }
 
-variable "os_version" {
+variable "openstack_version" {
   type = string
-  description = "Branch used to deploy the cluster"
+  description = "Openstack version to deploy the cluster, it used to reference branch of bootstrap-openstack-k8s openstack-docker repos and as the tag of the os services images to pull"
   default = "2025.1"
 }
 
@@ -56,6 +56,7 @@ resource "openstack_compute_instance_v2" "k8s" {
     {
       path_module = path.module,
       password = random_password.password.result
+      os_version = var.openstack_version
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -75,6 +76,7 @@ resource "openstack_compute_instance_v2" "computes" {
       path_module = path.module,
       password = random_password.password.result
       k8s_ip = openstack_compute_instance_v2.k8s[0].access_ip_v4
+      os_version = var.openstack_version
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -98,6 +100,7 @@ resource "openstack_compute_instance_v2" "networks" {
       path_module = path.module,
       password = random_password.password.result
       k8s_ip = openstack_compute_instance_v2.k8s[0].access_ip_v4
+      os_version = var.openstack_version
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -109,15 +112,3 @@ resource "openstack_compute_instance_v2" "networks" {
     name = openstack_networking_network_v2.public.name
   }
 }
-
-# resource "local_file" "test" {
-#   content = templatefile("${path.module}/userdata/compute.tftpl",
-#     {
-#       path_module = path.module,
-#       password = random_password.password.result
-#       k8s_ip = openstack_compute_instance_v2.k8s[0].access_ip_v4
-#     }
-#     )
-
-#   filename = "${path.module}/testfile"
-# }

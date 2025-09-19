@@ -48,7 +48,7 @@ spec:
     spec:
       initContainers:
       - name: placement-init
-        image: arnaudmorin/openstack-placement:2025.1
+        image: arnaudmorin/openstack-placement:{{.openstack_version}}
         command: ["/opt/openstack/placement/bin/placement-manage", "db", "sync"]
         volumeMounts:
         - name: placement-conf
@@ -56,7 +56,7 @@ spec:
           subPath: placement.conf
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:2025.1
+        image: arnaudmorin/openstack-placement:{{.openstack_version}}
         # command: [ "/bin/bash", "-c", "--" ]
         # args: [ "source /etc/apache2/envvars && /usr/sbin/apache2 -DFOREGROUND" ]
         # imagePullPolicy: Always
