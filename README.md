@@ -8,6 +8,7 @@ Table of Contents
 * [Bootstrap](#bootstrap)
   * [Source your openrc](#source-your-openrc)
   * [Clone this repo](#clone-this-repo)
+  * [tofu](#tofu)
   * [Start instances](#start-instances)
   * [SSH into instances](#ssh-into-instances)
 * [k8s\-0](#k8s-0)
@@ -139,6 +140,10 @@ source openrc
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git
 cd bootstrap-openstack-k8s
 ```
+
+## tofu
+
+Install `tofu` if not yet done, see here: [https://opentofu.org/docs/intro/install/standalone/](https://opentofu.org/docs/intro/install/standalone/)
 
 ## Start instances
 
