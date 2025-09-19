@@ -62,7 +62,7 @@ Main objective is to create a small OpenStack infrastructure within an OVH publi
                    └─────────────────────────────────────────────────┘
 
                    ┌─────────────────────────────────────────────────┐
-                   │        compute-1 (data plane)                   │
+                   │        compute-0 (data plane)                   │
           ssh      ├───┐                                             │
  you  ───────────► │ E │    ┌─────────────────────┐                  │
                    │ N │    │    neutron agents   │        Using:    │
@@ -85,7 +85,7 @@ net ─────┤ a ├─────┤ S │                            
                                 routed in vRack (vlan 0)
 
                    ┌─────────────────────────────────────────────────┐
-                   │        network-1 (data plane)                   │
+                   │        network-0 (data plane)                   │
           ssh      ├───┐                                             │
  you  ───────────► │ E │    ┌─────────────────────┐                  │
                    │ N │    │    neutron agents   │        Using:    │
@@ -278,7 +278,7 @@ lnav /var/log/neutron-dhcp-agent.log
 
 ## playbook
 
-All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-0` node, not on the `compute-1`).
+All `OpenStack` services running on the compute are going to be executed outside of `kubernetes` (`kubernetes` is installed only on `k8s-0` node, not on the `compute-0`).
 
 To install them, we rely on a playbook.
 
