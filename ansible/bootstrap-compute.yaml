@@ -15,18 +15,18 @@
 
   - name: grab nova and neutron
     get_url:
-      url: "https://github.com/arnaudmorin/openstack-debian/releases/download/v2024.2-27%2Bd64bb38/{{item}}"
+      url: "https://github.com/arnaudmorin/openstack-debian/releases/latest/download/{{item}}"
       dest: "/root/{{item}}"
     with_items:
-      - openstack-nova_2024.2-27+d64bb38_all.deb
-      - openstack-neutron_2024.2-27+d64bb38_all.deb
+      - openstack-nova_2025.1-28+3f10f5e_all.deb 
+      - openstack-neutron_2025.1-28+3f10f5e_all.deb 
 
   - name: install nova and neutron
     apt:
       deb: "/root/{{item}}"
     with_items:
-      - openstack-nova_2024.2-27+d64bb38_all.deb
-      - openstack-neutron_2024.2-27+d64bb38_all.deb
+      - openstack-nova_2025.1-28+3f10f5e_all.deb 
+      - openstack-neutron_2025.1-28+3f10f5e_all.deb 
 
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
     ansible.posix.sysctl:
