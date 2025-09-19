@@ -7,7 +7,6 @@ Table of Contents
 * [Install OpenStack (control plane)](#install-openstack-control-plane)
 * [Install OpenStack (compute and network)](#compute-1)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
-* [For lazy people](#for-lazy-people)
 * [Notes](#notes)
 
 # Introduction
