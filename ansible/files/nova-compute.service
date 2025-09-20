@@ -6,7 +6,6 @@ Wants=libvirtd.service network-online.target
 [Service]
 User=nova
 Group=nova
-Type=notify
 WorkingDirectory=~
 RuntimeDirectory=nova lock/nova
 CacheDirectory=nova
@@ -14,7 +13,6 @@ ExecStart=/opt/openstack/nova/bin/nova-compute --config-dir /etc/nova/ --log-fil
 Restart=on-failure
 LimitNOFILE=65535
 TimeoutStopSec=15
-NotifyAccess=all
 
 [Install]
 WantedBy=multi-user.target

@@ -6,7 +6,6 @@ Wants=openvswitch-switch.service network-online.target
 [Service]
 User=neutron
 Group=neutron
-Type=notify
 WorkingDirectory=~
 RuntimeDirectory=neutron lock/neutron
 CacheDirectory=neutron
@@ -14,7 +13,6 @@ ExecStart=/opt/openstack/neutron/bin/neutron-dhcp-agent --config-file /etc/neutr
 Restart=on-failure
 LimitNOFILE=65535
 TimeoutStopSec=15
-NotifyAccess=all
 
 [Install]
 WantedBy=multi-user.target
