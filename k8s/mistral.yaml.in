@@ -67,6 +67,8 @@ metadata:
   name: mistral-api
   labels:
     app: mistral-api
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
@@ -125,6 +127,8 @@ metadata:
   name: mistral-engine
   labels:
     app: mistral-engine
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   serviceName: mistral-engine
   replicas: 1
@@ -159,6 +163,8 @@ metadata:
   name: mistral-executor
   labels:
     app: mistral-executor
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   serviceName: mistral-executor
   replicas: 1

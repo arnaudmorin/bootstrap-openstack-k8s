@@ -24,6 +24,10 @@ sed -i -r "s/somewhere.net/$${ip}.xip.opensteak.fr/" config/config.yaml
 sed -i -r "s/changeme/${password}/" config/config.yaml
 sed -i -r "s/os_version/${os_version}/" config/config.yaml
 
+# Stakater reloader
+# This is not mandatory, but useful to auto-restart deployments / statefulset when a configmap change
+kubectl apply -f https://raw.githubusercontent.com/stakater/Reloader/v1.4.8/deployments/kubernetes/reloader.yaml
+
 # Mysql
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl apply -f -

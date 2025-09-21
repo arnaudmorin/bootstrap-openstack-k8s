@@ -51,6 +51,8 @@ metadata:
   name: glance
   labels:
     app: glance
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:

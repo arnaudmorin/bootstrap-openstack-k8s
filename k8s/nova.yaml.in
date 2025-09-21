@@ -96,8 +96,10 @@ metadata:
   name: nova-api
   labels:
     app: nova-api
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: nova-api
@@ -145,6 +147,8 @@ metadata:
   name: nova-metadata-api
   labels:
     app: nova-metadata-api
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
@@ -179,8 +183,10 @@ metadata:
   name: nova-conductor
   labels:
     app: nova-conductor
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
-  replicas: 1
+  replicas: 2
   podManagementPolicy: Parallel
   selector:
     matchLabels:
@@ -212,8 +218,10 @@ metadata:
   name: nova-scheduler
   labels:
     app: nova-scheduler
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
-  replicas: 1
+  replicas: 2
   podManagementPolicy: Parallel
   selector:
     matchLabels:
@@ -245,6 +253,8 @@ metadata:
   name: nova-vnc
   labels:
     app: nova-vnc
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
@@ -277,6 +287,8 @@ metadata:
   name: nova-spice
   labels:
     app: nova-spice
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
@@ -309,6 +321,8 @@ metadata:
   name: nova-serial
   labels:
     app: nova-serial
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:
