@@ -85,7 +85,7 @@ spec:
         command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
         volumeMounts:
         - name: mistral-conf
-          mountPath: /etc /mistral/mistral.conf
+          mountPath: "/etc/mistral/mistral.conf"
           subPath: mistral.conf
       - name: mistral-db-populate
         image: arnaudmorin/openstack-mistral:{{.openstack_version}}
