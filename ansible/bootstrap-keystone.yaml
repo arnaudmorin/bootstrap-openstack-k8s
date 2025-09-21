@@ -22,7 +22,7 @@
 
   - name: install openstack client in os-cli venv
     command: |
-      /opt/oscli/bin/pip install python-openstackclient
+      /opt/oscli/bin/pip install python-openstackclient python-mistralclient
     args:
       creates: /opt/oscli/bin/openstack
 
