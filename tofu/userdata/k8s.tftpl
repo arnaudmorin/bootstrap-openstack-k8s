@@ -88,6 +88,9 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 # Nova
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
+# Mistral
+frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
 # Skyline
 frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
