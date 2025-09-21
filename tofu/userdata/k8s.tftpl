@@ -16,6 +16,9 @@ alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --l
 alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
+# We may need docker to build images
+apt-get -y install docker.io
+
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
