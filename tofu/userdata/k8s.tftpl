@@ -1,6 +1,21 @@
 ${file("${path_module}/userdata/generic")}
 echo "starting k8s postinstall"
 
+# Add useful aliases - not useful everywhere but at least we have them
+cat << 'EOF' > /etc/profile.d/aliases.sh
+alias k=kubectl
+alias l=stern
+alias os=openstack
+alias frep-rabbit='frep /root/bootstrap-openstack-k8s/k8s/rabbit.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-keystone='frep /root/bootstrap-openstack-k8s/k8s/keystone.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-glance='frep /root/bootstrap-openstack-k8s/k8s/glance.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-placement='frep /root/bootstrap-openstack-k8s/k8s/placement.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-neutron='frep /root/bootstrap-openstack-k8s/k8s/neutron.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-nova='frep /root/bootstrap-openstack-k8s/k8s/nova.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+EOF
+
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
