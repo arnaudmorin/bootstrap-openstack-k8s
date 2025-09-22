@@ -24,29 +24,29 @@ spec:
         configMap:
           name: nova-conf
 
-#---
-##
-## CINDER JOBS
-##
-#apiVersion: batch/v1
-#kind: Job
-#metadata:
-#  name: cinder-init
-#spec:
-#  template:
-#    spec:
-#      restartPolicy: Never
-#      containers:
-#      - name: cinder
-#        image: arnaudmorin/openstack-cinder:2024.2
-#        command: ["cinder-manage", "db", "sync"]
-#        volumeMounts:
-#        - name: cinder-conf
-#          mountPath: /etc/cinder/cinder.conf
-#          subPath: cinder.conf
-#      volumes:
-#      - name: cinder-conf
-#        configMap:
-#          name: cinder-conf
-#  backoffLimit: 4
+---
+#
+# CINDER JOBS
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+ name: cinder-init
+spec:
+ template:
+   spec:
+     restartPolicy: Never
+     containers:
+     - name: cinder
+       image: arnaudmorin/openstack-cinder:{{.openstack_version}}
+       command: ["/opt/openstack/cinder/bin/cinder-manage", "db", "sync"]
+       volumeMounts:
+       - name: cinder-conf
+         mountPath: /etc/cinder/cinder.conf
+         subPath: cinder.conf
+     volumes:
+     - name: cinder-conf
+       configMap:
+         name: cinder-conf
+ backoffLimit: 4
 
