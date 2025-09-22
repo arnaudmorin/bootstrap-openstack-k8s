@@ -66,6 +66,9 @@ spec:
           mountPath: /var/lib/mysql
         - name: mysql-initdb-{{ .db_name }}
           mountPath: /docker-entrypoint-initdb.d
+        - name: my-cnf
+          mountPath: /root/.my.cnf
+          subPath: ".my.cnf"
       volumes:
       - name: mysql-persistent-storage-{{ .db_name }}
         persistentVolumeClaim:
@@ -73,3 +76,6 @@ spec:
       - name: mysql-initdb-{{ .db_name }}
         configMap:
           name: initdb-{{ .db_name }}
+      - name: my-cnf
+        configMap:
+          name: my-cnf
