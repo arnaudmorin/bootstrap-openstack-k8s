@@ -126,8 +126,7 @@ spec:
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/opt/openstack/nova/bin/nova-api-wsgi", "--port", "8774", "--host", "0.0.0.0" ]
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8774", "--wsgi-file", "/opt/openstack/nova/bin/nova-api-wsgi" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
@@ -162,8 +161,7 @@ spec:
       containers:
       - name: nova-metadata-api
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/opt/openstack/nova/bin/nova-metadata-wsgi", "--port", "8775", "--host", "0.0.0.0" ]
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "-wsgi-file", "/opt/openstack/nova/bin/nova-metadata-wsgi" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8775
