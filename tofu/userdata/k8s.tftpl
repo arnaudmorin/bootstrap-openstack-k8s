@@ -49,6 +49,9 @@ sed -i -r "s/os_version/${os_version}/" config/config.yaml
 # This is not mandatory, but useful to auto-restart deployments / statefulset when a configmap change
 kubectl apply -f https://raw.githubusercontent.com/stakater/Reloader/v1.4.8/deployments/kubernetes/reloader.yaml
 
+# Config
+frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
 # Mysql
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl apply -f -
@@ -64,9 +67,6 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-neutron
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-glance
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
-
-# Config
-frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -

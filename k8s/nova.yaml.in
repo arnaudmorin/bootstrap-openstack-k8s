@@ -161,7 +161,7 @@ spec:
       containers:
       - name: nova-metadata-api
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
-        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "-wsgi-file", "/opt/openstack/nova/bin/nova-metadata-wsgi" ]
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "--wsgi-file", "/opt/openstack/nova/bin/nova-metadata-wsgi" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8775
