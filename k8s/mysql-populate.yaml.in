@@ -1,4 +1,7 @@
 ---
+# NOTE(arnaud) this nova init job is doing the cell configuration
+# db-sync is done in nova-api deployment using init container like any other
+# service
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -23,30 +26,3 @@ spec:
       - name: nova-conf
         configMap:
           name: nova-conf
-
----
-#
-# CINDER JOBS
-#
-apiVersion: batch/v1
-kind: Job
-metadata:
- name: cinder-init
-spec:
- template:
-   spec:
-     restartPolicy: Never
-     containers:
-     - name: cinder
-       image: arnaudmorin/openstack-cinder:{{.openstack_version}}
-       command: ["/opt/openstack/cinder/bin/cinder-manage", "db", "sync"]
-       volumeMounts:
-       - name: cinder-conf
-         mountPath: /etc/cinder/cinder.conf
-         subPath: cinder.conf
-     volumes:
-     - name: cinder-conf
-       configMap:
-         name: cinder-conf
- backoffLimit: 4
-

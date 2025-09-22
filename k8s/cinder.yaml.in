@@ -48,6 +48,14 @@ spec:
       labels:
         app: cinder
     spec:
+      initContainers:
+      - name: cinder
+        image: arnaudmorin/openstack-cinder:{{.openstack_version}}
+        command: ["/opt/openstack/cinder/bin/cinder-manage", "db", "sync"]
+        volumeMounts:
+        - name: cinder-conf
+          mountPath: /etc/cinder/cinder.conf
+          subPath: cinder.conf
       containers:
       - name: cinder
         image: arnaudmorin/openstack-cinder:{{.openstack_version}}
