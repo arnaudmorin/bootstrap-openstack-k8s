@@ -85,8 +85,7 @@ spec:
         image: arnaudmorin/openstack-keystone:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/opt/openstack/keystone/bin/keystone-wsgi-public", "--port", "5000", "--host", "0.0.0.0" ]
+        command: [ "/opt/openstack/keystone/bin/uwsgi", "--http", ":5000", "--wsgi-file", "/opt/openstack/keystone/bin/keystone-wsgi-public" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000

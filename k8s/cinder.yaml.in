@@ -53,8 +53,7 @@ spec:
         image: arnaudmorin/openstack-cinder:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "dumb-init", "--single-child", "--" ]
-        args: [ "/opt/openstack/cinder/bin/cinder-wsgi", "--port", "8776", "--host", "0.0.0.0" ]
+        command: [ "/opt/openstack/cinder/bin/uwsgi", "--http", ":8776", "--wsgi-file", "/opt/openstack/cinder/bin/cinder-wsgi" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0

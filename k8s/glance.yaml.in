@@ -76,6 +76,7 @@ spec:
         image: arnaudmorin/openstack-glance:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
+        command: [ "/opt/openstack/glance/bin/glance-api", "--http", ":9292", "--wsgi-file", "/opt/openstack/glance/bin/glance-wsgi-api" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
