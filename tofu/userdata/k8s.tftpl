@@ -6,6 +6,7 @@ cat << 'EOF' > /etc/profile.d/aliases.sh
 alias k=kubectl
 alias l=stern
 alias os=openstack
+alias frep-config='frep /root/bootstrap-openstack-k8s/k8s/config.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-rabbit='frep /root/bootstrap-openstack-k8s/k8s/rabbit.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-keystone='frep /root/bootstrap-openstack-k8s/k8s/keystone.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-glance='frep /root/bootstrap-openstack-k8s/k8s/glance.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
