@@ -59,7 +59,7 @@ spec:
       containers:
       - name: placement
         image: arnaudmorin/openstack-placement:{{.openstack_version}}
-        command: [ "/opt/openstack/placement/bin/uwsgi", "--http", ":8778", "--wsgi-file", "/opt/openstack/placement/bin/placement-api" ]
+        command: [ "/opt/openstack/placement/bin/uwsgi", "--http", "0.0.0.0:8778", "--wsgi-file", "/opt/openstack/placement/bin/placement-api" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 8778
