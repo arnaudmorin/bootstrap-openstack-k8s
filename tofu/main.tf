@@ -23,7 +23,7 @@ resource "random_password" "password" {
 }
 
 resource "openstack_networking_network_v2" "public" {
-  name                  = "public"
+  name                  = "${terraform.workspace}-public"
   port_security_enabled = false
   value_specs = {
     "provider:network_type"    = "vrack"
@@ -42,14 +42,14 @@ resource "openstack_networking_subnet_v2" "public_subnet" {
 }
 
 resource "openstack_compute_keypair_v2" "zob" {
-  name       = "zob"
+  name       = "${terraform.workspace}-zob"
   public_key = file("${path.module}/../ansible/files/zob.pub")
 }
 
 resource "openstack_compute_instance_v2" "k8s" {
   count = 1
 
-  name        = "k8s-${count.index}"
+  name        = "${terraform.workspace}-k8s-${count.index}"
   image_name  = "Debian 12"
   flavor_name = "r3-64"
   user_data = templatefile("${path.module}/userdata/k8s.tftpl",
@@ -68,7 +68,7 @@ resource "openstack_compute_instance_v2" "k8s" {
 resource "openstack_compute_instance_v2" "computes" {
   count = 2
 
-  name        = "compute-${count.index}"
+  name        = "${terraform.workspace}-compute-${count.index}"
   image_name  = "Debian 12"
   flavor_name = "r3-64"
   user_data = templatefile("${path.module}/userdata/compute.tftpl",
@@ -92,7 +92,7 @@ resource "openstack_compute_instance_v2" "computes" {
 resource "openstack_compute_instance_v2" "networks" {
   count = 2
 
-  name        = "network-${count.index}"
+  name        = "${terraform.workspace}-network-${count.index}"
   image_name  = "Debian 12"
   flavor_name = "r3-64"
   user_data = templatefile("${path.module}/userdata/network.tftpl",
