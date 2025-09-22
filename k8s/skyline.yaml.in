@@ -60,6 +60,7 @@ spec:
       containers:
       - name: skyline
         image: arnaudmorin/openstack-skyline:{{.openstack_version}}
+        command: [ "/usr/local/bin/skyline-start"]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8080

@@ -64,9 +64,45 @@ spec:
         image: arnaudmorin/openstack-neutron:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
+        command: [ "/opt/openstack/neutron/bin/uwsgi", "--http", ":9696", "--wsgi-file", "/opt/openstack/neutron/bin/neutron-api" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 9696
+        volumeMounts:
+        - name: neutron-conf
+          mountPath: /etc/neutron/neutron.conf
+          subPath: neutron.conf
+        - name: neutron-conf
+          mountPath: /etc/neutron/plugins/ml2/ml2_conf.ini
+          subPath: ml2_conf.ini
+      volumes:
+      - name: neutron-conf
+        configMap:
+          name: neutron-conf
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neutron-rpc
+  labels:
+    app: neutron-rpc
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neutron-rpc
+  template:
+    metadata:
+      labels:
+        app: neutron-rpc
+    spec:
+      containers:
+      - name: neutron-rpc
+        image: arnaudmorin/openstack-neutron:{{.openstack_version}}
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/neutron/bin/neutron-rpc-server" ]
         volumeMounts:
         - name: neutron-conf
           mountPath: /etc/neutron/neutron.conf
