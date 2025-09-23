@@ -101,4 +101,21 @@ frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
 # Skyline
 frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
+kubectl wait --for=condition=available --timeout=60s deployment/nova-api
+kubectl wait --for=condition=available --timeout=60s deployment/glance
+kubectl wait --for=condition=available --timeout=60s deployment/neutron-api
+
+# Pre-populate openstack
+source /root/openrc_admin
+source /root/helper
+
+create_flavors
+create_image_cirros
+create_image_debian
+
+source /root/openrc_demo
+create_network_private
+create_rules
+create_key
+
 echo "done"

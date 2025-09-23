@@ -9,7 +9,7 @@ function create_flavors(){(
 )}
 
 function create_image_cirros(){(
-    [ -f cirros-0.6.2-x86_64-disk.img ] || wget https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
+    [ -f cirros-0.6.2-x86_64-disk.img ] || curl -fLO https://download.cirros-cloud.net/0.6.2/cirros-0.6.2-x86_64-disk.img
     set -xv
     openstack image create \
      --file cirros-0.6.2-x86_64-disk.img \
@@ -26,7 +26,7 @@ function create_image_cirros(){(
 )}
 
 function create_image_debian(){(
-    [ -f debian-12-genericcloud-amd64.qcow2 ] || wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+    [ -f debian-12-genericcloud-amd64.qcow2 ] || curl -fLO https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
     set -xv
     openstack image create \
      --file debian-12-genericcloud-amd64.qcow2 \
