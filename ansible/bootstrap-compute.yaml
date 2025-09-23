@@ -244,6 +244,14 @@
       - { section: "libvirt", option: "cpu_mode", value: "custom" }
       - { section: "libvirt", option: "cpu_models", value: "EPYC" }
       - { section: "libvirt", option: "live_migration_inbound_addr", value: "$my_ip" }    # NOTE by default it use hostname, painful to maintain /etc/hosts between computes
+      - { section: "service_user", option: "send_service_user_token", value: "true" }
+      - { section: "service_user", option: "auth_url", value: "http://keystone.{{domain}}" }
+      - { section: "service_user", option: "auth_type", value: "password" }
+      - { section: "service_user", option: "project_domain_name", value: "default" }
+      - { section: "service_user", option: "project_name", value: "service" }
+      - { section: "service_user", option: "user_domain_name", value: "default" }
+      - { section: "service_user", option: "username", value: "nova" }
+      - { section: "service_user", option: "password", value: "{{password}}" }
     notify:
       - restart nova
 
