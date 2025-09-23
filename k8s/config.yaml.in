@@ -36,7 +36,7 @@ metadata:
 data:
   glance-api.conf: |
     [DEFAULT]
-    debug = True
+    # debug = True
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-glance/glance
     [glance_store]
