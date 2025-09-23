@@ -1,6 +1,8 @@
 ---
 - name: Install
   hosts: localhost
+  vars:
+    user_password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
   vars_files:
     - ../config/config.yaml
   tasks:
@@ -19,7 +21,7 @@
   - name: create user
     os_user:
       name: "{{project_name}}_user1"
-      password: "{{password}}"
+      password: "{{user_password}}"
       default_project: "{{project_name}}"
       description: "user for {{project_name}}"
       region_name: "RegionOne"
@@ -37,7 +39,7 @@
   - name: "create openrc_{{ project_name }} file"
     vars:
       openrc_user: "{{project_name}}_user1"
-      openrc_password: "{{password}}"
+      openrc_password: "{{user_password}}"
       openrc_project: "{{project_name}}"
       openrc_auth_url: "http://keystone.{{domain}}/v3"
     template:
