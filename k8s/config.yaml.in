@@ -343,6 +343,7 @@ data:
     [placement]
     # See https://bugs.launchpad.net/placement/+bug/2070257
     max_allocation_candidates = 1000
+    allocation_candidates_generation_strategy = breadth-first
 
 ---
 apiVersion: v1
