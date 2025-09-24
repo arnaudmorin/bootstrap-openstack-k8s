@@ -148,3 +148,8 @@ function create_router(){(
     openstack router set --external-gateway public router
     openstack router add subnet router 192.168.42.0/24
 )}
+
+function create_workflow(){(
+    set -xv
+    openstack workflow execution create create_instance '{"name":"test-from-wf", "image":"cirros", "flavor":"small", "keypair":"zob", "network":"private"}'
+)}
