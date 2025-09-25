@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: octavia
+spec:
+  selector:
+    app: octavia-api
+  ports:
+    - port: 9876
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: octavia
+  annotations:
+    spec.ingressClassName: traefik
+spec:
+  rules:
+  - host: octavia.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: octavia
+            port:
+              number: 9876
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octavia-api
+  labels:
+    app: octavia-api
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octavia-api
+  template:
+    metadata:
+      labels:
+        app: octavia-api
+    spec:
+      containers:
+      - name: octavia-api
+        image: localhost:5000/octavia-docker:2025.1
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/octavia/bin/octavia-api" ]
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 9876
+        volumeMounts:
+        - name: octavia-conf
+          mountPath: /etc/octavia/octavia.conf
+          subPath: octavia.conf
+      volumes:
+      - name: octavia-conf
+        configMap:
+          name: octavia-conf
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octavia-worker
+  labels:
+    app: octavia-worker
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: octavia-worker
+  template:
+    metadata:
+      labels:
+        app: octavia-worker 
+    spec:
+      containers:
+      - name: octavia-worker
+        image: localhost:5000/octavia-docker:2025.1
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/octavia/bin/octavia-worker" ]
+        volumeMounts:
+        - name: octavia-conf
+          mountPath: /etc/octavia/octavia.conf
+          subPath: octavia.conf
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/server_ca.cert.pem
+          subPath: server_ca_cert
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/server_ca.key.pem
+          subPath: server_ca_key
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/client_ca.cert.pem
+          subPath: client_ca_cert
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/client.cert-and-key.pem
+          subPath: client_cert_key
+      - name: octavia-health-manager
+        image: localhost:5000/octavia-docker:2025.1
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/octavia/bin/octavia-health-manager" ]
+        volumeMounts:
+        - name: octavia-conf
+          mountPath: /etc/octavia/octavia.conf
+          subPath: octavia.conf
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/server_ca.cert.pem
+          subPath: server_ca_cert
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/server_ca.key.pem
+          subPath: server_ca_key
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/client_ca.cert.pem
+          subPath: client_ca_cert
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/client.cert-and-key.pem
+          subPath: client_cert_key
+      - name: octavia-housekeeing
+        image: localhost:5000/octavia-docker:2025.1
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/octavia/bin/octavia-housekeeping" ]
+        volumeMounts:
+        - name: octavia-conf
+          mountPath: /etc/octavia/octavia.conf
+          subPath: octavia.conf
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/server_ca.cert.pem
+          subPath: server_ca_cert
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/server_ca.key.pem
+          subPath: server_ca_key
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/client_ca.cert.pem
+          subPath: client_ca_cert
+        - name: octavia-conf
+          mountPath: /etc/octavia/certificates/client.cert-and-key.pem
+          subPath: client_cert_key
+      volumes:
+      - name: octavia-conf
+        configMap:
+          name: octavia-conf
+

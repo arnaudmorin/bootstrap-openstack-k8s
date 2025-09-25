@@ -26,3 +26,24 @@ spec:
       - name: nova-conf
         configMap:
           name: nova-conf
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: octavia-init
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: octavia
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
+        command: [ "/opt/openstack/octavia/bin/octavia-db-manage", "--config-file", "/etc/octavia/octavia.conf", "upgrade", "head" ]
+        volumeMounts:
+        - name: octavia-conf
+          mountPath: /etc/octavia/octavia.conf
+          subPath: octavia.conf
+      volumes:
+      - name: octavia-conf
+        configMap:
+          name: octavia-conf
