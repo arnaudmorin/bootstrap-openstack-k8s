@@ -17,7 +17,10 @@
   - name: create Octavia network
     shell: |
       source /root/openrc_octavia
-      openstack network create lb-mgmt-net
+      openstack network create \
+        --provider-physical-network provider-octavia \
+        --provider-network-type flat \
+        lb-mgmt-net
       [ $? -eq 0 ] && touch /root/.ansible_octavia_network
     args:
       executable: /bin/bash
@@ -26,7 +29,13 @@
   - name: create Octavia subnet
     shell: |
       source /root/openrc_octavia
-      openstack subnet create --network lb-mgmt-net --subnet-range 172.21.0.0/16 --dhcp --dns-nameserver 1.1.1.1 lb-mgmt-subnet
+      openstack subnet create \
+        --network lb-mgmt-net \
+        --subnet-range 172.21.0.0/16 \
+        --dhcp \
+        --dns-nameserver 1.1.1.1 \
+        --allocation-pool start=172.21.0.16,end=172.21.255.254 \
+        lb-mgmt-subnet
       [ $? -eq 0 ] && touch /root/.ansible_octavia_subnetwork
     args:
       executable: /bin/bash
@@ -67,11 +76,16 @@
       executable: /bin/bash
       creates: /root/.ssh/octavia.priv
 
+  - name: get Octavia amphora image
+    get_url:
+      url: https://tarballs.opendev.org/openstack/octavia/test-images/test-only-amphora-x64-haproxy-ubuntu-noble.qcow2
+      dest: ./files/amphora.qcow2
+
   - name: create Octavia amphora image
     shell: |
       source /root/openrc_octavia
       openstack image create \
-        --file ./files/amphora-zed-jammy-v338.qcow2 \
+        --file ./files/amphora.qcow2 \
         --container-format bare \
         --disk-format qcow2 \
         --tag amphora \

@@ -58,6 +58,22 @@
     command: ip link set ens4 up
     changed_when: false
 
+  - name: create br-octavia ovs bridge
+    openvswitch_bridge:
+      bridge: br-octavia
+      fail_mode: secure
+      state: present
+
+  - name: add second network card in br-octavia
+    openvswitch_port:
+      bridge: br-octavia
+      port: "ens5"
+      state: present
+
+  - name: setting third interface up
+    command: ip link set ens5 up
+    changed_when: false
+
   - name: create br-flat ovs bridge
     openvswitch_bridge:
       bridge: br-flat
@@ -166,7 +182,7 @@
       - { section: "agent", option: "arp_responder", value: "true" }
       - { section: "agent", option: "enable_distributed_routing", value: "true" }
       - { section: "ovs", option: "local_ip", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex,flat:br-flat" }
+      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex,flat:br-flat,provider-octavia:br-octavia" }
       - { section: "securitygroup", option: "enable_security_group", value: "true" }
       - { section: "securitygroup", option: "firewall_driver", value: "openvswitch" }
     notify:

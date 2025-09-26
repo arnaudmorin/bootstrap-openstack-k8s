@@ -503,7 +503,7 @@ kind: ConfigMap
 metadata:
   name: octavia-conf
 data:
-  octavia.cnf: |
+  octavia.conf: |
     [DEFAULT]
     transport_url = rabbit://openstack:{{.password}}@rabbit
     debug = False
@@ -523,7 +523,7 @@ data:
     connect_retries = 5
     [certificates]
     cert_generator = local_cert_generator
-    ca_certificates = /etc/octavia/certificates/server_ca.cert.pem
+    ca_certificate = /etc/octavia/certificates/server_ca.cert.pem
     ca_private_key = /etc/octavia/certificates/server_ca.key.pem
     ca_private_key_passphrase = pass
     [controller_worker]
@@ -533,7 +533,7 @@ data:
     amp_ssh_key_name = amphora_keypair
     amp_boot_network_list = {{.amp.boot_network_list}}
     amp_secgroup_list = {{.amp.secgroup_list}}
-    loadbalancer_topology = {{.amp.secgroup_list}}
+    loadbalancer_topology = ACTIVE_STANDBY
     [haproxy_amphora]
     client_cert = /etc/octavia/certificates/client_ca.cert-and-key.pem
     server_ca = /etc/octavia/certificates/server_ca.cert.pem
