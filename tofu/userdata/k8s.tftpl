@@ -18,10 +18,36 @@ alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --l
 EOF
 
 # We may need docker to build images
-apt-get -y install docker.io
+# Add Docker's official GPG key:
+apt-get update
+apt-get install ca-certificates curl
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
+
+# Setup SSH config for easy access to computes and networks node
+chmod 600 /root/bootstrap-openstack-k8s/ansible/files/zob
+
+mkdir -p /root/.ssh/config.d/
+echo "Include config.d/*" > /root/.ssh/config
+tee /root/.ssh/config.d/os.conf << EOF
+Match host="compute-*,network-*"
+      User root
+      StrictHostKeyChecking no
+      UserKnownHostsFile /dev/null
+      IdentityFile /root/bootstrap-openstack-k8s/ansible/files/zob
+EOF
 
 # Install k3s
 curl -sfL https://get.k3s.io | sh -
