@@ -57,6 +57,8 @@ resource "openstack_compute_instance_v2" "k8s" {
       path_module = path.module,
       password    = random_password.password.result
       os_version  = var.openstack_version
+      workspace   = terraform.workspace
+      name        = "k8s-${count.index}"
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -77,6 +79,8 @@ resource "openstack_compute_instance_v2" "computes" {
       password    = random_password.password.result
       k8s_ip      = openstack_compute_instance_v2.k8s[0].access_ip_v4
       os_version  = var.openstack_version
+      workspace   = terraform.workspace
+      hostname    = "compute-${count.index}"
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -101,6 +105,8 @@ resource "openstack_compute_instance_v2" "networks" {
       password    = random_password.password.result
       k8s_ip      = openstack_compute_instance_v2.k8s[0].access_ip_v4
       os_version  = var.openstack_version
+      workspace   = terraform.workspace
+      hostname    = "network-${count.index}"
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -115,9 +121,9 @@ resource "openstack_compute_instance_v2" "networks" {
 
 output "ssh_commands" {
   value = merge(
-    { for idx, instance in openstack_compute_instance_v2.k8s : instance.name => "ssh debian@${instance.access_ip_v4}" },
-    { for idx, instance in openstack_compute_instance_v2.computes : instance.name => "ssh debian@${instance.access_ip_v4}" },
-    { for idx, instance in openstack_compute_instance_v2.networks : instance.name => "ssh debian@${instance.access_ip_v4}" }
+    { for idx, instance in openstack_compute_instance_v2.k8s : instance.name => "ssh root@${instance.access_ip_v4}" },
+    { for idx, instance in openstack_compute_instance_v2.computes : instance.name => "ssh root@${instance.access_ip_v4}" },
+    { for idx, instance in openstack_compute_instance_v2.networks : instance.name => "ssh root@${instance.access_ip_v4}" }
   )
   description = "SSH commands (make sure you loaded the 'zob' key in your ssh-agent)"
 }

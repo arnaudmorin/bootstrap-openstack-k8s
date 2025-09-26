@@ -11,4 +11,9 @@ sed -i -r "s/os_version/${os_version}/" config/config.yaml
 
 ansible-playbook ansible/bootstrap-compute.yaml
 
+echo "${k8s_ip} k8s" >> /etc/hosts
+
+chmod 600 ansible/files/zob
+echo "$(hostname -I | awk '{print $1}') ${hostname}" | ssh -o "StrictHostKeyChecking no" -i ansible/files/zob root@k8s tee -a /etc/hosts
+
 echo "done"
