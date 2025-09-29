@@ -15,6 +15,7 @@ alias frep-neutron='frep /root/bootstrap-openstack-k8s/k8s/neutron.yaml.in:- --l
 alias frep-nova='frep /root/bootstrap-openstack-k8s/k8s/nova.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -87,6 +88,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
@@ -94,6 +96,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-neutron
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-glance
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -163,5 +166,24 @@ source /root/openrc_demo
 create_network_private
 create_rules
 create_key
+
+# Octavia bootstrap
+ansible-playbook ansible/bootstrap-octavia.yaml
+
+source /root/openrc_octavia
+octavia_flavor=$(openstack flavor show medium -f json | jq -r ".id")
+octavia_net=$(openstack network show lb-mgmt-net -f json | jq -r ".id")
+octavia_secgroup=$(openstack security group show octavia-amphora -f json | jq -r ".id")
+
+sed -ir "s/amp_flavor_id/$${octavia_flavor}/" config/config.yaml
+sed -ir "s/amp_boot_network_list/$${octavia_net}/" config/config.yaml
+sed -ir "s/amp_secgroup_list/$${octavia_secgroup}/" config/config.yaml
+
+# Octavia
+frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
+frep k8s/octavia.yaml.in:- --load config/config.yaml | kubectl apply -f -
+kubectl wait --for=condition=available --timeout=60s deployment/octavia-api
+
+ip addr add 172.21.0.5/16 dev ens4
 
 echo "done"

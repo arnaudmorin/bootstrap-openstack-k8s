@@ -137,6 +137,10 @@ resource "openstack_compute_instance_v2" "networks" {
   network {
     uuid = openstack_networking_network_v2.public.id
   }
+
+  network {
+    uuid = openstack_networking_network_v2.octavia_mgmt.id
+  }
 }
 
 output "ssh_commands" {
