@@ -1,0 +1,89 @@
+---
+region: RegionOne
+endpoints:
+  nova:
+    service_type: compute
+    endpoints:
+      public: http://nova.{{.domain}}/v2.1
+      admin: http://nova.{{.domain}}/v2.1
+      internal: http://nova.{{.domain}}/v2.1
+  neutron:
+    service_type: network
+    endpoints:
+      public: http://neutron.{{.domain}}
+      admin: http://neutron.{{.domain}}
+      internal: http://neutron.{{.domain}}      
+  placement:
+    service_type: placement
+    endpoints:
+      public: http://placement.{{.domain}}
+      admin: http://placement.{{.domain}}
+      internal: http://placement.{{.domain}}
+  glance:
+    service_type: image
+    endpoints:
+      public: http://glance.{{.domain}}
+      admin: http://glance.{{.domain}}
+      internal: http://glance.{{.domain}}
+  cinderv2:
+    service_type: volumev2
+    endpoints:
+      public: http://cinder.{{.domain}}/v2/%(project_id)s
+      admin: http://cinder.{{.domain}}/v2/%(project_id)s
+      internal: http://cinder.{{.domain}}/v2/%(project_id)s
+  cinderv3:
+    service_type: volumev3
+    endpoints:
+      public: http://cinder.{{.domain}}/v3/%(project_id)s
+      admin: http://cinder.{{.domain}}/v3/%(project_id)s
+      internal: http://cinder.{{.domain}}/v3/%(project_id)s
+  mistral:
+    service_type: workflowv2
+    endpoints:
+      public: http://mistral.{{.domain}}/v2
+      admin: http://mistral.{{.domain}}/v2
+      internal: http://mistral.{{.domain}}/v2
+users_roles:
+  default:
+    service:
+      nova:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      neutron:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      placement:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      glance:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      cinder:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      mistral:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      skyline:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+    demo:
+      demo:
+        roles:
+        - user
+        - member
+        password: {{.password}}
