@@ -107,7 +107,27 @@ frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/keystone
 
 # Keystone bootstrap
-ansible-playbook ansible/bootstrap-keystone.yaml
+apt-get install -y python3-venv
+python3 -m venv /opt/oscli || echo "Venv creation failed"
+/opt/oscli/bin/pip install --upgrade pip
+/opt/oscli/bin/pip install python-openstackclient python-mistralclient
+
+ln -s /opt/oscli/bin/openstack /usr/local/bin/openstack
+mkdir -p /etc/bash_completion.d/
+openstack complete > /etc/bash_completion.d/openstack
+
+frep files/openrc.in:/root/openrc_admin --load config/config.yaml \
+     -e openrc_user=admin -e openrc_project=admin
+frep files/openrc.in:/root/openrc_demo --load config/config.yaml \
+     -e openrc_user=demo -e openrc_project=demo
+cp files/helper /root/helper
+
+cd keystone_ressources
+frep keystone-auth.conf.in:keystone-auth.conf --load ../config/config.yaml
+frep keystone-settings.yaml.in:keystone-settings.yaml --load ../config/config.yaml
+source /opt/oscli/bin/activate
+./create-keystone-ressources --conf keystone-auth.conf --keystone_conf keystone-settings.yaml --log info
+cd ../
 
 # Glance
 frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
