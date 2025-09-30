@@ -44,36 +44,62 @@
 
 
   # br-ex
-  - name: create br-ex ovs bridge
-    openvswitch_bridge:
-      bridge: br-ex
-      fail_mode: secure
-      state: present
-    changed_when: false
+  - name: check if br-ex exists
+    command: ovs-vsctl br-exists br-ex
+    register: ovs_br_ex_exists
+    ignore_errors: true
 
-  - name: add second network card in br-ex
-    openvswitch_port:
-      bridge: br-ex
-      port: "ens4"
-      state: present
-    changed_when: false
-      
+  - name: create br-ex ovs bridge
+    command: ovs-vsctl add-br br-ex
+    when: ovs_br_ex_exists.rc == 2
+
+  - name: check fail mode br-ex
+    command: ovs-vsctl get-fail-mode br-ex
+    register: ovs_br_ex_fail_mode
+
+  - name: set fail mode to secure on br-ex
+    command: ovs-vsctl set-fail-mode br-ex secure
+    when: ovs_br_ex_fail_mode.stdout != 'secure'
+
+  - name: check physical port in br-ex
+    command: ovs-vsctl port-to-br ens4
+    register: ovs_br_ex_port
+    ignore_errors: true
+
+  - name: set physical port in br-ex
+    command: ovs-vsctl add-port br-ex ens4
+    when: ovs_br_ex_port.stdout != 'br-ex'
+  
   - name: setting second interface up
     command: ip link set ens4 up
     changed_when: false
 
   # br-octavia
-  - name: create br-octavia ovs bridge
-    openvswitch_bridge:
-      bridge: br-octavia
-      fail_mode: secure
-      state: present
+  - name: check if br-octavia exists
+    command: ovs-vsctl br-exists br-octavia
+    register: ovs_br_octavia_exists
+    ignore_errors: true
 
-  - name: add second network card in br-octavia
-    openvswitch_port:
-      bridge: br-octavia
-      port: "ens5"
-      state: present
+  - name: create br-octavia bridge
+    command: ovs-vsctl add-br br-octavia
+    when: ovs_br_octavia_exists.rc == 2
+
+  - name: check fail mode br-octavia
+    command: ovs-vsctl get-fail-mode br-octavia
+    register: ovs_br_octavia_fail_mode
+
+  - name: set fail mode to secure on br-octavia
+    command: ovs-vsctl set-fail-mode br-octavia secure
+    when: ovs_br_octavia_fail_mode.stdout != 'secure'
+
+  - name: check physical port in br-octavia
+    command: ovs-vsctl port-to-br ens5
+    register: ovs_br_octavia_port
+    ignore_errors: true
+
+  - name: set physical port in br-octavia
+    command: ovs-vsctl add-port br-octavia ens5
+    when: ovs_br_octavia_port.stdout != 'br-octavia'
 
   - name: setting third interface up
     command: ip link set ens5 up
