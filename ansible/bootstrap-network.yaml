@@ -270,6 +270,7 @@
     service:
       name: "{{item}}"
       state: started
+      enabled: true
     with_items:
       - "neutron-dhcp-agent"
       - "neutron-metadata-agent"
