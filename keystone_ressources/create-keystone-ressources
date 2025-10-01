@@ -14,8 +14,8 @@ from sys import exit as sexit
 
 from yaml import safe_load as yaml_safe_load
 from urllib3 import disable_warnings
-from keystoneclient import session, utils, exceptions
-from keystoneclient.auth import identity
+from keystoneauth1 import identity, session
+from keystoneclient import utils, exceptions
 from keystoneclient.v3 import client
 
 # Tool for dev not required on prod
@@ -313,7 +313,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
 
     def apply_permissions(self):
         """
-        Add user in group and grand role on project
+        Add user in group and grant role on project
         """
         # contain 3 key with id to create role bind
         # project, user, role
@@ -390,7 +390,7 @@ def _pool_apply_permissions(lst: list):
             user=item.get("user_id"),
             project=item.get("project_id")
         )
-        LOG.info(f"Created / Updated grand for user {item.get('user_name')} with role {item.get('role_name')} for project {item.get('project_name')}")
+        LOG.info(f"Created / Updated grant for user {item.get('user_name')} with role {item.get('role_name')} for project {item.get('project_name')}")
 
 def _pool_create_users(lst: list):
 
@@ -402,10 +402,10 @@ def _pool_create_users(lst: list):
         try:
             openstack_user = utils.find_resource(keystone_client.users, user.get("user"))
         except Exception:
-            LOG.info(f"Create user{user.get('user')} password on domain={domain_name}")
+            LOG.info(f"Create user {user.get('user')} password on domain={domain_name}")
             keystone_client.users.create(user.get("user"), domain=ksf.keystone_domains_map[domain_name], password=user.get("password"))
         else:
-            LOG.info(f"Update user{user.get('user')} password on domain={domain_name}")
+            LOG.info(f"Update user {user.get('user')} password on domain={domain_name}")
             keystone_client.users.update(openstack_user, domain=ksf.keystone_domains_map[domain_name], password=user.get("password"))
 
 def _pool_create_endpoints(lst: list):
