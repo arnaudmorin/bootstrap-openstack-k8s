@@ -66,15 +66,45 @@
     register: ovs_br_ex_port
     ignore_errors: true
 
-  - name: set fail mode to secure on br-ex
+  - name: set physical port in br-ex
     command: ovs-vsctl add-port br-ex ens4
     when: ovs_br_ex_port.stdout != 'br-ex'
-
-  - name: setting physical port up
+  
+  - name: setting second interface up
     command: ip link set ens4 up
     changed_when: false
 
+  # br-octavia
+  - name: check if br-octavia exists
+    command: ovs-vsctl br-exists br-octavia
+    register: ovs_br_octavia_exists
+    ignore_errors: true
 
+  - name: create br-octavia bridge
+    command: ovs-vsctl add-br br-octavia
+    when: ovs_br_octavia_exists.rc == 2
+
+  - name: check fail mode br-octavia
+    command: ovs-vsctl get-fail-mode br-octavia
+    register: ovs_br_octavia_fail_mode
+
+  - name: set fail mode to secure on br-octavia
+    command: ovs-vsctl set-fail-mode br-octavia secure
+    when: ovs_br_octavia_fail_mode.stdout != 'secure'
+
+  - name: check physical port in br-octavia
+    command: ovs-vsctl port-to-br ens5
+    register: ovs_br_octavia_port
+    ignore_errors: true
+
+  - name: set physical port in br-octavia
+    command: ovs-vsctl add-port br-octavia ens5
+    when: ovs_br_octavia_port.stdout != 'br-octavia'
+
+  - name: setting third interface up
+    command: ip link set ens5 up
+    changed_when: false
+    
   - name: create systemd files
     copy:
       src: files/{{item}}
@@ -331,7 +361,7 @@
       - { section: "agent", option: "arp_responder", value: "true" }
       - { section: "agent", option: "enable_distributed_routing", value: "true" }
       - { section: "ovs", option: "local_ip", value: "{{ansible_default_ipv4['address']}}" }
-      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex" }
+      - { section: "ovs", option: "bridge_mappings", value: "provider:br-ex,provider-octavia:br-octavia" }
       - { section: "securitygroup", option: "enable_security_group", value: "true" }
       - { section: "securitygroup", option: "firewall_driver", value: "openvswitch" }
     notify:

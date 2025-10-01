@@ -43,6 +43,12 @@ endpoints:
       public: http://mistral.{{.domain}}/v2
       admin: http://mistral.{{.domain}}/v2
       internal: http://mistral.{{.domain}}/v2
+  octavia:
+    service_type: load-balancer
+    endpoints:
+      public: http://octavia.{{.domain}}
+      admin: http://octavia.{{.domain}}
+      internal: http://octavia.{{.domain}}
 users_roles:
   default:
     service:
@@ -77,6 +83,11 @@ users_roles:
         - service
         password: {{.password}}
       skyline:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      octavia:
         roles:
         - admin
         - service

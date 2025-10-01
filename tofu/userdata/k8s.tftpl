@@ -15,6 +15,7 @@ alias frep-neutron='frep /root/bootstrap-openstack-k8s/k8s/neutron.yaml.in:- --l
 alias frep-nova='frep /root/bootstrap-openstack-k8s/k8s/nova.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -87,6 +88,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
@@ -94,6 +96,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-neutron
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-glance
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -110,7 +113,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/keystone
 apt-get install -y python3-venv
 python3 -m venv /opt/oscli || echo "Venv creation failed"
 /opt/oscli/bin/pip install --upgrade pip
-/opt/oscli/bin/pip install python-openstackclient python-mistralclient
+/opt/oscli/bin/pip install python-openstackclient python-mistralclient python-octaviaclient
 
 ln -s /opt/oscli/bin/openstack /usr/local/bin/openstack
 mkdir -p /etc/bash_completion.d/
@@ -163,5 +166,62 @@ source /root/openrc_demo
 create_network_private
 create_rules
 create_key
+
+# Octavia bootstrap
+# ansible-playbook ansible/bootstrap-octavia.yaml
+
+frep files/openrc.in:/root/openrc_octavia --load config/config.yaml \
+     -e openrc_user=octavia -e openrc_project=service
+
+source /root/openrc_octavia
+set -xv
+openstack network create \
+          --provider-physical-network provider-octavia \
+          --provider-network-type flat \
+          lb-mgmt-net
+
+openstack subnet create \
+          --network lb-mgmt-net \
+          --subnet-range 172.21.0.0/16 \
+          --dhcp \
+          --dns-nameserver 1.1.1.1 \
+          --allocation-pool start=172.21.0.16,end=172.21.255.254 \
+          lb-mgmt-subnet
+
+openstack security group create octavia-amphora --description "Security group for octavia amphpora"
+openstack security group rule create octavia-amphora --ingress --protocol tcp --dst-port 9443 --remote-ip 0.0.0.0/0
+openstack security group rule create octavia-amphora --ingress --protocol tcp --dst-port 22 --remote-ip 0.0.0.0/0
+
+openstack keypair create --private-key /root/.ssh/octavia.priv amphora_keypair
+
+set +xv
+
+curl -fL -o /root/amphora.qcow2 https://tarballs.opendev.org/openstack/octavia/test-images/test-only-amphora-x64-haproxy-ubuntu-noble.qcow2
+
+set -xv
+openstack image create \
+          --file /root/amphora.qcow2 \
+          --container-format bare \
+          --disk-format qcow2 \
+          --tag amphora \
+          --public \
+          amphora
+
+set +xv
+
+octavia_flavor=$(openstack flavor show medium -f json | jq -r ".id")
+octavia_net=$(openstack network show lb-mgmt-net -f json | jq -r ".id")
+octavia_secgroup=$(openstack security group show octavia-amphora -f json | jq -r ".id")
+
+sed -ir "s/amp_flavor_id/$${octavia_flavor}/" config/config.yaml
+sed -ir "s/amp_boot_network_list/$${octavia_net}/" config/config.yaml
+sed -ir "s/amp_secgroup_list/$${octavia_secgroup}/" config/config.yaml
+
+# Octavia
+frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
+frep k8s/octavia.yaml.in:- --load config/config.yaml | kubectl apply -f -
+kubectl wait --for=condition=available --timeout=60s deployment/octavia-api
+
+ip addr add 172.21.0.5/16 dev ens4 || echo "Error while adding ip"
 
 echo "done"

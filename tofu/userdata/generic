@@ -22,7 +22,7 @@ EOF
 # Update apt cache
 apt-get update
 
-apt-get -y install tmux curl vim wget ipcalc mosh git ansible lnav
+apt-get -y install tmux curl vim wget ipcalc mosh git ansible lnav jq
 
 # Disable vim mouse support -- this is insupportable
 cat <<'EOF' > /etc/vim/vimrc.local

@@ -39,7 +39,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: keystone

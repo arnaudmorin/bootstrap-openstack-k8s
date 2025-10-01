@@ -1,0 +1,97 @@
+---
+- name: Install
+  hosts: localhost
+  vars_files:
+    - ../config/config.yaml
+  tasks:
+  - name: create openrc_octavia
+    vars:
+      openrc_user: octavia
+      openrc_password: "{{password}}"
+      openrc_project: service
+      openrc_auth_url: "http://keystone.{{domain}}/v3"
+    template:
+      src: ./files/openrc.j2
+      dest: /root/openrc_octavia
+
+  - name: create Octavia network
+    shell: |
+      source /root/openrc_octavia
+      openstack network create \
+        --provider-physical-network provider-octavia \
+        --provider-network-type flat \
+        lb-mgmt-net
+      [ $? -eq 0 ] && touch /root/.ansible_octavia_network
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_octavia_network
+
+  - name: create Octavia subnet
+    shell: |
+      source /root/openrc_octavia
+      openstack subnet create \
+        --network lb-mgmt-net \
+        --subnet-range 172.21.0.0/16 \
+        --dhcp \
+        --dns-nameserver 1.1.1.1 \
+        --allocation-pool start=172.21.0.16,end=172.21.255.254 \
+        lb-mgmt-subnet
+      [ $? -eq 0 ] && touch /root/.ansible_octavia_subnetwork
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_octavia_subnetwork
+
+  - name: create Octavia security group
+    shell: |
+      source /root/openrc_octavia
+      openstack security group create octavia-amphora --description "Security group for octavia amphora"
+      [ $? -eq 0 ] && touch /root/.ansible_octavia_security_group
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_octavia_security_group
+
+  - name: create Octavia security group rule Amphora api
+    shell: |
+      source /root/openrc_octavia
+      openstack security group rule create octavia-amphora --ingress --protocol tcp --dst-port 9443 --remote-ip 0.0.0.0/0
+      [ $? -eq 0 ] && touch /root/.ansible_octavia_security_group_rule_api
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_octavia_security_group_rule_api
+  
+  - name: create Octavia security group rule Amphora SSH
+    shell: |
+      source /root/openrc_octavia
+      openstack security group rule create octavia-amphora --ingress --protocol tcp --dst-port 22 --remote-ip 0.0.0.0/0
+      [ $? -eq 0 ] && touch /root/.ansible_octavia_security_group_rule_ssh
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_octavia_security_group_rule_ssh
+
+  - name: create nova SSH keypair for amphora
+    shell: |
+      source /root/openrc_octavia
+      openstack keypair create --private-key /root/.ssh/octavia.priv amphora_keypair
+    args:
+      executable: /bin/bash
+      creates: /root/.ssh/octavia.priv
+
+  - name: get Octavia amphora image
+    get_url:
+      url: https://tarballs.opendev.org/openstack/octavia/test-images/test-only-amphora-x64-haproxy-ubuntu-noble.qcow2
+      dest: ./files/amphora.qcow2
+
+  - name: create Octavia amphora image
+    shell: |
+      source /root/openrc_octavia
+      openstack image create \
+        --file ./files/amphora.qcow2 \
+        --container-format bare \
+        --disk-format qcow2 \
+        --tag amphora \
+        --public \
+        amphora
+      [ $? -eq 0 ] && touch /root/.ansible_octavia_image
+    args:
+      executable: /bin/bash
+      creates: /root/.ansible_octavia_image
