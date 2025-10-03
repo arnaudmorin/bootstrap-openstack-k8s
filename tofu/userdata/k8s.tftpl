@@ -1,6 +1,24 @@
 ${file("${path_module}/userdata/generic")}
 echo "starting k8s postinstall"
 
+# Configure the network interfaces
+cat <<'EOF' >/etc/systemd/network/10-octavia.link
+[Match]
+PermanentMACAddress=${mac_octavia}
+[Link]
+Name=octavia
+EOF
+
+cat <<'EOF' >/etc/systemd/network/10-octavia.network
+[Match]
+PermanentMACAddress=${mac_octavia}
+[Network]
+Address=172.21.0.5/16
+EOF
+
+systemctl restart systemd-udev-trigger.service
+systemctl restart systemd-networkd.service
+
 # Add useful aliases - not useful everywhere but at least we have them
 cat << 'EOF' > /etc/profile.d/aliases.sh
 alias k=kubectl
@@ -221,7 +239,5 @@ sed -ir "s/amp_secgroup_list/$${octavia_secgroup}/" config/config.yaml
 frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/octavia.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/octavia-api
-
-ip addr add 172.21.0.5/16 dev ens4 || echo "Error while adding ip"
 
 echo "done"

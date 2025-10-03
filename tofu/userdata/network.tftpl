@@ -1,4 +1,22 @@
 ${file("${path_module}/userdata/generic")}
+echo "starting network postinstall"
+
+# Configure the network interfaces
+cat <<'EOF' >/etc/systemd/network/10-public.link
+[Match]
+PermanentMACAddress=${mac_public}
+[Link]
+Name=public
+EOF
+
+cat <<'EOF' >/etc/systemd/network/10-octavia.link
+[Match]
+PermanentMACAddress=${mac_octavia}
+[Link]
+Name=octavia
+EOF
+
+systemctl restart systemd-udev-trigger.service
 
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
 

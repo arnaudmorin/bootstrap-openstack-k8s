@@ -3,8 +3,6 @@
   hosts: localhost
   vars_files:
     - ../config/config.yaml
-  vars:
-    allNetworkInterfaces: "{{ ansible_facts | dict2items | selectattr('value.ipv4', 'defined') | selectattr('value.type', 'equalto', 'ether') | map(attribute='value') | list }}"
   tasks:
 
   - name: install some dependencies
@@ -62,16 +60,16 @@
     when: ovs_br_ex_fail_mode.stdout != 'secure'
 
   - name: check physical port in br-ex
-    command: ovs-vsctl port-o-br ens8
+    command: ovs-vsctl port-o-br public
     register: ovs_br_ex_port
     ignore_errors: true
 
   - name: set physical port in br-ex
-    command: ovs-vsctl add-port br-ex ens8
+    command: ovs-vsctl add-port br-ex public
     when: ovs_br_ex_port.stdout != 'br-ex'
   
   - name: setting second interface up
-    command: ip link set ens8 up
+    command: ip link set public up
     changed_when: false
 
   # br-octavia
@@ -93,16 +91,16 @@
     when: ovs_br_octavia_fail_mode.stdout != 'secure'
 
   - name: check physical port in br-octavia
-    command: ovs-vsctl port-to-br ens9
+    command: ovs-vsctl port-to-br octavia
     register: ovs_br_octavia_port
     ignore_errors: true
 
   - name: set physical port in br-octavia
-    command: ovs-vsctl add-port br-octavia ens9
+    command: ovs-vsctl add-port br-octavia octavia
     when: ovs_br_octavia_port.stdout != 'br-octavia'
 
   - name: setting third interface up
-    command: ip link set ens9 up
+    command: ip link set octavia up
     changed_when: false
     
   - name: create systemd files
