@@ -17,13 +17,32 @@ variable "openstack_version" {
   default     = "2025.1"
 }
 
+variable "compute_count" {
+  description = "Number of compute nodes"
+  type = number
+  default = 2
+}
+
+variable "network_count" {
+  description = "Number of network node"
+  type = number
+  default = 2
+}
+
 resource "random_password" "password" {
   length  = 16
   special = false
 }
 
 data "openstack_networking_network_v2" "public" {
-  name                  = "public"
+  name = "public"
+}
+
+resource "openstack_networking_port_v2" "public_port" {
+  count = var.compute_count + var.network_count
+  name = "${terraform.workspace}-public-port-${count.index}"
+  network_id = data.openstack_networking_network_v2.public.id
+  admin_state_up = "true"
 }
 
 resource "openstack_networking_network_v2" "octavia_mgmt" {
@@ -34,13 +53,11 @@ resource "openstack_networking_network_v2" "octavia_mgmt" {
   }
 }
 
-resource "openstack_networking_subnet_v2" "octavia_subnet" {
-  name = "${terraform.workspace}-octavia-mgmt-subnet"
+resource "openstack_networking_port_v2" "octavia_port" {
+  count = var.compute_count + var.network_count + 1
+  name = "${terraform.workspace}-octavia-port-${count.index}"
   network_id = openstack_networking_network_v2.octavia_mgmt.id
-  cidr = "192.168.1.0/24"
-  no_gateway = true
-  enable_dhcp = false
-  dns_nameservers = ["0.0.0.0"]
+  admin_state_up = "true"
 }
 
 resource "openstack_compute_keypair_v2" "zob" {
@@ -65,13 +82,16 @@ resource "openstack_compute_instance_v2" "k8s" {
   network {
     name = "Ext-Net"
   }
-  network {
-    uuid = openstack_networking_network_v2.octavia_mgmt.id
-  }
+}
+
+resource "openstack_compute_interface_attach_v2" "attach_octavia_k8s" {
+  count = 1
+  instance_id = openstack_compute_instance_v2.k8s[count.index].id
+  port_id = openstack_networking_port_v2.octavia_port[count.index].id
 }
 
 resource "openstack_compute_instance_v2" "computes" {
-  count = 2
+  count = var.compute_count
 
   name        = "${terraform.workspace}-compute-${count.index}"
   image_name  = "Debian 12"
@@ -89,17 +109,22 @@ resource "openstack_compute_instance_v2" "computes" {
   network {
     name = "Ext-Net"
   }
+}
 
-  network {
-    uuid = data.openstack_networking_network_v2.public.id
-  }
-  network {
-    uuid = openstack_networking_network_v2.octavia_mgmt.id
-  }
+resource "openstack_compute_interface_attach_v2" "attach_public_computes" {
+  count = var.compute_count
+  instance_id = openstack_compute_instance_v2.computes[count.index].id
+  port_id = openstack_networking_port_v2.public_port[count.index].id
+}
+
+resource "openstack_compute_interface_attach_v2" "attach_octavia_computes" {
+  count = var.compute_count
+  instance_id = openstack_compute_instance_v2.computes[count.index].id
+  port_id = openstack_networking_port_v2.octavia_port[count.index + 1].id
 }
 
 resource "openstack_compute_instance_v2" "networks" {
-  count = 2
+  count = var.network_count
 
   name        = "${terraform.workspace}-network-${count.index}"
   image_name  = "Debian 12"
@@ -117,14 +142,18 @@ resource "openstack_compute_instance_v2" "networks" {
   network {
     name = "Ext-Net"
   }
+}
 
-  network {
-    uuid = data.openstack_networking_network_v2.public.id
-  }
+resource "openstack_compute_interface_attach_v2" "attach_public_networks" {
+  count = var.network_count
+  instance_id = openstack_compute_instance_v2.networks[count.index].id
+  port_id = openstack_networking_port_v2.public_port[count.index + var.compute_count].id
+}
 
-  network {
-    uuid = openstack_networking_network_v2.octavia_mgmt.id
-  }
+resource "openstack_compute_interface_attach_v2" "attach_octavia_networks" {
+  count = var.network_count
+  instance_id = openstack_compute_instance_v2.networks[count.index].id
+  port_id = openstack_networking_port_v2.octavia_port[count.index + 1 + var.compute_count].id
 }
 
 output "ssh_commands" {

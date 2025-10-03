@@ -59,16 +59,16 @@
     when: ovs_br_ex_fail_mode.stdout != 'standalone'
 
   - name: check physical port in br-ex
-    command: ovs-vsctl port-to-br ens4
+    command: ovs-vsctl port-to-br ens8
     register: ovs_br_ex_port
     ignore_errors: true
 
   - name: set physical port in br-ex
-    command: ovs-vsctl add-port br-ex ens4
+    command: ovs-vsctl add-port br-ex ens8
     when: ovs_br_ex_port.stdout != 'br-ex'
 
   - name: setting second interface up
-    command: ip link set ens4 up
+    command: ip link set ens8 up
     changed_when: false
 
   # br-octavia
@@ -90,16 +90,16 @@
     when: ovs_br_octavia_fail_mode.stdout != 'secure'
 
   - name: check physical port in br-octavia
-    command: ovs-vsctl port-to-br ens5
+    command: ovs-vsctl port-to-br ens9
     register: ovs_br_octavia_port
     ignore_errors: true
 
   - name: set physical port in br-octavia
-    command: ovs-vsctl add-port br-octavia ens5
+    command: ovs-vsctl add-port br-octavia ens9
     when: ovs_br_octavia_port.stdout != 'br-octavia'
 
   - name: setting third interface up
-    command: ip link set ens5 up
+    command: ip link set ens9 up
     changed_when: false
 
   # br-flat
