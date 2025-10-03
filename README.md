@@ -147,6 +147,12 @@ Install `tofu` if not yet done, see here: [https://opentofu.org/docs/intro/insta
 
 ## Start instances
 
+Tofu configuration assume the existence of a ``public`` network, if you do not have it you create it using the following commands
+```bash
+openstack network create public --disable-port-security --provider-network-type=vrack --provider-segment=0
+openstack subnet create --no-dhcp --gateway none --subnet-range 192.168.0.0/24 --network public --dns-nameserver 0.0.0.0 192.168.0.0/24
+```
+
 Open the tofu folder and apply the config
 
 ```bash
