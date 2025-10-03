@@ -183,7 +183,7 @@ openstack network create \
 openstack subnet create \
           --network lb-mgmt-net \
           --subnet-range 172.21.0.0/16 \
-          --dhcp \
+          --no-dhcp \
           --dns-nameserver 1.1.1.1 \
           --allocation-pool start=172.21.0.16,end=172.21.255.254 \
           lb-mgmt-subnet
