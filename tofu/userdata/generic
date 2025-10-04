@@ -22,6 +22,10 @@ EOF
 # Update apt cache
 apt-get update
 
+# Wesh va voir ailleurs si jy suis
+apt-get purge unattended-upgrades
+
+# Install some useful stuff
 apt-get -y install tmux curl vim wget ipcalc mosh git ansible lnav jq
 
 # Disable vim mouse support -- this is insupportable
