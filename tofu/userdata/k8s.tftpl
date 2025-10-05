@@ -19,6 +19,17 @@ EOF
 systemctl restart systemd-udev-trigger.service
 systemctl restart systemd-networkd.service
 
+# Tune a little bit the number of open files
+# This is useful for stern
+cat <<'EOF' >/etc/sysctl.d/local.conf
+fs.inotify.max_user_watches=999999
+fs.inotify.max_user_instances=999999
+fs.inotify.max_queued_events=999999
+EOF
+
+# Apply this new sysctl config
+sysctl -p /etc/sysctl.d/local.conf
+
 # Add useful aliases - not useful everywhere but at least we have them
 cat << 'EOF' > /etc/profile.d/aliases.sh
 alias k=kubectl
