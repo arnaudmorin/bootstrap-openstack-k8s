@@ -23,6 +23,9 @@ data:
     policy_dirs = /etc/keystone/policy.d
     [token]
     provider = fernet
+    [identity]
+    # avoid a bcrypt warning
+    max_password_length = 72
   0: |
     {{ index .keystone.fernet 0 }}
   1: |
