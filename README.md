@@ -315,14 +315,14 @@ openstack token issue
 Which should give you something like:
 ```bash
 # This command is doing an API call against `keystone` and should give you something like:
-+------------+---------------------------------------
-| Field      | Value                                 
-+------------+---------------------------------------
-| expires    | 2021-11-05T21:35:40+0000              
-| id         | gAAAAABhhZWc-f-TGVV2NNqN03KXLpgIDmBD2f
-| project_id | 966629a3e2f34ad996d0ec8d57f6a1bd      
-| user_id    | fd6a41322bdc4941ae74354697fcc2db      
-+------------+---------------------------------------
++------------+----------------------------------------+
+| Field      | Value                                  |
++------------+----------------------------------------+
+| expires    | 2021-11-05T21:35:40+0000               |
+| id         | gAAAAABhhZWc-f-TGVV2NNqN03KXLpgIDmBD2f |
+| project_id | 966629a3e2f34ad996d0ec8d57f6a1bd       |
+| user_id    | fd6a41322bdc4941ae74354697fcc2db       |
++------------+----------------------------------------+
 ```
 If you have your token, it means `keystone` is good!
 
