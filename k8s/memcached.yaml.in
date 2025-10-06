@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memcached
+spec:
+  selector:
+    app: memcached
+  ports:
+  - port: 11211
+  # memcached service should not be published outside of the kube cluster because it's not protected for now
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memcached
+spec:
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      containers:
+      - image: memcached
+        name: memcached
+        ports:
+        - containerPort: 11211
+          name: memcached
