@@ -26,7 +26,13 @@ apt-get update
 apt-get purge unattended-upgrades
 
 # Install some useful stuff
-apt-get -y install tmux curl vim wget ipcalc mosh git ansible lnav jq
+apt-get -y install tmux curl vim wget ipcalc mosh git ansible jq unzip
+
+# Install lnav (we use a statically linked version because as of writing
+# debian 13 lnav version is broken with tmux)
+curl -fLO https://github.com/tstack/lnav/releases/download/v0.13.2/lnav-0.13.2-linux-musl-x86_64.zip
+unzip lnav-0.13.2-linux-musl-x86_64.zip
+cp lnav-0.13.2/lnav /usr/bin/lnav
 
 # Disable vim mouse support -- this is insupportable
 cat <<'EOF' > /etc/vim/vimrc.local
