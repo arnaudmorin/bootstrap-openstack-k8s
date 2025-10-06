@@ -26,6 +26,9 @@ data:
     [identity]
     # avoid a bcrypt warning
     max_password_length = 72
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
   0: |
     {{ index .keystone.fernet 0 }}
   1: |
@@ -70,6 +73,9 @@ data:
     output_format = raw
     [image_import_opts]
     image_import_plugins = ['image_conversion']
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
   glance-image-import.conf: |
     [image_conversion]
     output_format = raw
@@ -110,6 +116,9 @@ data:
     nas_share_path=/zpool-bhs-000917/cinder-k8s
     nfs_snapshot_support=True
     nfs_mount_options='vers=3,nolock'
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
 
 ---
 apiVersion: v1
@@ -179,6 +188,9 @@ data:
     vni_ranges = 1:1000
     [securitygroup]
     enable_ipset = true
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
 
 ---
 apiVersion: v1
@@ -249,6 +261,9 @@ data:
     enabled = true
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
 
 ---
 apiVersion: v1
@@ -347,6 +362,9 @@ data:
     # See https://bugs.launchpad.net/placement/+bug/2070257
     max_allocation_candidates = 1000
     allocation_candidates_generation_strategy = breadth-first
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
 
 ---
 apiVersion: v1
@@ -372,6 +390,9 @@ data:
     connection = mysql+pymysql://root:{{.password}}@mysql-mistral/mistral
     #[oslo_policy]
     #policy_file = /etc/mistral/policy.yaml
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
   uwsgi.ini: |
     [uwsgi]
     # Listen on port 8989 and start as a full web server
@@ -550,6 +571,9 @@ data:
     www_authenticate_uri = http://keystone.{{.domain}}
     region_name = RegionOne
     auth_type = password
+    [cache]
+    backend = oslo_cache.memcache_pool
+    memcache_servers = memcached:11211
   server_ca_cert: |
     -----BEGIN CERTIFICATE-----
     MIIFpTCCA42gAwIBAgIUBXuHQaHn4v/0obKRqi4dDcCIU/UwDQYJKoZIhvcNAQEL

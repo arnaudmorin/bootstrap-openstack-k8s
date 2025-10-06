@@ -45,6 +45,7 @@ alias frep-nova='frep /root/bootstrap-openstack-k8s/k8s/nova.yaml.in:- --load /r
 alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-memcached='frep /root/bootstrap-openstack-k8s/k8s/memcached.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -131,6 +132,9 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 
+# Memcached
+frep k8s/memcached.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
@@ -138,7 +142,10 @@ frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=complete --timeout=60s jobs/nova-init
 
+
 # Keystone
+# wait for memcached because we need it for a working keystone
+kubectl wait --for=condition=available --timeout=60s deployment/memcached
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/keystone
 
@@ -158,6 +165,7 @@ frep files/openrc.in:/root/openrc_demo --load config/config.yaml \
      -e openrc_user=demo -e openrc_project=demo
 cp files/helper /root/helper
 
+# Create keystone resources
 cd keystone_ressources
 frep keystone-auth.conf.in:keystone-auth.conf --load ../config/config.yaml
 frep keystone-settings.yaml.in:keystone-settings.yaml --load ../config/config.yaml
