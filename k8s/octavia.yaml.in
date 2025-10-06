@@ -50,7 +50,7 @@ spec:
     spec:
       containers:
       - name: octavia-api
-        image: arnaudmorin/openstack-octavia:2025.1
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/octavia/bin/octavia-api" ]
         # imagePullPolicy: Always
