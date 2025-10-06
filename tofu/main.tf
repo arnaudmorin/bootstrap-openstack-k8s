@@ -85,7 +85,7 @@ resource "openstack_compute_instance_v2" "k8s" {
   count = 1
 
   name        = "${terraform.workspace}-k8s-${count.index}"
-  image_name  = "Debian 12"
+  image_name  = "Debian 13"
   flavor_name = "r3-64"
   user_data = templatefile("${path.module}/userdata/k8s.tftpl",
     {
@@ -113,7 +113,7 @@ resource "openstack_compute_instance_v2" "computes" {
   count = var.compute_count
 
   name        = "${terraform.workspace}-compute-${count.index}"
-  image_name  = "Debian 12"
+  image_name  = "Debian 13"
   flavor_name = "r3-64"
   user_data = templatefile("${path.module}/userdata/compute.tftpl",
     {
@@ -148,7 +148,7 @@ resource "openstack_compute_instance_v2" "networks" {
   count = var.network_count
 
   name        = "${terraform.workspace}-network-${count.index}"
-  image_name  = "Debian 12"
+  image_name  = "Debian 13"
   flavor_name = "r3-64"
   user_data = templatefile("${path.module}/userdata/network.tftpl",
     {

@@ -16,15 +16,15 @@
       url: "https://github.com/arnaudmorin/openstack-debian/releases/latest/download/{{item}}"
       dest: "/root/{{item}}"
     with_items:
-      - openstack-nova_2025.1-28+3f10f5e_all.deb 
-      - openstack-neutron_2025.1-28+3f10f5e_all.deb 
-
+      - openstack-nova_2025.1-28+3f10f5e_all.deb
+      - openstack-neutron_2025.1-28+3f10f5e_all.deb
+  
   - name: install nova and neutron
     apt:
       deb: "/root/{{item}}"
     with_items:
-      - openstack-nova_2025.1-28+3f10f5e_all.deb 
-      - openstack-neutron_2025.1-28+3f10f5e_all.deb 
+      - openstack-nova_2025.1-28+3f10f5e_all.deb
+      - openstack-neutron_2025.1-28+3f10f5e_all.deb
 
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
     ansible.posix.sysctl:
@@ -131,11 +131,20 @@
       uid: "{{item.id}}"
       group: "{{item.name}}"
       home: "/var/lib/{{item.name}}/"
+      umask: "0022"
       system: true
       shell: /bin/bash
     with_items:
       - { name: 'nova', id: 200 }
       - { name: 'neutron', id: 201 }
+
+  - name: update perm on users home
+    file:
+      dest: "/var/lib/{{item}}"
+      mode: "0755"
+    with_items:
+      - nova
+      - neutron
 
   - name: create log files with correct permissions
     file:

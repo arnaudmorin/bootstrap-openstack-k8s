@@ -95,6 +95,10 @@ curl -sS https://webi.sh/k9s | HOME=/root sh
 curl -fSL https://github.com/subchen/frep/releases/download/v1.3.12/frep-1.3.12-linux-amd64 -o /usr/local/bin/frep
 chmod +x /usr/local/bin/frep
 
+# Install osconsole
+curl -fSL https://github.com/arnaudmorin/osconsole/releases/download/0.0.3/osconsole -o /usr/local/bin/osconsole
+chmod +x /usr/local/bin/osconsole
+
 cd /root/bootstrap-openstack-k8s
 cp config/config.yaml.sample config/config.yaml
 ip=$(hostname -I | awk '{print $1}')
@@ -220,6 +224,7 @@ openstack subnet create \
 openstack security group create octavia-amphora --description "Security group for octavia amphpora"
 openstack security group rule create octavia-amphora --ingress --protocol tcp --dst-port 9443 --remote-ip 0.0.0.0/0
 openstack security group rule create octavia-amphora --ingress --protocol tcp --dst-port 22 --remote-ip 0.0.0.0/0
+openstack security group rule create octavia-amphora --ingress --protocol icmp --remote-ip 0.0.0.0/0
 
 openstack keypair create --private-key /root/.ssh/octavia.priv amphora_keypair
 

@@ -85,7 +85,7 @@ spec:
         image: arnaudmorin/openstack-keystone:{{.openstack_version}}
         command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        args: [ "chmod 600 /dev/shm/fernet-keys && /opt/openstack/keystone/bin/uwsgi --http :5000 --wsgi-file /opt/openstack/keystone/bin/keystone-wsgi-public" ]
+        args: [ "chmod 600 /etc/keystone/fernet-keys && /opt/openstack/keystone/bin/uwsgi --http :5000 --wsgi-file /opt/openstack/keystone/bin/keystone-wsgi-public" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000

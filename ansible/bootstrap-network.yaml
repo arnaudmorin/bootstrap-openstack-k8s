@@ -160,6 +160,13 @@
     with_items:
       - { name: 'neutron', id: 201 }
 
+  - name: update perm on users home
+    file:
+      dest: "/var/lib/{{item}}"
+      mode: "0755"
+    with_items:
+      - neutron
+      
   - name: create log files with correct permissions
     file:
       path: "{{item.path}}"
