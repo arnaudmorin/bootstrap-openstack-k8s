@@ -26,10 +26,10 @@ function create_image_cirros(){(
 )}
 
 function create_image_debian(){(
-    [ -f debian-12-genericcloud-amd64.qcow2 ] || curl -fLO https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+    [ -f debian-13-genericcloud-amd64.qcow2 ] || curl -fLO https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2
     set -xv
     openstack image create \
-     --file debian-12-genericcloud-amd64.qcow2 \
+     --file debian-13-genericcloud-amd64.qcow2 \
      --container-format bare \
      --disk-format qcow2 \
      --property hw_disk_bus=scsi \
@@ -37,9 +37,9 @@ function create_image_debian(){(
      --property os_type=linux \
      --property os_distro=debian \
      --property os_admin_user=debian \
-     --property os_version='12.0.0' \
+     --property os_version='13.0.0' \
      --public \
-     "Debian 12"
+     "Debian 13"
 )}
 
 function create_key(){(
@@ -153,3 +153,13 @@ function create_workflow(){(
     set -xv
     openstack workflow execution create create_instance '{"name":"test-from-wf", "image":"cirros", "flavor":"small", "keypair":"zob", "network":"private"}'
 )}
+
+function osconsole_search() {
+    if [ "$#" -ne 1 ]; then
+        echo "usage: osconsole_search <instance>"
+        return
+    fi
+
+    local url=$(openstack console url show --serial $1 -f json | jq -r ".url")
+    osconsole $url
+}

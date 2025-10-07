@@ -97,6 +97,7 @@ curl -fSL https://github.com/subchen/frep/releases/download/v1.3.12/frep-1.3.12-
 chmod +x /usr/local/bin/frep
 
 # Install osconsole
+apt-get install -y jq
 curl -fSL https://github.com/arnaudmorin/osconsole/releases/download/0.0.3/osconsole -o /usr/local/bin/osconsole
 chmod +x /usr/local/bin/osconsole
 
@@ -204,7 +205,6 @@ create_image_cirros
 create_image_debian
 
 source /root/openrc_demo
-create_network_private
 create_rules
 create_key
 
