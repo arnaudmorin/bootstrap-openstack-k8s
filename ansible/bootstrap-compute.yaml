@@ -60,7 +60,7 @@
     when: ovs_br_ex_fail_mode.stdout != 'secure'
 
   - name: check physical port in br-ex
-    command: ovs-vsctl port-o-br public
+    command: ovs-vsctl port-to-br public
     register: ovs_br_ex_port
     ignore_errors: true
 
