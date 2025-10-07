@@ -11,13 +11,23 @@
       update_cache: yes
       state: latest
 
-  - name: grab nova and neutron
+  # - name: grab nova and neutron
+  #   get_url:
+  #     url: "https://github.com/arnaudmorin/openstack-debian/releases/latest/download/{{item}}"
+  #     dest: "/root/{{item}}"
+  #   with_items:
+  #     - openstack-nova_2025.1-28+3f10f5e_all.deb
+  #     - openstack-neutron_2025.1-28+3f10f5e_all.deb
+
+  - name: grab nova
     get_url:
-      url: "https://github.com/arnaudmorin/openstack-debian/releases/latest/download/{{item}}"
-      dest: "/root/{{item}}"
-    with_items:
-      - openstack-nova_2025.1-28+3f10f5e_all.deb
-      - openstack-neutron_2025.1-28+3f10f5e_all.deb
+      url: "https://plik.arno.ovh/file/AA1yWN9ADUbiDexX/AXVcKGlJZ8vRnGee/openstack-nova_2025.1-28+3f10f5e_all.deb"
+      dest: "/root/openstack-nova_2025.1-28+3f10f5e_all.deb"
+
+  - name: grab neutron
+    get_url:
+      url: "https://plik.arno.ovh/file/AA1yWN9ADUbiDexX/rk8nw3LxY3RFaJEz/openstack-neutron_2025.1-28+3f10f5e_all.deb"
+      dest: "/root/openstack-neutron_2025.1-28+3f10f5e_all.deb"
   
   - name: install nova and neutron
     apt:
