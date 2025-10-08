@@ -126,6 +126,8 @@ spec:
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
         command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8774", "--wsgi-file", "/opt/openstack/nova/bin/nova-api-wsgi" ]
         #imagePullPolicy: Always
         ports:
