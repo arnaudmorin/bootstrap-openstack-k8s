@@ -7,9 +7,19 @@
 
   - name: install some dependencies
     apt:
-      name: ["tcpdump", "ifupdown", "lnav", "ccze", "tmux", "crudini"]
+      name: ["tcpdump", "ifupdown", "ccze", "tmux", "crudini"]
       update_cache: yes
       state: latest
+
+  - name: "[workaround] download lnav from github"   # NOTE(arnaud) we need to do that until the version 0.13 is available in debian
+    get_url:
+      url: "https://github.com/tstack/lnav/releases/download/v0.13.2/lnav-0.13.2-linux-musl-x86_64.zip"
+      dest: "/root/lnav.zip"
+
+  - name: "[workaround] install lnav from github"
+    shell: "unzip /root/lnav.zip lnav-0.13.2/lnav -d /tmp/ && mv /tmp/lnav-0.13.2/lnav /usr/local/bin/"
+    args:
+      creates: /usr/local/bin/lnav
 
   - name: grab nova and neutron
     get_url:
