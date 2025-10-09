@@ -289,6 +289,11 @@
       - { section: "service_user", option: "user_domain_name", value: "default" }
       - { section: "service_user", option: "username", value: "nova" }
       - { section: "service_user", option: "password", value: "{{password}}" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_quorum_queue", value: "True" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_transient_quorum_queue", value: "True" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_qos_prefetch_count", value: "1" }
+      - { section: "oslo_messaging_rabbit", option: "use_queue_manager", value: "True" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_stream_fanout", value: "True" }
     notify:
       - restart nova
 
@@ -354,6 +359,11 @@
       - { section: "keystone_authtoken", option: "password", value: "{{password}}" }
       - { section: "keystone_authtoken", option: "region_name", value: "RegionOne" }
       - { section: "agent", option: "root_helper", value: "sudo /opt/openstack/neutron/bin/neutron-rootwrap /etc/neutron/rootwrap.conf" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_quorum_queue", value: "True" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_transient_quorum_queue", value: "True" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_qos_prefetch_count", value: "1" }
+      - { section: "oslo_messaging_rabbit", option: "use_queue_manager", value: "True" }
+      - { section: "oslo_messaging_rabbit", option: "rabbit_stream_fanout", value: "True" }
     notify:
       - restart neutron
   - name: configure neutron l2 agent
