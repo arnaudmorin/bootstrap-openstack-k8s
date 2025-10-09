@@ -119,6 +119,12 @@ data:
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
 
 ---
 apiVersion: v1
@@ -176,6 +182,12 @@ data:
     project_name = service
     user_domain_name = Default
     username = placement
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
   ml2_conf.ini: |
     [ml2]
     type_drivers = flat,vlan,vxlan
@@ -264,73 +276,12 @@ data:
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
-
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nova-compute-conf
-data:
-  nova.conf: |
-    [DEFAULT]
-    pybasedir = /var/lib/kolla/venv/lib/python3.7/site-packages/
-    bindir = /var/lib/kolla/venv/bin/
-    state_path = /var/lib/nova
-    transport_url = rabbit://openstack:{{.password}}@rabbit
-    compute_driver=libvirt.LibvirtDriver
-    [cinder]
-    os_region_name = RegionOne
-    [database]
-    connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova
-    [glance]
-    api_servers = http://glance.{{.domain}}
-    [keystone_authtoken]
-    auth_url = http://keystone.{{.domain}}/v3
-    project_name = service
-    project_domain_name = Default
-    username = nova
-    user_domain_name = Default
-    password = {{.password}}
-    www_authenticate_uri = http://keystone.{{.domain}}
-    region_name = RegionOne
-    auth_type = password
-    [neutron]
-    default_floating_pool = ext-net
-    service_metadata_proxy = true
-    auth_type = password
-    auth_url = http://keystone.{{.domain}}/v3
-    project_name = service
-    project_domain_name = Default
-    username = neutron
-    user_domain_name = Default
-    password = {{.password}}
-    service_name = neutron
-    url = http://neutron.{{.domain}}
-    region_name = RegionOne
-    [oslo_concurrency]
-    lock_path = /var/lib/nova/tmp
-    [placement]
-    auth_type = password
-    auth_url = http://keystone.{{.domain}}/v3
-    project_name = service
-    project_domain_name = Default
-    username = placement
-    user_domain_name = Default
-    password = {{.password}}
-    region_name = RegionOne
-    [serial_console]
-    enabled = true
-    base_url = ws://nova.{{.domain}}:6083
-    proxyclient_address = 51.195.233.251
-    [spice]
-    enabled = true
-    server_listen = 0.0.0.0
-    server_proxyclient_address = $my_ip
-    [vnc]
-    enabled = True
-    server_listen = 0.0.0.0
-    server_proxyclient_address = $my_ip
-    novncproxy_base_url = http://nova.{{.domain}}:6080/vnc_auto.html
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
 
 ---
 apiVersion: v1
@@ -393,6 +344,12 @@ data:
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
   uwsgi.ini: |
     [uwsgi]
     # Listen on port 8989 and start as a full web server
@@ -574,6 +531,12 @@ data:
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
   server_ca_cert: |
     -----BEGIN CERTIFICATE-----
     MIIFpTCCA42gAwIBAgIUBXuHQaHn4v/0obKRqi4dDcCIU/UwDQYJKoZIhvcNAQEL
