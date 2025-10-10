@@ -154,7 +154,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/keystone
 apt-get install -y python3-venv
 python3 -m venv /opt/oscli || echo "Venv creation failed"
 /opt/oscli/bin/pip install --upgrade pip
-/opt/oscli/bin/pip install python-openstackclient python-mistralclient python-octaviaclient
+/opt/oscli/bin/pip install python-openstackclient python-mistralclient python-octaviaclient osc-placement
 
 ln -s /opt/oscli/bin/openstack /usr/local/bin/openstack
 mkdir -p /etc/bash_completion.d/
