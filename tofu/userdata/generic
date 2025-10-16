@@ -26,7 +26,7 @@ apt-get update
 apt-get purge unattended-upgrades
 
 # Install some useful stuff
-apt-get -y install tmux curl vim wget ipcalc mosh git ansible jq unzip
+apt-get -y install tmux curl vim wget ipcalc mosh git ansible jq unzip locales-all
 
 # Install lnav (we use a statically linked version because as of writing
 # debian 13 lnav version is broken with tmux)
