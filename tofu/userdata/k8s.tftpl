@@ -167,11 +167,11 @@ frep files/openrc.in:/root/openrc_demo --load config/config.yaml \
 cp files/helper /root/helper
 
 # Create keystone resources
-cd keystone_ressources
-frep keystone-auth.conf.in:keystone-auth.conf --load ../config/config.yaml
+cd keystone-bootstrap
 frep keystone-settings.yaml.in:keystone-settings.yaml --load ../config/config.yaml
 source /opt/oscli/bin/activate
-./create-keystone-ressources --conf keystone-auth.conf --keystone_conf keystone-settings.yaml --log info
+source /root/openrc_admin
+./keystone-bootstrap --settings keystone-settings.yaml
 cd ../
 
 # Glance

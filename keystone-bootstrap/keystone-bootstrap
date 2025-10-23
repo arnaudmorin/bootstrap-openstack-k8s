@@ -3,21 +3,18 @@
 """
 This script create ressource on target keystone from a config file
 """
-# Lint : pylint ovh-create-keystone-resources.py -d W1203,E1120,W0621,C0201,R0902,C0103,E0401,W0703,C0301
 import argparse
 import configparser
 import logging
 from threading import Lock
-from multiprocessing import Pool, cpu_count
-from sys import exit as sexit
-
+from multiprocessing import Pool
+import os
 
 from yaml import safe_load as yaml_safe_load
 from urllib3 import disable_warnings
 from keystoneauth1 import identity, session
 from keystoneauth1 import exceptions as auth_exceptions
 from keystoneclient import utils
-from keystoneclient import exceptions as client_exceptions
 from keystoneclient.v3 import client
 
 # Tool for dev not required on prod
@@ -43,6 +40,7 @@ def chunkify(lst: list, n: int, remove_empty=True):
         return [item for item in result if len(item) > 0]
     return result
 
+
 class SingletonMeta(type):
     """
     This is a thread-safe implementation of Singleton.
@@ -58,9 +56,10 @@ class SingletonMeta(type):
                 cls._instances[cls] = instance
         return cls._instances[cls]
 
+
 class KeyStoneFeed(metaclass=SingletonMeta):
     """
-    Object wuth *_map to avoid making to mutch useless call
+    Object with *_map to avoid making to mutch useless call
     Store creds from config to init keystone client
     """
 
@@ -78,42 +77,35 @@ class KeyStoneFeed(metaclass=SingletonMeta):
     project_domain_name: str
 
     # running map
-    keystone_endpoint_map: list # endpoint object (enabled,id,interface,links,region,region_id, service_id
-    keystone_services_map: dict # {service_name:id}
-    keystone_domains_map: dict # {domain_name:id}
-    keystone_roles_map: dict # {role_name:id}
-    keystone_projects_map: dict # {domain:{project_name:id}}
-    keystone_users_map: dict # {domain:{user_name:id}}
+    keystone_endpoint_map: list     # endpoint object (enabled,id,interface,links,region,region_id, service_id
+    keystone_services_map: dict     # {service_name:id}
+    keystone_domains_map: dict      # {domain_name:id}
+    keystone_roles_map: dict        # {role_name:id}
+    keystone_projects_map: dict     # {domain:{project_name:id}}
+    keystone_users_map: dict        # {domain:{user_name:id}}
 
     def __init__(self, args: dict):
         config = configparser.ConfigParser()
         config.read(args.conf)
-        self.auth_url=config.get('admin_credentials', 'endpoint')
-        self.username=config.get('admin_credentials', 'username')
-        self.password=config.get('admin_credentials', 'password')
-        self.project_name = config.get('admin_credentials', 'project_name')
-        self.user_domain_name=config.get('admin_credentials', 'user_domain_name')
-        self.project_domain_name=config.get('admin_credentials', 'project_domain_name')
+        self.auth_url = os.environ.get('OS_AUTH_URL')
+        self.username = os.environ.get('OS_USERNAME')
+        self.password = os.environ.get('OS_PASSWORD')
+        self.project_name = os.environ.get('OS_PROJECT_NAME')
+        self.user_domain_name = os.environ.get('OS_USER_DOMAIN_NAME')
+        self.project_domain_name = os.environ.get('OS_PROJECT_DOMAIN_NAME')
 
-        with open(args.keystone_conf, 'r', encoding="UTF-8") as stream:
+        with open(args.settings, 'r', encoding="UTF-8") as stream:
             keystone_settings = yaml_safe_load(stream.read())
             self.openstack_region_name = keystone_settings['region']
             self.openstack_endpoints = keystone_settings['endpoints']
             self.openstack_users_roles = keystone_settings['users_roles']
 
-        LOG.info("Refreshing map")
-        LOG.info("1/6 Update services map")
+        LOG.info("Get fresh data from keystone")
         self.refresh_keystone_services_map()
-        LOG.info("2/6 Update endpoints map")
         self.refresh_keystone_endpoints_map()
-        LOG.info("3/6 Update projects map")
         self.refresh_keystone_project_map()
-        LOG.info("4/6 Update roles map")
         self.refresh_keystone_roles_map()
-        LOG.info("5/6 Update users map")
         self.refresh_keystone_users_map()
-        LOG.info("6/6 Update domains map")
-        self.validate_domain()
         LOG.info("Done")
 
     #
@@ -157,7 +149,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
             auth_url=self.auth_url,
             username=self.username,
             password=self.password,
-            project_name = self.project_name,
+            project_name=self.project_name,
             user_domain_name=self.user_domain_name,
             project_domain_name=self.project_domain_name
         )
@@ -252,25 +244,6 @@ class KeyStoneFeed(metaclass=SingletonMeta):
                 pool.map(_pool_create_endpoints, todo)
         self.refresh_keystone_endpoints_map()
 
-    def validate_domain(self):
-        """
-        Check if all domains in settings exist on keystone crash if not present
-        Note: cf old code for why wee crash and dont create it
-        """
-        LOG.info("Checking if domains exists")
-        keystone_client = self.get_keystone_client()
-        keystone_domains_map = {}
-        todo = {item.get("domain") for item in self._get_users_flaten()}
-        for domain_name in todo:
-            try:
-                domain = utils.find_resource(keystone_client.domains, domain_name)
-                keystone_domains_map[domain_name] = domain.id
-                LOG.info(f'Domain {domain_name} exist')
-            except exceptions.CommandError:
-                LOG.error(f"Unable to find domain={domain_name}")
-                sexit(-1)
-        self.keystone_domains_map = keystone_domains_map
-
     def create_projects(self):
         """Create all missing project"""
         LOG.info("Running projects creation")
@@ -281,7 +254,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
             project_to_create = project_in_config - project_in_keystone
             for project in project_to_create:
                 LOG.info(f"Create Project {project} on domain {domain}")
-                keystone_client.projects.create(name=project, domain=domain, enabled=True) # TODO move this part to a pool
+                keystone_client.projects.create(name=project, domain=domain, enabled=True)  # TODO move this part to a pool
         self.refresh_keystone_project_map()
 
     def create_users(self):
@@ -307,7 +280,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
             for role in user.get("roles"):
                 if role not in roles_map_keys:
                     LOG.info(f"Create role {role}")
-                    os_role = keystone_client.roles.create(role) # TODO move this part to a pool
+                    os_role = keystone_client.roles.create(role)  # TODO move this part to a pool
                     roles_map[os_role.name] = os_role.id
                     continue
                 LOG.debug(f"Role {role} early exists")
@@ -364,6 +337,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
             with Pool(processes=toto_len) as pool:
                 pool.map(_pool_associate_endpoints, todo)
 
+
 def operation_with_retry(operation, exceptions, *args, max_retry=5, **kwargs):
     retry_count = 0
     while retry_count < max_retry:
@@ -371,11 +345,12 @@ def operation_with_retry(operation, exceptions, *args, max_retry=5, **kwargs):
         try:
             operation(*args, **kwargs)
             retry_count = max_retry
-        except:
+        except Exception:
             if (retry_count == max_retry):
                 LOG.error(f"operation {operation.__name__} failed with *args={args}, **kwargs={kwargs}, max retry exceeded")
             else:
                 LOG.warning(f"operation {operation.__name__} failed with *args={args}, **kwargs={kwargs}, retrying ...")
+
 
 def _pool_associate_endpoints(lst: list):
     ksf = KeyStoneFeed()
@@ -391,6 +366,7 @@ def _pool_associate_endpoints(lst: list):
                                  project=project, endpoint=endpoint)
             LOG.info(f"Associate project {project} to endpoint {endpoint}")
 
+
 def _pool_create_services(lst: list):
     keystone_driver = KeyStoneFeed().get_keystone_client()
     for item in lst:
@@ -402,8 +378,9 @@ def _pool_create_services(lst: list):
                              type=service_type)
         LOG.info(f"Create service {service_name} of type {service_type}")
 
+
 def _pool_apply_permissions(lst: list):
-    ksf =  KeyStoneFeed()
+    ksf = KeyStoneFeed()
     keystone_client = ksf.get_keystone_client()
     for item in lst:
         # keystone_client.roles.grant(
@@ -418,12 +395,13 @@ def _pool_apply_permissions(lst: list):
                              project=item.get("project_id"))
         LOG.info(f"Created / Updated grant for user {item.get('user_name')} with role {item.get('role_name')} for project {item.get('project_name')}")
 
+
 def _pool_create_users(lst: list):
 
     ksf = KeyStoneFeed()
     keystone_client = ksf.get_keystone_client()
 
-    for user in lst: # add chunkify here to setup pooling
+    for user in lst:  # add chunkify here to setup pooling
         domain_name = user.get("domain")
         try:
             openstack_user = utils.find_resource(keystone_client.users, user.get("user"))
@@ -443,6 +421,7 @@ def _pool_create_users(lst: list):
                                  domain=ksf.keystone_domains_map[domain_name],
                                  password=user.get("password"))
             LOG.info(f"Update user {user.get('user')} password on domain={domain_name}")
+
 
 def _pool_create_endpoints(lst: list):
     ksf = KeyStoneFeed()
@@ -488,30 +467,24 @@ def _pool_create_endpoints(lst: list):
                                  url=endpoint_url)
             LOG.info(f"Update endpoint region={ksf.openstack_region_name}, service={service_id}, interface={interface}, url={endpoint_url}")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--conf', help='Keystone admin credentials',
-                        metavar='/etc/ovh.conf.d/keystone_auth.conf',
-                        default='/etc/ovh.conf.d/keystone_auth.conf')
-    parser.add_argument('--keystone_conf', help='Keystone settings endpoint/users',
-                        metavar='/etc/ovh.conf.d/keystone_settings.yaml',
-                        default='/etc/ovh.conf.d/keystone_settings.yaml')
-    parser.add_argument('--log', help='log level to display',
-                        choices=['error', 'info', 'debug'], default='info')
-    parser.add_argument('--debug', action='store_true', help='trigger debug mode')
+    parser.add_argument('--settings', help='Keystone settings endpoint/users',
+                        metavar='/root/bootstrap-openstack-k8s/keystone-bootstrap/keystone-settings.yaml',
+                        default='/root/bootstrap-openstack-k8s/keystone-bootstrap/keystone-settings.yaml')
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
 
     args = parser.parse_args()
 
-    if args.log:
-        level = logging.getLevelName(args.log.upper())
-        logging.getLogger().setLevel(level)
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.INFO)
 
     ksf = KeyStoneFeed(args=args)
     ksf.create_services()
     ksf.create_endpoints()
-    ksf.validate_domain()
     ksf.create_projects()
     ksf.create_users()
     ksf.create_roles()

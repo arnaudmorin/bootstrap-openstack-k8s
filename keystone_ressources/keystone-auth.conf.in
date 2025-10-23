@@ -1,7 +1,0 @@
-[admin_credentials]
-endpoint = http://keystone.{{.domain}}/v3
-password = {{.password}}
-project_domain_name = default
-project_name = admin
-user_domain_name = default
-username = admin
