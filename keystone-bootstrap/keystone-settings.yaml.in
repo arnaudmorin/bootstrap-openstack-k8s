@@ -49,6 +49,12 @@ endpoints:
       public: http://octavia.{{.domain}}
       admin: http://octavia.{{.domain}}
       internal: http://octavia.{{.domain}}
+  designate:
+    service_type: dns
+    endpoints:
+      public: http://designate.{{.domain}}
+      admin: http://designate.{{.domain}}
+      internal: http://designate.{{.domain}}
 users_roles:
   default:
     service:
@@ -88,6 +94,11 @@ users_roles:
         - service
         password: {{.password}}
       octavia:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      designate:
         roles:
         - admin
         - service

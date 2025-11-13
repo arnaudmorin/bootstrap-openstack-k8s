@@ -4,7 +4,6 @@
 This script create ressource on target keystone from a config file
 """
 import argparse
-import configparser
 import logging
 from threading import Lock
 from multiprocessing import Pool
@@ -13,7 +12,6 @@ import os
 from yaml import safe_load as yaml_safe_load
 from urllib3 import disable_warnings
 from keystoneauth1 import identity, session
-from keystoneauth1 import exceptions as auth_exceptions
 from keystoneclient import utils
 from keystoneclient.v3 import client
 
@@ -85,8 +83,6 @@ class KeyStoneFeed(metaclass=SingletonMeta):
     keystone_users_map: dict        # {domain:{user_name:id}}
 
     def __init__(self, args: dict):
-        config = configparser.ConfigParser()
-        config.read(args.conf)
         self.auth_url = os.environ.get('OS_AUTH_URL')
         self.username = os.environ.get('OS_USERNAME')
         self.password = os.environ.get('OS_PASSWORD')
@@ -106,6 +102,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
         self.refresh_keystone_project_map()
         self.refresh_keystone_roles_map()
         self.refresh_keystone_users_map()
+        self.refresh_keystone_domain()
         LOG.info("Done")
 
     #
@@ -207,6 +204,16 @@ class KeyStoneFeed(metaclass=SingletonMeta):
             base[user.domain_id][user.name] = user.id
         self.keystone_users_map = base
 
+    def refresh_keystone_domain(self):
+        """
+		Refresh domains
+        """
+        base = {}
+        for domain in self.get_keystone_client().domains.list():
+            if domain.name not in base.keys():
+                base[domain.id] = domain.name
+        self.keystone_domains_map = base
+
     #
     # Create keystone ressource
     #
@@ -238,9 +245,9 @@ class KeyStoneFeed(metaclass=SingletonMeta):
         """
         LOG.info("Running endpoints creation")
         todo = chunkify(list(self.openstack_endpoints.keys()), POOL_PROCESSES)
-        toto_len = len(todo)
-        if toto_len > 0:
-            with Pool(processes=toto_len) as pool:
+        todo_len = len(todo)
+        if todo_len > 0:
+            with Pool(processes=todo_len) as pool:
                 pool.map(_pool_create_endpoints, todo)
         self.refresh_keystone_endpoints_map()
 
@@ -299,7 +306,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
 
         # build list with all information
         for user in self._get_users_flaten():
-            os_domain_id = self.keystone_domains_map.get(user.get("domain"))
+            os_domain_id = user.get("domain")
             os_project_id = self.keystone_projects_map.get(os_domain_id).get(user.get("project"))
             os_user_id = self.keystone_users_map.get(os_domain_id).get(user.get("user"))
             for role in user.get("roles"):
@@ -326,7 +333,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
         """Build a map of project_id/endpoint_id to create link"""
         LOG.info("Running associate endpoint to project")
         ass_map = []
-        for _, domain_id in self.keystone_domains_map.items():
+        for domain_id in self.keystone_domains_map.keys():
             for _, project_id in self.keystone_projects_map.get(domain_id).items():
                 for endpoint in self.keystone_endpoint_map:
                     ass_map.append(project_id + "|" + endpoint.id)
@@ -338,18 +345,18 @@ class KeyStoneFeed(metaclass=SingletonMeta):
                 pool.map(_pool_associate_endpoints, todo)
 
 
-def operation_with_retry(operation, exceptions, *args, max_retry=5, **kwargs):
+def operation_with_retry(operation, *args, max_retry=5, **kwargs):
     retry_count = 0
     while retry_count < max_retry:
         retry_count += 1
         try:
             operation(*args, **kwargs)
             retry_count = max_retry
-        except Exception:
+        except Exception as e:
             if (retry_count == max_retry):
-                LOG.error(f"operation {operation.__name__} failed with *args={args}, **kwargs={kwargs}, max retry exceeded")
+                LOG.error(f"operation {operation.__name__} failed, max retry exceeded: {e}")
             else:
-                LOG.warning(f"operation {operation.__name__} failed with *args={args}, **kwargs={kwargs}, retrying ...")
+                LOG.warning(f"operation {operation.__name__} failed, retrying ...")
 
 
 def _pool_associate_endpoints(lst: list):
@@ -362,7 +369,6 @@ def _pool_associate_endpoints(lst: list):
 
         if endpoint not in endpoint_id_list:
             operation_with_retry(keystone_client.endpoint_filter.add_endpoint_to_project,
-                                 auth_exceptions.http.BadGateway,
                                  project=project, endpoint=endpoint)
             LOG.info(f"Associate project {project} to endpoint {endpoint}")
 
@@ -371,9 +377,7 @@ def _pool_create_services(lst: list):
     keystone_driver = KeyStoneFeed().get_keystone_client()
     for item in lst:
         service_name, service_type = item.split("|")
-        # keystone_driver.services.create(service_name, type=service_type)
         operation_with_retry(keystone_driver.services.create,
-                             auth_exceptions.http.BadGateway,
                              service_name,
                              type=service_type)
         LOG.info(f"Create service {service_name} of type {service_type}")
@@ -383,13 +387,7 @@ def _pool_apply_permissions(lst: list):
     ksf = KeyStoneFeed()
     keystone_client = ksf.get_keystone_client()
     for item in lst:
-        # keystone_client.roles.grant(
-        #     role=item.get("role_id"),
-        #     user=item.get("user_id"),
-        #     project=item.get("project_id")
-        # )
         operation_with_retry(keystone_client.roles.grant,
-                             auth_exceptions.http.BadGateway,
                              role=item.get("role_id"),
                              user=item.get("user_id"),
                              project=item.get("project_id"))
@@ -402,25 +400,21 @@ def _pool_create_users(lst: list):
     keystone_client = ksf.get_keystone_client()
 
     for user in lst:  # add chunkify here to setup pooling
-        domain_name = user.get("domain")
+        domain_id = user.get("domain")
         try:
             openstack_user = utils.find_resource(keystone_client.users, user.get("user"))
         except Exception:
-            # keystone_client.users.create(user.get("user"), domain=ksf.keystone_domains_map[domain_name], password=user.get("password"))
             operation_with_retry(keystone_client.users.create,
-                                 auth_exceptions.http.BadGateway,
                                  user.get("user"),
-                                 domain=ksf.keystone_domains_map[domain_name],
+                                 domain=domain_id,
                                  password=user.get("password"))
-            LOG.info(f"Create user {user.get('user')} password on domain={domain_name}")
+            LOG.info(f"Create user {user.get('user')} password on domain={domain_id}")
         else:
-            # keystone_client.users.update(openstack_user, domain=ksf.keystone_domains_map[domain_name], password=user.get("password"))
             operation_with_retry(keystone_client.users.update,
-                                 auth_exceptions.http.BadGateway,
                                  openstack_user,
-                                 domain=ksf.keystone_domains_map[domain_name],
+                                 domain=domain_id,
                                  password=user.get("password"))
-            LOG.info(f"Update user {user.get('user')} password on domain={domain_name}")
+            LOG.info(f"Update user {user.get('user')} password on domain={domain_id}")
 
 
 def _pool_create_endpoints(lst: list):
@@ -451,16 +445,14 @@ def _pool_create_endpoints(lst: list):
             if not openstack_endpoint:
                 # keystone_driver.endpoints.create(region=ksf.openstack_region_name, service=service_id, interface=interface, url=endpoint_url)
                 operation_with_retry(keystone_driver.endpoints.create,
-                                     auth_exceptions.http.BadGateway,
                                      region=ksf.openstack_region_name,
                                      service=service_id,
                                      interface=interface,
                                      url=endpoint_url)
                 LOG.info(f"Create endpoint region={ksf.openstack_region_name}, service={service_id}, interface={interface}, url={endpoint_url}")
                 continue
-            # keystone_driver.endpoints.update(openstack_endpoint, service=service_id, url=endpoint_url, interface=interface, region=ksf.openstack_region_name)
             operation_with_retry(keystone_driver.endpoints.update,
-                                 auth_exceptions.http.BadGateway,
+                                 endpoint=openstack_endpoint,
                                  region=ksf.openstack_region_name,
                                  service=service_id,
                                  interface=interface,
