@@ -55,9 +55,20 @@ endpoints:
       public: http://designate.{{.domain}}
       admin: http://designate.{{.domain}}
       internal: http://designate.{{.domain}}
+  barbican:
+    service_type: key-manager
+    endpoints:
+      public: http://barbican.{{.domain}}
+      admin: http://barbican.{{.domain}}
+      internal: http://barbican.{{.domain}}
 users_roles:
   default:
     service:
+      barbican:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
       nova:
         roles:
         - admin
