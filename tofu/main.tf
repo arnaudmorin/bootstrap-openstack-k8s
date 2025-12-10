@@ -73,6 +73,14 @@ resource "openstack_networking_port_v2" "octavia_port" {
 
 
 #
+# Server group
+#
+resource "openstack_compute_servergroup_v2" "compute-server-group" {
+  name = "${terraform.workspace}-compute-server-group"
+  policies = ["soft-anti-affinity"]
+}
+
+#
 # Instances
 #
 
@@ -127,6 +135,9 @@ resource "openstack_compute_instance_v2" "computes" {
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
+  scheduler_hints {
+    group = openstack_compute_servergroup_v2.compute-server-group.id
+  }
   network {
     name = "Ext-Net"
   }
