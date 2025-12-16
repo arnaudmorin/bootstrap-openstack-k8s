@@ -718,3 +718,39 @@ data:
     jrXACpRL86O0Xpn1lwNudnDtxOHiur9+VasCrfZGdb/kkvSotkpuYswwqw==
     -----END CERTIFICATE-----
 
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: barbican-conf
+data:
+  barbican.conf: |
+    [DEFAULT]
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-barbican/barbican
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = glance
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    auth_type = password
+    [keystone_notifications]
+    enable = True
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = False
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
+    amqp_durable_queues = True
+    [secretstore]
+    enabled_secretstore_plugins = store_crypto
+    [crypto]
+    enabled_crypto_plugins = simple_crypto
+    [simple_crypto_plugin]
+    kek = 'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY='
