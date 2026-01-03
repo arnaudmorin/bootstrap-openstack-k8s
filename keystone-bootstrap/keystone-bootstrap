@@ -92,9 +92,9 @@ class KeyStoneFeed(metaclass=SingletonMeta):
 
         with open(args.settings, 'r', encoding="UTF-8") as stream:
             keystone_settings = yaml_safe_load(stream.read())
-            self.openstack_region_name = keystone_settings['region']
-            self.openstack_endpoints = keystone_settings['endpoints']
-            self.openstack_users_roles = keystone_settings['users_roles']
+            self.openstack_region_name = keystone_settings.get('region', 'RegionOne')
+            self.openstack_endpoints = keystone_settings.get('endpoints', {})
+            self.openstack_users_roles = keystone_settings.get('users_roles', {})
 
         LOG.info("Get fresh data from keystone")
         self.refresh_keystone_services_map()
@@ -260,7 +260,7 @@ class KeyStoneFeed(metaclass=SingletonMeta):
             project_in_config = {item.get("project") for item in self._get_users_flaten() if item.get("domain") == domain}
             project_to_create = project_in_config - project_in_keystone
             for project in project_to_create:
-                LOG.info(f"Create Project {project} on domain {domain}")
+                LOG.info(f"Create project {project} on domain {domain}")
                 keystone_client.projects.create(name=project, domain=domain, enabled=True)  # TODO move this part to a pool
         self.refresh_keystone_project_map()
 
