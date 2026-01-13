@@ -193,7 +193,7 @@ You should be able to ssh both instances using the `zob` key:
 ```bash
 chmod 600 ../ansible/files/zob
 ssh-add ../ansible/files/zob
-ssh debian@ip             # replace ip with the real server IP
+ssh root@ip             # replace ip with the real server IP
 ```
 
 # k8s-0
