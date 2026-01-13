@@ -126,6 +126,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement

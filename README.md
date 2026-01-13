@@ -258,6 +258,16 @@ Here are few commands that you may need to rely on if you modify the kubernetes 
 
 ```bash
 cd bootstrap-openstack-k8s
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=nova | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=placement | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=neutron | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=glance | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
 frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
