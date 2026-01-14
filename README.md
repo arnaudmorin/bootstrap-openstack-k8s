@@ -438,6 +438,10 @@ openstack server list
 
 # To login:
 ssh cirros@ip_of_server         # password is gocubsgo
+
+# If you dont have a real public IP, you can reach the console using the serial and osconsole
+openstack console url show p1 --serial
+osconsole 'ws://xyz'
 ```
 
 # Notes
