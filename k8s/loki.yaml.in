@@ -10,9 +10,6 @@ spec:
   ports:
   - name: http
     port: 3100
-    nodePort: 33100
-  # service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by neutron/nova agents)
-  type: LoadBalancer
 
 ---
 apiVersion: v1
