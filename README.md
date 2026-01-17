@@ -407,6 +407,14 @@ k delete job nova-init
 frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
+## Collect and centralize logs
+
+If you want to collect and analyze `OpenStack` logs in a centralized way, I created a `alloy`/`loki`/`grafana` stack that can be deployed with:
+
+```bash
+frep k8s/loki.yaml.in:- --load config/config.yaml | kubectl apply -f -
+```
+
 # Populate your OpenStack with default values
 
 Back on your `k8s-0` node, as root:

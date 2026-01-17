@@ -47,6 +47,7 @@ alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --l
 alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-memcached='frep /root/bootstrap-openstack-k8s/k8s/memcached.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-loki='frep /root/bootstrap-openstack-k8s/k8s/loki.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
