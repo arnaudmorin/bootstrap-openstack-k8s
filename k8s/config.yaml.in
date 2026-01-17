@@ -15,6 +15,7 @@ metadata:
   name: keystone-conf
 data:
   keystone.conf: |
+    [DEFAULT]
     [database]
     connection = mysql+pymysql://root:{{ .password }}@mysql-keystone/keystone
     [catalog]
@@ -212,9 +213,6 @@ metadata:
 data:
   nova.conf: |
     [DEFAULT]
-    pybasedir = /var/lib/kolla/venv/lib/python3.7/site-packages/
-    bindir = /var/lib/kolla/venv/bin/
-    state_path = /var/lib/nova
     transport_url = rabbit://openstack:{{.password}}@rabbit
     [api_database]
     connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova_api
@@ -291,7 +289,6 @@ metadata:
 data:
   placement.conf: |
     [DEFAULT]
-    pybasedir = /usr/lib/python3/dist-packages
     [api]
     auth_strategy = keystone
     [keystone_authtoken]
