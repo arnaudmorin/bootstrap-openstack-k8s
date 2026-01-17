@@ -28,6 +28,7 @@ Table of Contents
   * [Nova](#nova)
   * [Skyline](#skyline)
   * [In case of error \- debugging](#in-case-of-error---debugging)
+  * [Collect and centralize logs](#collect-and-centralize-logs)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
 * [Notes](#notes)
 
