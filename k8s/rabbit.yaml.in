@@ -21,6 +21,38 @@ spec:
     name: rabbit
   # Rabbit service is type LoadBalancer in order to be reachable from outside the k8s cluster (used by neutron/nova agents)
   type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit-management
+spec:
+  selector:
+    app: rabbit
+  ports:
+  - port: 15672
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbit
+  annotations:
+    spec.ingressClassName: traefik
+spec:
+  rules:
+  - host: rabbit.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: rabbit-management
+            port:
+              number: 15672
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,11 +70,13 @@ spec:
         app: rabbit
     spec:
       containers:
-      - image: rabbitmq:4
+      - image: rabbitmq:4-management
         name: rabbit
         ports:
         - containerPort: 5672
           name: rabbit
+        - containerPort: 15672
+          name: management
         volumeMounts:
         - name: rabbit-conf
           mountPath: "/etc/rabbitmq/rabbitmq.conf"
