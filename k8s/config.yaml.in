@@ -221,6 +221,11 @@ data:
     connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova
     [glance]
     api_servers = http://glance.{{.domain}}
+    # Authentication strategy: keystone (default) or keystone+oauth2
+    # keystone: use Keystone only
+    # keystone+oauth2: use OAuth2 (Keycloak) only
+    # Note: To allow both, you need to create a custom composite middleware
+    # auth_strategy = keystone
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
@@ -232,6 +237,30 @@ data:
     region_name = RegionOne
     #memcached_servers = keystone:11211
     auth_type = password
+    # OAuth2.0 External Authorization Server (Keycloak) configuration
+    # This section allows Nova to authenticate with Keycloak OAuth2 tokens
+    # while still supporting Keystone authentication
+    [external_oauth2_token]
+    # Keycloak introspection endpoint
+    introspection_endpoint = http://keycloak.{{.domain}}/realms/openstack/protocol/openid-connect/token/introspect
+    # Client credentials for Keycloak (used by middleware to authenticate for token introspection)
+    client_id = nova-middleware
+    client_secret = {{.keycloak_client_secret}}
+    # Authentication method: client_secret_basic, client_secret_post, or tls_client_auth
+    auth_method = client_secret_basic
+    # Token introspection timeout
+    jwt_bearer_time_out = 3600
+    # Mapping rules to extract OpenStack attributes from Keycloak token introspection response
+    # These map Keycloak token claims to OpenStack environment variables
+    user_id_attribute = sub
+    user_name_attribute = preferred_username
+    user_domain_attribute = user_domain
+    project_id_attribute = project_id
+    project_name_attribute = project_name
+    project_domain_attribute = project_domain
+    roles_attribute = realm_access.roles
+    # Cache configuration for token introspection results
+    memcached_servers = memcached:11211
     [neutron]
     default_floating_pool = ext-net
     service_metadata_proxy = true
@@ -280,6 +309,105 @@ data:
     rabbit_qos_prefetch_count = 1
     use_queue_manager = True
     rabbit_stream_fanout = True
+  api-paste.ini: |
+    [composite:osapi_compute]
+    use = call:nova.api.openstack.urlmap:urlmap_factory
+    /: oscomputeversions
+    /v2: oscomputeversion_legacy_v2
+    /v2.1: oscomputeversion_v2
+    /v2/+: openstack_compute_api_v21_legacy_v2_compatible
+    /v2.1/+: openstack_compute_api_v21
+
+    [composite:main]
+    use = egg:Paste#urlmap
+    /v2 = openstack_compute_api_v2
+    /v2.1 = openstack_compute_api_v21
+    / = openstack_compute_api_legacy_v2
+
+    [composite:openstack_compute_api_v2]
+    use = call:nova.api.auth:pipeline_factory
+    noauth = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit noauth osapi_compute_app_v2
+    keystone = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v2
+    keystone_nolimit = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v2
+    # Pipeline OAuth2 only (Keycloak)
+    keystone+oauth2 = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit external_oauth2_token keystonecontext osapi_compute_app_v2
+    # Default pipeline: try OAuth2 then Keystone as fallback
+    # Note: To use this pipeline, configure auth_strategy = keystone+oauth2 in nova.conf
+    # or use the header X-Auth-Strategy: keystone+oauth2
+
+    [composite:openstack_compute_api_v21]
+    use = call:nova.api.auth:pipeline_factory_v21
+    noauth = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit noauth osapi_compute_app_v21
+    keystone = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v21
+    keystone_nolimit = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v21
+    # Pipeline OAuth2 only (Keycloak)
+    keystone+oauth2 = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit external_oauth2_token keystonecontext osapi_compute_app_v21
+    # Default pipeline: try OAuth2 then Keystone as fallback
+    # Note: To use this pipeline, configure auth_strategy = keystone+oauth2 in nova.conf
+
+    [composite:openstack_compute_api_legacy_v2]
+    use = call:nova.api.auth:pipeline_factory
+    noauth = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit noauth osapi_compute_app_v21
+    keystone = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v21
+
+    [composite:openstack_compute_api_v21_legacy_v2_compatible]
+    use = call:nova.api.auth:pipeline_factory_v21
+    keystone = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v21
+
+    [pipeline:oscomputeversions]
+    pipeline = cors faultwrap request_log http_proxy_to_wsgi oscomputeversionapp
+
+    [pipeline:oscomputeversion_v2]
+    pipeline = cors compute_req_id faultwrap request_log http_proxy_to_wsgi oscomputeversionapp_v2
+
+    [pipeline:oscomputeversion_legacy_v2]
+    pipeline = cors compute_req_id faultwrap request_log http_proxy_to_wsgi oscomputeversionapp_v2
+
+    [app:oscomputeversionapp]
+    paste.app_factory = nova.api.openstack.compute.versions:Versions.factory
+
+    [app:oscomputeversionapp_v2]
+    paste.app_factory = nova.api.openstack.compute.versions:VersionsV2.factory
+
+    [filter:external_oauth2_token]
+    paste.filter_factory = keystonemiddleware.external_oauth2_token:filter_factory
+
+    [filter:authtoken]
+    paste.filter_factory = keystonemiddleware.auth_token:filter_factory
+
+    [filter:keystonecontext]
+    paste.filter_factory = nova.api.auth:NovaKeystoneContext.factory
+
+    [filter:compute_req_id]
+    paste.filter_factory = nova.api.compute_req_id:ComputeReqIdMiddleware.factory
+
+    [filter:request_log]
+    paste.filter_factory = nova.api.openstack.requestlog:RequestLog.factory
+
+    [filter:faultwrap]
+    paste.filter_factory = nova.api.openstack:FaultWrapper.factory
+
+    [filter:osprofiler]
+    paste.filter_factory = nova.profiler:WsgiMiddleware.factory
+
+    [filter:noauth]
+    paste.filter_factory = nova.api.openstack.auth:NoAuthMiddleware.factory
+
+    [filter:sizelimit]
+    paste.filter_factory = oslo_middleware:RequestBodySizeLimiter.factory
+
+    [filter:http_proxy_to_wsgi]
+    paste.filter_factory = oslo_middleware.http_proxy_to_wsgi:HTTPProxyToWSGI.factory
+
+    [filter:cors]
+    paste.filter_factory = oslo_middleware.cors:filter_factory
+    oslo_config_project = nova
+
+    [app:osapi_compute_app_v2]
+    paste.app_factory = nova.api.openstack.compute:APIRouter.factory
+
+    [app:osapi_compute_app_v21]
+    paste.app_factory = nova.api.openstack.compute:APIRouterV21.factory
 
 ---
 apiVersion: v1

@@ -48,6 +48,7 @@ alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --l
 alias frep-memcached='frep /root/bootstrap-openstack-k8s/k8s/memcached.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-loki='frep /root/bootstrap-openstack-k8s/k8s/loki.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-keycloak='frep /root/bootstrap-openstack-k8s/k8s/keycloak.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -66,7 +67,7 @@ echo \
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b feature/keycloak-oauth2-integration
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
 # Setup SSH config for easy access to computes and networks node
@@ -128,6 +129,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keycloak | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
@@ -137,6 +139,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-keycloak
 
 # Memcached
 frep k8s/memcached.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -199,6 +202,219 @@ frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Barbican
 frep k8s/barbican.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Keycloak (OAuth2 authentication server)
+# Note: Keycloak uses MySQL (deployed above with db_name=keycloak)
+frep k8s/keycloak.yaml.in:- --load config/config.yaml | kubectl apply -f -
+# Wait for Keycloak to be ready (it may take a while to initialize)
+kubectl wait --for=condition=available --timeout=300s deployment/keycloak || echo "Keycloak deployment may still be initializing"
+
+# Install Java (required for Keycloak CLI)
+apt-get update
+apt-get install -y default-jdk
+
+# Download Keycloak CLI binaries
+KEYCLOAK_VERSION=26.0.0
+if [ ! -d /root/keycloak-26.0.0 ]; then
+  echo "Downloading Keycloak 26.0.0..."
+  curl -sL https://github.com/keycloak/keycloak/releases/download/26.0.0/keycloak-26.0.0.tar.gz | tar xz -C /root
+fi
+
+# Add Keycloak bin directory to PATH
+echo 'export PATH="/root/keycloak-26.0.0/bin:$PATH"' >> /etc/profile.d/keycloak.sh
+
+# Create Keycloak configuration file (similar to openrc files)
+frep files/keycloakrc.in:/root/keycloakrc --load config/config.yaml
+
+# Configure Keycloak (realm, clients, roles, users)
+# Wait a bit more for Keycloak to be fully ready
+sleep 10
+
+# Source Keycloak configuration
+source /etc/profile.d/keycloak.sh
+source /root/keycloakrc
+
+# Configure credentials for kcadm.sh
+kcadm.sh config credentials \
+  --server $${KEYCLOAK_URL} \
+  --realm master \
+  --user $${KEYCLOAK_USER} \
+  --password $${KEYCLOAK_PASSWORD} > /dev/null 2>&1 || echo "Keycloak credentials configuration may have failed, retrying..."
+
+# Wait for Keycloak to be fully ready
+echo "Waiting for Keycloak to be fully ready..."
+for i in {1..30}; do
+  if kcadm.sh get realms 2>&1 | grep -q "openstack\|master"; then
+    echo "Keycloak is ready"
+    break
+  fi
+  echo "Waiting for Keycloak... ($i/30)"
+  sleep 5
+done
+
+# Create realm if it doesn't exist
+if ! kcadm.sh get realms/openstack 2>&1 | grep -q '"realm"'; then
+  echo "Creating Keycloak realm: openstack"
+  echo '{"realm": "openstack", "enabled": true}' | kcadm.sh create realms -f -
+else
+  echo "Keycloak realm 'openstack' already exists"
+fi
+
+# Create clients
+echo "Configuring Keycloak clients..."
+
+# Client: nova-middleware (for token introspection)
+# Use realms/openstack/clients endpoint instead of clients --realm openstack
+EXISTING_CLIENTS=$(kcadm.sh get realms/openstack/clients --fields clientId 2>&1 | python3 -c 'import sys, json; [print(c.get("clientId")) for c in json.load(sys.stdin)]' 2>/dev/null || echo "")
+
+if ! echo "$EXISTING_CLIENTS" | grep -q "nova-middleware"; then
+  echo "Creating client: nova-middleware"
+  cat <<'EOF' | kcadm.sh create realms/openstack/clients -f -
+{
+  "clientId": "nova-middleware",
+  "enabled": true,
+  "clientAuthenticatorType": "client-secret",
+  "serviceAccountsEnabled": true,
+  "standardFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "publicClient": false,
+  "protocol": "openid-connect"
+}
+EOF
+else
+  echo "Client 'nova-middleware' already exists"
+fi
+
+# Client: openstack-client (for user authentication)
+if ! echo "$EXISTING_CLIENTS" | grep -q "openstack-client"; then
+  echo "Creating client: openstack-client"
+  cat <<'EOF' | kcadm.sh create realms/openstack/clients -f -
+{
+  "clientId": "openstack-client",
+  "enabled": true,
+  "publicClient": true,
+  "standardFlowEnabled": true,
+  "directAccessGrantsEnabled": true,
+  "serviceAccountsEnabled": false,
+  "redirectUris": ["*"],
+  "webOrigins": ["*"],
+  "protocol": "openid-connect"
+}
+EOF
+else
+  echo "Client 'openstack-client' already exists"
+fi
+
+# Get client UUIDs using Python for reliable JSON parsing
+NOVA_MIDDLEWARE_UUID=$(kcadm.sh get realms/openstack/clients --fields id,clientId 2>&1 | python3 -c 'import sys, json; [print(c["id"]) for c in json.load(sys.stdin) if c.get("clientId") == "nova-middleware"]' 2>/dev/null || echo "")
+OPENSTACK_CLIENT_UUID=$(kcadm.sh get realms/openstack/clients --fields id,clientId 2>&1 | python3 -c 'import sys, json; [print(c["id"]) for c in json.load(sys.stdin) if c.get("clientId") == "openstack-client"]' 2>/dev/null || echo "")
+
+if [ -n "$OPENSTACK_CLIENT_UUID" ]; then
+  echo "Adding protocol mappers to openstack-client..."
+  
+  # Check if mappers already exist using Python
+  EXISTING_MAPPERS=$(kcadm.sh get realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models 2>&1 | python3 -c 'import sys, json; print(len(json.load(sys.stdin)))' 2>/dev/null || echo "0")
+  
+  if [ "$EXISTING_MAPPERS" -lt "5" ]; then
+    # Mapper for project_id
+    echo '{"name": "project_id", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "project_id", "claim.name": "project_id", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for project_name
+    echo '{"name": "project_name", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "project_name", "claim.name": "project_name", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for project_domain
+    echo '{"name": "project_domain", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "project_domain", "claim.name": "project_domain", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for user_domain
+    echo '{"name": "user_domain", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "user_domain", "claim.name": "user_domain", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for roles
+    echo '{"name": "openstack_roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-realm-role-mapper", "config": {"claim.name": "realm_access.roles", "multivalued": "true", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    echo "Protocol mappers added"
+  else
+    echo "Protocol mappers already exist"
+  fi
+fi
+
+# Create role: nova:reboot
+if ! kcadm.sh get realms/openstack/roles 2>&1 | grep -q '"name" : "nova:reboot"'; then
+  echo "Creating role: nova:reboot"
+  echo '{"name": "nova:reboot", "description": "Permission to reboot Nova instances"}' | kcadm.sh create realms/openstack/roles -f -
+else
+  echo "Role 'nova:reboot' already exists"
+fi
+
+# Get project ID from OpenStack for the demo project
+source /root/openrc_admin 2>/dev/null || true
+PROJECT_ID=$(openstack project show demo -c id -f value 2>/dev/null || echo "")
+PROJECT_NAME="demo"
+
+if [ -z "$PROJECT_ID" ]; then
+  echo "⚠️  Warning: Could not get demo project ID from OpenStack"
+  echo "   You may need to configure the Keycloak user manually"
+else
+  # Delete existing user if it exists
+  EXISTING_USER=$(kcadm.sh get realms/openstack/users --query username=nova-restart-user 2>&1 | python3 -c 'import sys, json; users = json.load(sys.stdin); [print(u["id"]) for u in users if u.get("username") == "nova-restart-user"]' 2>/dev/null || echo "")
+  
+  if [ -n "$EXISTING_USER" ]; then
+    echo "Deleting existing user: nova-restart-user"
+    kcadm.sh delete realms/openstack/users/$${EXISTING_USER} 2>/dev/null || true
+  fi
+  
+  # Create user: nova-restart-user
+  echo "Creating user: nova-restart-user"
+  cat <<EOF | kcadm.sh create realms/openstack/users -f -
+{
+  "username": "nova-restart-user",
+  "enabled": true,
+  "emailVerified": true,
+  "email": "nova-restart@example.com",
+  "firstName": "Nova",
+  "lastName": "Restart",
+  "attributes": {
+    "project_id": ["$${PROJECT_ID}"],
+    "project_name": ["$${PROJECT_NAME}"],
+    "project_domain": ["Default"],
+    "user_domain": ["Default"]
+  }
+}
+EOF
+  
+  # Set password
+  kcadm.sh set-password --realm openstack --username nova-restart-user --new-password changeme --temporary false 2>/dev/null || true
+  
+  # Assign role
+  kcadm.sh add-roles --realm openstack --uusername nova-restart-user --rolename nova:reboot 2>/dev/null || true
+  
+  echo "✅ User nova-restart-user created with project $${PROJECT_NAME} ($${PROJECT_ID})"
+fi
+
+# Get client secret for nova-middleware
+echo ""
+echo "🔑 Retrieving client secret for nova-middleware..."
+if [ -n "$NOVA_MIDDLEWARE_UUID" ]; then
+  CLIENT_SECRET=$(kcadm.sh get realms/openstack/clients/$${NOVA_MIDDLEWARE_UUID}/client-secret 2>&1 | python3 -c 'import sys, json; print(json.load(sys.stdin).get("value", ""))' 2>/dev/null || echo "")
+  
+  if [ -n "$CLIENT_SECRET" ] && [ "$CLIENT_SECRET" != "null" ] && [ -n "$CLIENT_SECRET" ]; then
+    echo "Client secret: $${CLIENT_SECRET}"
+    # Update config.yaml with the secret
+    if grep -q "keycloak_client_secret:" config/config.yaml; then
+      sed -i "s/keycloak_client_secret:.*/keycloak_client_secret: $${CLIENT_SECRET}/" config/config.yaml
+      echo "✅ Updated keycloak_client_secret in config/config.yaml"
+    else
+      echo "keycloak_client_secret: $${CLIENT_SECRET}" >> config/config.yaml
+      echo "✅ Added keycloak_client_secret to config/config.yaml"
+    fi
+  else
+    echo "⚠️  Could not retrieve client secret. You may need to configure it manually."
+  fi
+else
+  echo "⚠️  Could not find nova-middleware client UUID"
+fi
+
+echo ""
+echo "✅ Keycloak configuration completed!"
 
 kubectl wait --for=condition=available --timeout=60s deployment/nova-api
 kubectl wait --for=condition=available --timeout=60s deployment/glance

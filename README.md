@@ -278,6 +278,7 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
+frep k8s/keycloak.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
 # compute-x and network-x

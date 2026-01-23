@@ -1,0 +1,22 @@
+# Keycloak CLI Configuration
+# This file is sourced to configure kcreg.sh and kcadm.sh credentials
+# Usage: source /root/keycloakrc
+
+export KEYCLOAK_URL=http://keycloak.{{.domain}}
+export KEYCLOAK_REALM={{.keycloak_realm}}
+export KEYCLOAK_USER={{.keycloak_admin_user}}
+export KEYCLOAK_PASSWORD={{.keycloak_admin_password}}
+
+# Configure kcreg.sh credentials (Client Registration CLI)
+/root/keycloak-26.0.0/bin/kcreg.sh config credentials \
+  --server ${KEYCLOAK_URL} \
+  --realm master \
+  --user ${KEYCLOAK_USER} \
+  --password ${KEYCLOAK_PASSWORD} > /dev/null 2>&1 || true
+
+# Configure kcadm.sh credentials (Admin CLI)
+/root/keycloak-26.0.0/bin/kcadm.sh config credentials \
+  --server ${KEYCLOAK_URL} \
+  --realm master \
+  --user ${KEYCLOAK_USER} \
+  --password ${KEYCLOAK_PASSWORD} > /dev/null 2>&1 || true

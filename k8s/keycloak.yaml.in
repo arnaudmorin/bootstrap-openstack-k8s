@@ -1,0 +1,156 @@
+---
+# Note: MySQL/MariaDB for Keycloak is deployed separately using k8s/mysql.yaml.in
+# with db_name=keycloak, which uses MariaDB 11.8-noble
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+  - port: 8080
+    name: http
+  - port: 8443
+    name: https
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  annotations:
+    spec.ingressClassName: traefik
+spec:
+  rules:
+  - host: keycloak.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-conf
+data:
+  keycloak.conf: |
+    # Database
+    # The database vendor (MariaDB)
+    db=mariadb
+    # The full database JDBC URL with Unicode support
+    # characterEncoding=UTF-8: enables Unicode support for VARCHAR and CHAR fields
+    # serverTimezone=UTC: sets the timezone to UTC
+    db-url=jdbc:mariadb://mysql-keycloak:3306/keycloak?characterEncoding=UTF-8&serverTimezone=UTC
+    db-username=root
+    db-password={{.password}}
+    
+    # HTTP (for start-dev mode, these are optional)
+    http-port=8080
+    http-relative-path=/
+    
+    # Health
+    health-enabled=true
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.5
+        # Use 'start-dev' for development/testing (simpler, no HTTPS required)
+        # For production, use 'start' with proper HTTPS configuration
+        args: ["start-dev"]
+        env:
+        - name: KC_DB
+          value: mariadb
+        - name: KC_DB_URL
+          value: jdbc:mariadb://mysql-keycloak:3306/keycloak?characterEncoding=UTF-8&serverTimezone=UTC
+        - name: KC_DB_USERNAME
+          value: root
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-db-password
+              key: password
+        - name: KC_HEALTH_ENABLED
+          value: "true"
+        - name: KC_METRICS_ENABLED
+          value: "true"
+        - name: KEYCLOAK_ADMIN
+          value: admin
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-password
+              key: password
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8443
+          name: https
+        volumeMounts:
+        - name: keycloak-conf
+          mountPath: /opt/keycloak/conf/keycloak.conf
+          subPath: keycloak.conf
+        # Use TCP probe - health endpoints may not be available in start-dev mode
+        # Even with KC_HEALTH_ENABLED=true, endpoints might not be exposed in dev mode
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 10
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 180
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: keycloak-conf
+        configMap:
+          name: keycloak-conf
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-db-password
+type: Opaque
+stringData:
+  password: {{.password}}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-admin-password
+type: Opaque
+stringData:
+  password: {{.password}}

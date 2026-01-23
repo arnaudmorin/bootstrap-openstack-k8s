@@ -37,3 +37,13 @@ amp:
   flavor_id: "amp_flavor_id"
   boot_network_list: "amp_boot_network_list"
   secgroup_list: "amp_secgroup_list"
+
+# Keycloak OAuth2 configuration
+# Client secret for the nova-middleware client in Keycloak
+# This client is used by Nova middleware to authenticate with Keycloak for token introspection
+keycloak_client_secret: changeme
+# Keycloak admin credentials (for CLI tools)
+keycloak_admin_user: admin
+keycloak_admin_password: changeme
+# Keycloak realm name
+keycloak_realm: openstack
