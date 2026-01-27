@@ -10,11 +10,15 @@ cd "${SCRIPT_DIR}"
 echo "=== Test: Keycloak OAuth2 Cannot Create Instance (demo) ==="
 echo ""
 
-# Load demo openrc to get project info
+# Load demo openrc - tests run as demo user only
 if [ -f /root/openrc_demo ]; then
   source /root/openrc_demo
 else
   echo "❌ File /root/openrc_demo not found"
+  exit 1
+fi
+if [ "${OS_USERNAME}" != "demo" ]; then
+  echo "❌ This test must run as demo user (OS_USERNAME=demo). Current: OS_USERNAME=${OS_USERNAME}"
   exit 1
 fi
 
@@ -73,14 +77,15 @@ echo ""
 echo "2. Getting image and flavor info (using Keystone)..."
 IMAGE_ID=$(openstack image list --limit 1 -c ID -f value 2>&1 | head -1)
 FLAVOR_NAME=$(openstack flavor list --limit 1 -c Name -f value 2>&1 | head -1)
+FLAVOR_ID=$(openstack flavor show "${FLAVOR_NAME}" -c id -f value 2>&1)
 
-if [ -z "${IMAGE_ID}" ] || [ -z "${FLAVOR_NAME}" ]; then
+if [ -z "${IMAGE_ID}" ] || [ -z "${FLAVOR_NAME}" ] || [ -z "${FLAVOR_ID}" ]; then
   echo "   ❌ Cannot get image or flavor"
   exit 1
 fi
 
 echo "   ✅ Image ID: ${IMAGE_ID}"
-echo "   ✅ Flavor: ${FLAVOR_NAME}"
+echo "   ✅ Flavor: ${FLAVOR_NAME} (ID: ${FLAVOR_ID})"
 echo ""
 
 # Try to create instance using OAuth2 token
@@ -93,7 +98,7 @@ SERVER_CREATE_JSON=$(cat <<EOF
   "server": {
     "name": "${INSTANCE_NAME}",
     "imageRef": "${IMAGE_ID}",
-    "flavorRef": "${FLAVOR_NAME}"
+    "flavorRef": "${FLAVOR_ID}"
   }
 }
 EOF

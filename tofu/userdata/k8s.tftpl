@@ -141,6 +141,27 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keycloak
 
+# Keycloak (OAuth2 authentication server) - Deploy early for parallel initialization
+# Note: Keycloak uses MySQL (deployed above with db_name=keycloak)
+frep k8s/keycloak.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Install Java (required for Keycloak CLI) - Do this early while Keycloak initializes
+apt-get update
+apt-get install -y default-jdk
+
+# Download Keycloak CLI binaries
+KEYCLOAK_VERSION=26.0.0
+if [ ! -d /root/keycloak-26.0.0 ]; then
+  echo "Downloading Keycloak 26.0.0..."
+  curl -sL https://github.com/keycloak/keycloak/releases/download/26.0.0/keycloak-26.0.0.tar.gz | tar xz -C /root
+fi
+
+# Add Keycloak bin directory to PATH
+echo 'export PATH="/root/keycloak-26.0.0/bin:$PATH"' >> /etc/profile.d/keycloak.sh
+
+# Create Keycloak configuration file (similar to openrc files)
+frep files/keycloakrc.in:/root/keycloakrc --load config/config.yaml
+
 # Memcached
 frep k8s/memcached.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
@@ -182,53 +203,10 @@ source /root/openrc_admin
 ./keystone-bootstrap --settings keystone-settings.yaml
 cd ../
 
-# Glance
-frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Placement
-frep k8s/placement.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Neutron
-frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Nova
-frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Mistral
-frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Skyline
-frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Barbican
-frep k8s/barbican.yaml.in:- --load config/config.yaml | kubectl apply -f -
-
-# Keycloak (OAuth2 authentication server)
-# Note: Keycloak uses MySQL (deployed above with db_name=keycloak)
-frep k8s/keycloak.yaml.in:- --load config/config.yaml | kubectl apply -f -
-# Wait for Keycloak to be ready (it may take a while to initialize)
-kubectl wait --for=condition=available --timeout=300s deployment/keycloak || echo "Keycloak deployment may still be initializing"
-
-# Install Java (required for Keycloak CLI)
-apt-get update
-apt-get install -y default-jdk
-
-# Download Keycloak CLI binaries
-KEYCLOAK_VERSION=26.0.0
-if [ ! -d /root/keycloak-26.0.0 ]; then
-  echo "Downloading Keycloak 26.0.0..."
-  curl -sL https://github.com/keycloak/keycloak/releases/download/26.0.0/keycloak-26.0.0.tar.gz | tar xz -C /root
-fi
-
-# Add Keycloak bin directory to PATH
-echo 'export PATH="/root/keycloak-26.0.0/bin:$PATH"' >> /etc/profile.d/keycloak.sh
-
-# Create Keycloak configuration file (similar to openrc files)
-frep files/keycloakrc.in:/root/keycloakrc --load config/config.yaml
-
 # Configure Keycloak (realm, clients, roles, users)
-# Wait a bit more for Keycloak to be fully ready
-sleep 10
+# Wait for Keycloak API pod to be ready before configuration
+echo "Waiting for Keycloak API to be ready..."
+kubectl wait --for=condition=available --timeout=300s deployment/keycloak || echo "Keycloak deployment may still be initializing"
 
 # Source Keycloak configuration
 source /etc/profile.d/keycloak.sh
@@ -241,8 +219,8 @@ kcadm.sh config credentials \
   --user $${KEYCLOAK_USER} \
   --password $${KEYCLOAK_PASSWORD} > /dev/null 2>&1 || echo "Keycloak credentials configuration may have failed, retrying..."
 
-# Wait for Keycloak to be fully ready
-echo "Waiting for Keycloak to be fully ready..."
+# Wait for Keycloak to be fully ready (API responding)
+echo "Waiting for Keycloak API to be fully ready..."
 for i in {1..30}; do
   if kcadm.sh get realms 2>&1 | grep -q "openstack\|master"; then
     echo "Keycloak is ready"
@@ -312,10 +290,10 @@ OPENSTACK_CLIENT_UUID=$(kcadm.sh get realms/openstack/clients --fields id,client
 if [ -n "$OPENSTACK_CLIENT_UUID" ]; then
   echo "Adding protocol mappers to openstack-client..."
   
-  # Check if mappers already exist using Python
+  # Check if mappers already exist using Python (we need 8: 5 original + project_domain_id, user_domain_id, openstack_roles string)
   EXISTING_MAPPERS=$(kcadm.sh get realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models 2>&1 | python3 -c 'import sys, json; print(len(json.load(sys.stdin)))' 2>/dev/null || echo "0")
   
-  if [ "$EXISTING_MAPPERS" -lt "5" ]; then
+  if [ "$EXISTING_MAPPERS" -lt "8" ]; then
     # Mapper for project_id
     echo '{"name": "project_id", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "project_id", "claim.name": "project_id", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
     
@@ -328,13 +306,167 @@ if [ -n "$OPENSTACK_CLIENT_UUID" ]; then
     # Mapper for user_domain
     echo '{"name": "user_domain", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "user_domain", "claim.name": "user_domain", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
     
-    # Mapper for roles
+    # Mapper for realm roles (realm_access.roles array) - kept for optional use
     echo '{"name": "openstack_roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-realm-role-mapper", "config": {"claim.name": "realm_access.roles", "multivalued": "true", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for project_domain_id (Nova middleware requires this claim)
+    echo '{"name": "project_domain_id", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "project_domain_id", "claim.name": "project_domain_id", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for user_domain_id (Nova middleware requires this claim)
+    echo '{"name": "user_domain_id", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "user_domain_id", "claim.name": "user_domain_id", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
+    
+    # Mapper for openstack_roles as string (Nova middleware expects claim "openstack_roles" as comma-separated string)
+    echo '{"name": "openstack_roles_string", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"user.attribute": "openstack_roles", "claim.name": "openstack_roles", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true", "introspection.token.claim": "true"}}' | kcadm.sh create realms/openstack/clients/$${OPENSTACK_CLIENT_UUID}/protocol-mappers/models -f - 2>/dev/null || true
     
     echo "Protocol mappers added"
   else
     echo "Protocol mappers already exist"
   fi
+fi
+
+# Fix Keycloak User Profile configuration to register custom attributes
+# This is required in Keycloak 26.x for attributes to persist
+echo ""
+echo "🔧 Updating User Profile to register custom attributes..."
+
+# Get current profile using kcadm.sh (it uses REST API under the hood)
+PROFILE_JSON=$(kcadm.sh get realms/openstack/users/profile 2>/dev/null || echo "{}")
+
+# Check if we need to add custom attributes
+NEEDS_UPDATE=false
+for attr_name in project_id project_name project_domain user_domain project_domain_id user_domain_id openstack_roles; do
+  if ! echo "$PROFILE_JSON" | python3 -c "import sys, json; profile=json.load(sys.stdin); attrs=[a.get('name') for a in profile.get('attributes', [])]; sys.exit(0 if '$attr_name' in attrs else 1)" 2>/dev/null; then
+    echo "Adding attribute: $attr_name"
+    NEEDS_UPDATE=true
+  fi
+done
+
+if [ "$NEEDS_UPDATE" = "true" ]; then
+  # Update profile using kcadm.sh authentication with Python requests
+  python3 << 'PYTHON_EOF'
+import subprocess
+import json
+import sys
+import os
+import requests
+
+# Get Keycloak URL from environment
+keycloak_url = os.environ.get('KEYCLOAK_URL', '')
+admin_user = os.environ.get('KEYCLOAK_USER', 'admin')
+admin_password = os.environ.get('KEYCLOAK_PASSWORD', '')
+
+if not keycloak_url or not admin_password:
+    print("⚠️  Keycloak environment variables not set", file=sys.stderr)
+    sys.exit(1)
+
+# Get admin token using kcadm.sh (it handles authentication)
+# First, get token by calling kcadm.sh's internal mechanism
+# We'll use kcadm.sh config to ensure credentials are set, then get token
+try:
+    # Get token using kcadm.sh's authentication
+    # kcadm.sh stores token in ~/.keycloak/kcadm.config, but we can also get it via API
+    # For simplicity, we'll use requests to get token (same as kcadm.sh does internally)
+    token_url = f'{keycloak_url}/realms/master/protocol/openid-connect/token'
+    token_data = {
+        'client_id': 'admin-cli',
+        'username': admin_user,
+        'password': admin_password,
+        'grant_type': 'password'
+    }
+    token_resp = requests.post(token_url, data=token_data, timeout=10)
+    token_resp.raise_for_status()
+    admin_token = token_resp.json().get('access_token', '')
+    
+    if not admin_token:
+        print("⚠️  Failed to get admin token", file=sys.stderr)
+        sys.exit(1)
+except Exception as e:
+    print(f"⚠️  Failed to authenticate: {e}", file=sys.stderr)
+    sys.exit(1)
+
+# Get current profile using kcadm.sh
+try:
+    result = subprocess.run(['kcadm.sh', 'get', 'realms/openstack/users/profile'], 
+                          capture_output=True, text=True, check=True)
+    profile = json.loads(result.stdout)
+except:
+    profile = {"attributes": [], "groups": []}
+
+# Custom attributes to add
+custom_attrs = [
+    {
+        'name': 'project_id',
+        'displayName': 'OpenStack Project ID',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    },
+    {
+        'name': 'project_name',
+        'displayName': 'OpenStack Project Name',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    },
+    {
+        'name': 'project_domain',
+        'displayName': 'OpenStack Project Domain',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    },
+    {
+        'name': 'user_domain',
+        'displayName': 'OpenStack User Domain',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    },
+    {
+        'name': 'project_domain_id',
+        'displayName': 'OpenStack Project Domain Id',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    },
+    {
+        'name': 'user_domain_id',
+        'displayName': 'OpenStack User Domain Id',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    },
+    {
+        'name': 'openstack_roles',
+        'displayName': 'OpenStack Roles',
+        'permissions': {'view': ['admin'], 'edit': ['admin']},
+        'multivalued': False
+    }
+]
+
+existing_names = {a.get('name') for a in profile.get('attributes', [])}
+added = False
+for attr in custom_attrs:
+    if attr['name'] not in existing_names:
+        profile.setdefault('attributes', []).append(attr)
+        print(f"Adding attribute: {attr['name']}", file=sys.stderr)
+        added = True
+
+if added:
+    # Update profile using REST API with token (kcadm.sh uses same mechanism internally)
+    profile_url = f'{keycloak_url}/admin/realms/openstack/users/profile'
+    headers = {
+        'Authorization': f'Bearer {admin_token}',
+        'Content-Type': 'application/json'
+    }
+    try:
+        update_resp = requests.put(profile_url, json=profile, headers=headers, timeout=10)
+        update_resp.raise_for_status()
+        print("✅ User Profile updated successfully")
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️  User Profile update failed: {e}", file=sys.stderr)
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"   Response: {e.response.text}", file=sys.stderr)
+        sys.exit(1)
+else:
+    print("✅ User Profile already has custom attributes")
+PYTHON_EOF
+else
+  echo "✅ User Profile already has custom attributes"
 fi
 
 # Create role: nova:reboot
@@ -345,10 +477,11 @@ else
   echo "Role 'nova:reboot' already exists"
 fi
 
-# Get project ID from OpenStack for the demo project
+# Get project ID and default domain ID from OpenStack for the demo project
 source /root/openrc_admin 2>/dev/null || true
 PROJECT_ID=$(openstack project show demo -c id -f value 2>/dev/null || echo "")
 PROJECT_NAME="demo"
+DEFAULT_DOMAIN_ID=$(openstack domain show default -c id -f value 2>/dev/null || echo "default")
 
 if [ -z "$PROJECT_ID" ]; then
   echo "⚠️  Warning: Could not get demo project ID from OpenStack"
@@ -362,13 +495,14 @@ else
     kcadm.sh delete realms/openstack/users/$${EXISTING_USER} 2>/dev/null || true
   fi
   
-  # Create user: nova-restart-user
+  # Create user: nova-restart-user (with credentials in initial creation for persistence)
   echo "Creating user: nova-restart-user"
   cat <<EOF | kcadm.sh create realms/openstack/users -f -
 {
   "username": "nova-restart-user",
   "enabled": true,
   "emailVerified": true,
+  "requiredActions": [],
   "email": "nova-restart@example.com",
   "firstName": "Nova",
   "lastName": "Restart",
@@ -376,18 +510,132 @@ else
     "project_id": ["$${PROJECT_ID}"],
     "project_name": ["$${PROJECT_NAME}"],
     "project_domain": ["Default"],
-    "user_domain": ["Default"]
-  }
+    "user_domain": ["Default"],
+    "project_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "user_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "openstack_roles": ["nova:reboot"]
+  },
+  "credentials": [{
+    "type": "password",
+    "value": "changeme",
+    "temporary": false
+  }]
 }
 EOF
-  
-  # Set password
-  kcadm.sh set-password --realm openstack --username nova-restart-user --new-password changeme --temporary false 2>/dev/null || true
   
   # Assign role
   kcadm.sh add-roles --realm openstack --uusername nova-restart-user --rolename nova:reboot 2>/dev/null || true
   
   echo "✅ User nova-restart-user created with project $${PROJECT_NAME} ($${PROJECT_ID})"
+  
+  # Create demo user for testing
+  DEMO_USER_EXISTS=$(kcadm.sh get realms/openstack/users --query username=demo 2>&1 | python3 -c 'import sys, json; users = json.load(sys.stdin); [print(u["id"]) for u in users if u.get("username") == "demo"]' 2>/dev/null || echo "")
+  
+  if [ -n "$DEMO_USER_EXISTS" ]; then
+    echo "Deleting existing user: demo"
+    kcadm.sh delete realms/openstack/users/$${DEMO_USER_EXISTS} 2>/dev/null || true
+  fi
+  
+  # Get demo user password from openrc_demo if available
+  DEMO_PASSWORD=$(grep "^export OS_PASSWORD=" /root/openrc_demo 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "HbSsd5CCkd5R42tDrjke3YE4vAnDJPBf")
+  
+  echo "Creating user: demo"
+  cat <<EOF | kcadm.sh create realms/openstack/users -f -
+{
+  "username": "demo",
+  "enabled": true,
+  "emailVerified": true,
+  "requiredActions": [],
+  "email": "demo@example.com",
+  "firstName": "Demo",
+  "lastName": "User",
+  "attributes": {
+    "project_id": ["$${PROJECT_ID}"],
+    "project_name": ["$${PROJECT_NAME}"],
+    "project_domain": ["Default"],
+    "user_domain": ["Default"],
+    "project_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "user_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "openstack_roles": ["default,member"]
+  },
+  "credentials": [{
+    "type": "password",
+    "value": "$${DEMO_PASSWORD}",
+    "temporary": false
+  }]
+}
+EOF
+  
+  echo "✅ User demo created with project $${PROJECT_NAME} ($${PROJECT_ID})"
+  
+  # Create demo-reboot-only user (Keycloak OAuth2 reboot test)
+  DEMO_REBOOT_EXISTS=$(kcadm.sh get realms/openstack/users --query username=demo-reboot-only 2>&1 | python3 -c 'import sys, json; users = json.load(sys.stdin); [print(u["id"]) for u in users if u.get("username") == "demo-reboot-only"]' 2>/dev/null || echo "")
+  if [ -n "$DEMO_REBOOT_EXISTS" ]; then
+    kcadm.sh delete realms/openstack/users/$${DEMO_REBOOT_EXISTS} 2>/dev/null || true
+  fi
+  echo "Creating user: demo-reboot-only"
+  cat <<EOF | kcadm.sh create realms/openstack/users -f -
+{
+  "username": "demo-reboot-only",
+  "enabled": true,
+  "emailVerified": true,
+  "requiredActions": [],
+  "email": "demo-reboot@example.com",
+  "firstName": "Demo",
+  "lastName": "RebootOnly",
+  "attributes": {
+    "project_id": ["$${PROJECT_ID}"],
+    "project_name": ["$${PROJECT_NAME}"],
+    "project_domain": ["Default"],
+    "user_domain": ["Default"],
+    "project_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "user_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "openstack_roles": ["nova:reboot"]
+  },
+  "credentials": [{
+    "type": "password",
+    "value": "$${DEMO_PASSWORD}",
+    "temporary": false
+  }]
+}
+EOF
+  kcadm.sh add-roles --realm openstack --uusername demo-reboot-only --rolename nova:reboot 2>/dev/null || true
+  echo "✅ User demo-reboot-only created (nova:reboot)"
+  
+  # Create demo-keycloak user (Keycloak OAuth2 create-instance test)
+  DEMO_KC_EXISTS=$(kcadm.sh get realms/openstack/users --query username=demo-keycloak 2>&1 | python3 -c 'import sys, json; users = json.load(sys.stdin); [print(u["id"]) for u in users if u.get("username") == "demo-keycloak"]' 2>/dev/null || echo "")
+  if [ -n "$DEMO_KC_EXISTS" ]; then
+    kcadm.sh delete realms/openstack/users/$${DEMO_KC_EXISTS} 2>/dev/null || true
+  fi
+  echo "Creating user: demo-keycloak"
+  cat <<EOF | kcadm.sh create realms/openstack/users -f -
+{
+  "username": "demo-keycloak",
+  "enabled": true,
+  "emailVerified": true,
+  "requiredActions": [],
+  "email": "demo-kc@example.com",
+  "firstName": "Demo",
+  "lastName": "Keycloak",
+  "attributes": {
+    "project_id": ["$${PROJECT_ID}"],
+    "project_name": ["$${PROJECT_NAME}"],
+    "project_domain": ["Default"],
+    "user_domain": ["Default"],
+    "project_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "user_domain_id": ["$${DEFAULT_DOMAIN_ID}"],
+    "openstack_roles": ["default,member"]
+  },
+  "credentials": [{
+    "type": "password",
+    "value": "$${DEMO_PASSWORD}",
+    "temporary": false
+  }]
+}
+EOF
+  kcadm.sh add-roles --realm openstack --uusername demo-keycloak --rolename default 2>/dev/null || true
+  kcadm.sh add-roles --realm openstack --uusername demo-keycloak --rolename member 2>/dev/null || true
+  echo "✅ User demo-keycloak created (default,member)"
 fi
 
 # Get client secret for nova-middleware
@@ -413,8 +661,29 @@ else
   echo "⚠️  Could not find nova-middleware client UUID"
 fi
 
-echo ""
 echo "✅ Keycloak configuration completed!"
+
+# Glance
+frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Placement
+frep k8s/placement.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Neutron
+frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Nova
+frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Mistral
+frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Skyline
+frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Barbican
+frep k8s/barbican.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
 
 kubectl wait --for=condition=available --timeout=60s deployment/nova-api
 kubectl wait --for=condition=available --timeout=60s deployment/glance

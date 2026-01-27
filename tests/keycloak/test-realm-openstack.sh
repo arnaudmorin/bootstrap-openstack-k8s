@@ -35,7 +35,7 @@ fi
 echo ""
 
 echo "2. Test openstack realm clients:"
-CLIENTS=$(kcadm.sh get clients --realm openstack 2>&1)
+CLIENTS=$(kcadm.sh get clients --realm openstack 2>&1) || true
 if echo "${CLIENTS}" | grep -q "nova-middleware\|openstack-client"; then
   echo "   ✅ Clients found in openstack realm"
   echo "${CLIENTS}" | grep -E '"clientId"' | head -5
@@ -47,7 +47,7 @@ fi
 echo ""
 
 echo "3. Test openstack realm users:"
-USERS=$(kcadm.sh get users --realm openstack 2>&1)
+USERS=$(kcadm.sh get users --realm openstack 2>&1) || true
 if echo "${USERS}" | grep -q "nova-restart-user"; then
   echo "   ✅ nova-restart-user found"
   echo "${USERS}" | grep -E '"username"' | head -5
@@ -59,7 +59,7 @@ fi
 echo ""
 
 echo "4. Test openstack realm roles:"
-ROLES=$(kcadm.sh get roles --realm openstack 2>&1)
+ROLES=$(kcadm.sh get roles --realm openstack 2>&1) || true
 if echo "${ROLES}" | grep -q "nova:reboot"; then
   echo "   ✅ nova:reboot role found"
   echo "${ROLES}" | grep -E '"name"' | head -5

@@ -2,6 +2,8 @@
 
 This directory contains tests to validate Nova API functionality with both Keystone and Keycloak OAuth2 authentication.
 
+**All tests run as the demo user only.** The admin user is used only for infrastructure setup, not for running these tests.
+
 ## Overview
 
 These tests verify that:
@@ -17,7 +19,7 @@ These tests verify that:
 - Demo user and project exist in Keystone
 - Demo user exists in Keycloak realm (or will be created automatically)
 - OpenRC files available:
-  - `/root/openrc_demo` - Demo user credentials for Keystone
+  - `/root/openrc_demo` - Demo user credentials for Keystone (required; tests refuse to run as admin)
   - `/root/keycloakrc` - Keycloak configuration
 
 ## Test Files

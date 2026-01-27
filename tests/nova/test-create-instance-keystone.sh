@@ -1,6 +1,7 @@
 #!/bin/bash
 # Test: Create a Nova instance using Keystone authentication (demo user)
 # This test verifies that the demo user can create instances using Keystone
+# Runs as demo user only (admin is for infra setup).
 
 set -e
 
@@ -10,15 +11,19 @@ cd "${SCRIPT_DIR}"
 echo "=== Test: Create Instance with Keystone (demo) ==="
 echo ""
 
-# Load demo openrc
+# Load demo openrc - tests must run as demo user only
 if [ -f /root/openrc_demo ]; then
   source /root/openrc_demo
 else
   echo "❌ File /root/openrc_demo not found"
   exit 1
 fi
+if [ "${OS_USERNAME}" != "demo" ]; then
+  echo "❌ This test must run as demo user (OS_USERNAME=demo). Current: OS_USERNAME=${OS_USERNAME}"
+  exit 1
+fi
 
-echo "✅ Loaded demo openrc"
+echo "✅ Loaded demo openrc (user: ${OS_USERNAME})"
 echo "   OS_USERNAME=${OS_USERNAME}"
 echo "   OS_PROJECT_NAME=${OS_PROJECT_NAME}"
 echo "   OS_AUTH_URL=${OS_AUTH_URL}"
@@ -61,21 +66,59 @@ echo "3. Getting available network..."
 NETWORK_ID=$(openstack network list -c ID -f value 2>&1 | head -1)
 if [ -z "${NETWORK_ID}" ]; then
   # Try to get specific networks (may fail if not accessible to demo user)
-  NETWORK_ID=$(openstack network show lb-mgmt-net -c id -f value 2>&1 | grep -v "Error\|No Network" | head -1 || \
+  NETWORK_ID=$(openstack network show test-net -c id -f value 2>&1 | grep -v "Error\|No Network" | head -1 || \
+               openstack network show lb-mgmt-net -c id -f value 2>&1 | grep -v "Error\|No Network" | head -1 || \
                openstack network show public -c id -f value 2>&1 | grep -v "Error\|No Network" | head -1 || \
                openstack network show default -c id -f value 2>&1 | grep -v "Error\|No Network" | head -1 || echo "")
 fi
 
-if [ -n "${NETWORK_ID}" ] && [ "${NETWORK_ID}" != "" ]; then
-  echo "   ✅ Network ID: ${NETWORK_ID}"
+if [ -z "${NETWORK_ID}" ] || [ "${NETWORK_ID}" == "" ]; then
+  echo "   ℹ️  No network found, creating private network for this project..."
+  NETWORK_NAME="test-net-$(date +%s)"
+  
+  # Create private network for this project only (no --share)
+  NETWORK_OUTPUT=$(openstack network create \
+    --project "${PROJECT_ID}" \
+    "${NETWORK_NAME}" 2>&1)
+  
+  if echo "${NETWORK_OUTPUT}" | grep -q "ERROR\|error\|Error"; then
+    echo "   ❌ Failed to create network"
+    echo "${NETWORK_OUTPUT}"
+    exit 1
+  fi
+  
+  NETWORK_ID=$(openstack network show "${NETWORK_NAME}" -c id -f value 2>&1)
+  if [ -z "${NETWORK_ID}" ]; then
+    echo "   ❌ Cannot get network ID after creation"
+    exit 1
+  fi
+  
+  echo "   ✅ Created network: ${NETWORK_NAME} (ID: ${NETWORK_ID})"
+  
+  # Create subnet for the network
+  SUBNET_NAME="${NETWORK_NAME}-subnet"
+  SUBNET_CIDR="192.168.$(($(date +%s) % 255)).0/24"
+  
+  SUBNET_OUTPUT=$(openstack subnet create \
+    --network "${NETWORK_ID}" \
+    --subnet-range "${SUBNET_CIDR}" \
+    --project "${PROJECT_ID}" \
+    "${SUBNET_NAME}" 2>&1)
+  
+  if echo "${SUBNET_OUTPUT}" | grep -q "ERROR\|error\|Error"; then
+    echo "   ⚠️  Failed to create subnet, but network exists"
+    echo "${SUBNET_OUTPUT}"
+  else
+    SUBNET_ID=$(openstack subnet show "${SUBNET_NAME}" -c id -f value 2>&1)
+    echo "   ✅ Created subnet: ${SUBNET_NAME} (ID: ${SUBNET_ID}, CIDR: ${SUBNET_CIDR})"
+  fi
 else
-  echo "   ℹ️  No network specified (will use auto-assign)"
-  NETWORK_ID=""
+  echo "   ✅ Using existing network ID: ${NETWORK_ID}"
 fi
 echo ""
 
 # Create instance
-echo "4. Creating Nova instance..."
+echo "4. Creating Nova instance with network ${NETWORK_ID}..."
 INSTANCE_NAME="test-instance-keystone-$(date +%s)"
 if [ -n "${NETWORK_ID}" ] && [ "${NETWORK_ID}" != "" ]; then
   INSTANCE_OUTPUT=$(openstack server create \

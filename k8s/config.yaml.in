@@ -219,13 +219,14 @@ data:
     os_region_name = RegionOne
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova
-    [glance]
-    api_servers = http://glance.{{.domain}}
+    [api]
     # Authentication strategy: keystone (default) or keystone+oauth2
-    # keystone: use Keystone only
+    # keystone: use Keystone only (default)
     # keystone+oauth2: use OAuth2 (Keycloak) only
     # Note: To allow both, you need to create a custom composite middleware
-    # auth_strategy = keystone
+    auth_strategy = keystone+oauth2
+    [glance]
+    api_servers = http://glance.{{.domain}}
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
@@ -239,27 +240,30 @@ data:
     auth_type = password
     # OAuth2.0 External Authorization Server (Keycloak) configuration
     # This section allows Nova to authenticate with Keycloak OAuth2 tokens
-    # while still supporting Keystone authentication
-    [external_oauth2_token]
+    # Section name must be [ext_oauth2_auth] for keystonemiddleware.external_oauth2_token
+    [ext_oauth2_auth]
     # Keycloak introspection endpoint
-    introspection_endpoint = http://keycloak.{{.domain}}/realms/openstack/protocol/openid-connect/token/introspect
+    introspect_endpoint = http://keycloak.{{.domain}}/realms/openstack/protocol/openid-connect/token/introspect
+    # Audience - matches the 'aud' field in Keycloak token (typically 'account' for user tokens)
+    audience = account
     # Client credentials for Keycloak (used by middleware to authenticate for token introspection)
     client_id = nova-middleware
     client_secret = {{.keycloak_client_secret}}
-    # Authentication method: client_secret_basic, client_secret_post, or tls_client_auth
+    # Authentication method: client_secret_basic, client_secret_post, tls_client_auth, client_secret_jwt, private_key_jwt
     auth_method = client_secret_basic
-    # Token introspection timeout
-    jwt_bearer_time_out = 3600
     # Mapping rules to extract OpenStack attributes from Keycloak token introspection response
     # These map Keycloak token claims to OpenStack environment variables
-    user_id_attribute = sub
-    user_name_attribute = preferred_username
-    user_domain_attribute = user_domain
-    project_id_attribute = project_id
-    project_name_attribute = project_name
-    project_domain_attribute = project_domain
-    roles_attribute = realm_access.roles
-    # Cache configuration for token introspection results
+    mapping_user_id = sub
+    mapping_user_name = preferred_username
+    mapping_user_domain_id = user_domain_id
+    mapping_user_domain_name = user_domain
+    mapping_project_id = project_id
+    mapping_project_name = project_name
+    mapping_project_domain_id = project_domain_id
+    mapping_project_domain_name = project_domain
+    # Use openstack_roles (string "admin,member,reader") instead of realm_access.roles (array)
+    mapping_roles = openstack_roles
+    # Cache configuration
     memcached_servers = memcached:11211
     [neutron]
     default_floating_pool = ext-net
@@ -303,6 +307,8 @@ data:
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
+    [oslo_policy]
+    policy_dirs = /etc/nova/policy.d
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -338,12 +344,11 @@ data:
     [composite:openstack_compute_api_v21]
     use = call:nova.api.auth:pipeline_factory_v21
     noauth = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit noauth osapi_compute_app_v21
-    keystone = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v21
-    keystone_nolimit = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit authtoken keystonecontext osapi_compute_app_v21
-    # Pipeline OAuth2 only (Keycloak)
-    keystone+oauth2 = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit external_oauth2_token keystonecontext osapi_compute_app_v21
-    # Default pipeline: try OAuth2 then Keystone as fallback
-    # Note: To use this pipeline, configure auth_strategy = keystone+oauth2 in nova.conf
+    # Dual authentication pipeline: routes Bearer tokens to OAuth2, X-Auth-Token to Keystone
+    keystone = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit composite_auth keystonecontext osapi_compute_app_v21
+    keystone_nolimit = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit composite_auth keystonecontext osapi_compute_app_v21
+    # OAuth2 only pipeline (Keycloak) - kept for backward compatibility
+    oauth2 = cors http_proxy_to_wsgi compute_req_id faultwrap sizelimit external_oauth2_token keystonecontext osapi_compute_app_v21
 
     [composite:openstack_compute_api_legacy_v2]
     use = call:nova.api.auth:pipeline_factory
@@ -371,6 +376,9 @@ data:
 
     [filter:external_oauth2_token]
     paste.filter_factory = keystonemiddleware.external_oauth2_token:filter_factory
+
+    [filter:composite_auth]
+    paste.filter_factory = nova_oauth2_middleware:filter_factory
 
     [filter:authtoken]
     paste.filter_factory = keystonemiddleware.auth_token:filter_factory
@@ -409,6 +417,103 @@ data:
     [app:osapi_compute_app_v21]
     paste.app_factory = nova.api.openstack.compute:APIRouterV21.factory
 
+  nova_oauth2_middleware.py: |
+    """
+    Composite middleware for Nova allowing both OAuth2 (Keycloak) and Keystone authentication.
+
+    Strategy:
+    - If Authorization: Bearer header is present -> use OAuth2 (Keycloak)
+    - If X-Auth-Token header is present -> use Keystone
+    - Otherwise -> return 401
+    """
+    import webob.dec
+    import webob.exc
+    from oslo_log import log as logging
+
+    LOG = logging.getLogger(__name__)
+
+
+    class CompositeAuthMiddleware(object):
+        """Middleware that routes to OAuth2 or Keystone based on the auth header."""
+
+        def __init__(self, app, conf):
+            self.app = app
+            self.conf = conf
+            self._oauth2_middleware = None
+            self._keystone_middleware = None
+            
+            # Lazy load middlewares
+            self._init_oauth2()
+            self._init_keystone()
+        
+        def _init_oauth2(self):
+            try:
+                from keystonemiddleware.external_oauth2_token import ExternalAuth2Protocol
+                self._oauth2_middleware = ExternalAuth2Protocol(self.app, self.conf)
+                LOG.info("OAuth2 middleware initialized successfully")
+            except Exception as e:
+                LOG.warning("Could not initialize OAuth2 middleware: %s", e)
+                self._oauth2_middleware = None
+        
+        def _init_keystone(self):
+            try:
+                from keystonemiddleware import auth_token
+                self._keystone_middleware = auth_token.AuthProtocol(self.app, self.conf)
+                LOG.info("Keystone middleware initialized successfully")
+            except Exception as e:
+                LOG.warning("Could not initialize Keystone middleware: %s", e)
+                self._keystone_middleware = None
+
+        @webob.dec.wsgify
+        def __call__(self, req):
+            # Check for Bearer token (OAuth2)
+            auth_header = req.headers.get('Authorization', '')
+            x_auth_token = req.headers.get('X-Auth-Token', '')
+            
+            if auth_header.lower().startswith('bearer '):
+                # Use OAuth2 middleware
+                if self._oauth2_middleware:
+                    LOG.debug("Using OAuth2 authentication (Bearer token present)")
+                    return req.get_response(self._oauth2_middleware)
+                else:
+                    LOG.warning("Bearer token provided but OAuth2 middleware not available")
+                    return webob.exc.HTTPUnauthorized("OAuth2 authentication not configured")
+            
+            elif x_auth_token:
+                # Use Keystone middleware
+                if self._keystone_middleware:
+                    LOG.debug("Using Keystone authentication (X-Auth-Token present)")
+                    return req.get_response(self._keystone_middleware)
+                else:
+                    LOG.warning("X-Auth-Token provided but Keystone middleware not available")
+                    return webob.exc.HTTPUnauthorized("Keystone authentication not configured")
+            
+            else:
+                # No auth header - pass to app (will likely fail with 401)
+                LOG.debug("No authentication header found, passing to application")
+                return req.get_response(self.app)
+
+
+    def filter_factory(global_conf, **local_conf):
+        """Factory to create the composite middleware."""
+        conf = global_conf.copy()
+        conf.update(local_conf)
+        
+        def filter_(app):
+            return CompositeAuthMiddleware(app, conf)
+        
+        return filter_
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-policy
+data:
+  keycloak-policy.yaml: |
+    # Allow Keycloak role nova:reboot to perform server reboot
+    "os_compute_api:servers:reboot": "role:nova:reboot or role:admin"
+    "os_compute_api:servers:reboot:create": "role:nova:reboot or role:admin"
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script to run all Keycloak tests
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
@@ -30,10 +30,10 @@ for test in "${TESTS[@]}"; do
   echo "=== Running ${test} ==="
   if bash "${test}"; then
     echo "✅ ${test}: PASSED"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
   else
     echo "❌ ${test}: FAILED"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
   fi
   echo ""
 done

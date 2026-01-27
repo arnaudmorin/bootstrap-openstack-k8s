@@ -1,20 +1,36 @@
 #!/bin/bash
 # Script to run all Nova tests
 # Tests verify Keystone and Keycloak OAuth2 authentication with Nova API
+#
+# All tests MUST run as the demo user only. Admin user is for infra setup only.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
+# Ensure we use demo user for the whole test run (cleanup, etc.)
+if [ -f /root/openrc_demo ]; then
+  source /root/openrc_demo
+  if [ "${OS_USERNAME}" != "demo" ] || [ "${OS_PROJECT_NAME}" != "demo" ]; then
+    echo "❌ openrc_demo must define demo user (OS_USERNAME=demo, OS_PROJECT_NAME=demo)"
+    exit 1
+  fi
+else
+  echo "❌ /root/openrc_demo not found. Tests require demo user credentials."
+  exit 1
+fi
+
 echo "=========================================="
-echo "  Nova API Tests - Full Execution"
+echo "  Nova API Tests - Full Execution (demo user)"
 echo "=========================================="
+echo "   OS_USERNAME=${OS_USERNAME}  OS_PROJECT_NAME=${OS_PROJECT_NAME}"
 echo ""
 
 # List of tests to run in order
 TESTS=(
   "test-create-instance-keystone.sh"
+  "test-create-instance-keycloak.sh"
   "test-reboot-instance-keycloak.sh"
   "test-keycloak-cannot-create.sh"
 )
@@ -58,10 +74,10 @@ for test in "${TESTS[@]}"; do
   echo "=== Running ${test} ==="
   if bash "${test}"; then
     echo "✅ ${test}: PASSED"
-    ((PASSED++))
+    PASSED=$((PASSED + 1))
   else
     echo "❌ ${test}: FAILED"
-    ((FAILED++))
+    FAILED=$((FAILED + 1))
     # Continue with other tests even if one fails
   fi
   echo ""

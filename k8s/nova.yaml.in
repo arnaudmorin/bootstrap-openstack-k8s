@@ -129,10 +129,12 @@ spec:
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         # Use paste deploy to support both Keystone and OAuth2 authentication
-        # Note: uwsgi --paste doesn't work correctly with this image, so we use nova-api-wsgi directly
-        # The api-paste.ini file is still mounted and can be used by the application if configured in nova.conf
+        # PYTHONPATH includes /etc/nova for nova_oauth2_middleware.py (CompositeAuthMiddleware)
         command: [ "/bin/bash", "-c", "--" ]
         args: [ "cd /opt/openstack/nova && exec /opt/openstack/nova/bin/uwsgi --http :8774 --wsgi-file /opt/openstack/nova/bin/nova-api-wsgi" ]
+        env:
+        - name: PYTHONPATH
+          value: "/etc/nova:/opt/openstack/nova/lib/python3.13/site-packages"
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
@@ -143,10 +145,18 @@ spec:
         - name: nova-conf
           mountPath: /etc/nova/api-paste.ini
           subPath: api-paste.ini
+        - name: nova-conf
+          mountPath: /etc/nova/nova_oauth2_middleware.py
+          subPath: nova_oauth2_middleware.py
+        - name: nova-policy
+          mountPath: /etc/nova/policy.d
       volumes:
       - name: nova-conf
         configMap:
           name: nova-conf
+      - name: nova-policy
+        configMap:
+          name: nova-policy
 
 ---
 apiVersion: apps/v1

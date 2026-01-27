@@ -1,32 +1,40 @@
 #!/bin/bash
-# Test: Reboot a Nova instance using Keycloak OAuth2 authentication (demo user)
-# This test verifies that the demo user can reboot instances using Keycloak OAuth2
+# Test: Reboot a Nova instance using Keycloak OAuth2 authentication (demo-reboot-only user)
+# This test verifies that the demo-reboot-only user can reboot instances using Keycloak OAuth2
+# This user should only have reboot permissions, not create permissions
+#
+# Uses instance created by test-create-instance-keystone.sh (Keystone demo user)
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
-echo "=== Test: Reboot Instance with Keycloak OAuth2 (demo) ==="
+echo "=== Test: Reboot Instance with Keycloak OAuth2 (demo-reboot-only) ==="
 echo ""
 
-# Check if instance ID exists from previous test
+# Check if instance ID exists from test-create-instance-keystone.sh (Keystone demo user)
 if [ -f /tmp/nova-test-instance-id.txt ]; then
   INSTANCE_ID=$(cat /tmp/nova-test-instance-id.txt)
   INSTANCE_NAME=$(cat /tmp/nova-test-instance-name.txt 2>/dev/null || echo "unknown")
-  echo "✅ Found existing instance from previous test"
+  echo "✅ Found instance created by Keystone demo user (from test-create-instance-keystone.sh)"
   echo "   Instance ID: ${INSTANCE_ID}"
   echo "   Instance Name: ${INSTANCE_NAME}"
 else
   echo "❌ No instance ID found. Please run test-create-instance-keystone.sh first"
+  echo "   This test requires an instance created by the Keystone demo user"
   exit 1
 fi
 
-# Load demo openrc to get project info
+# Load demo openrc - tests run as demo user only
 if [ -f /root/openrc_demo ]; then
   source /root/openrc_demo
 else
   echo "❌ File /root/openrc_demo not found"
+  exit 1
+fi
+if [ "${OS_USERNAME}" != "demo" ]; then
+  echo "❌ This test must run as demo user (OS_USERNAME=demo). Current: OS_USERNAME=${OS_USERNAME}"
   exit 1
 fi
 
@@ -57,12 +65,12 @@ NOVA_URL=$(echo "${OS_AUTH_URL}" | sed 's|keystone|nova|g' | sed 's|/v3||g')
 echo "✅ Nova API URL: ${NOVA_URL}"
 echo ""
 
-# Get OAuth2 token from Keycloak for demo user
-echo "1. Obtaining OAuth2 token from Keycloak..."
+# Get OAuth2 token from Keycloak for demo-reboot-only user
+echo "1. Obtaining OAuth2 token from Keycloak for demo-reboot-only user..."
 TOKEN_RESPONSE=$(curl -s -X POST "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "client_id=openstack-client" \
-  -d "username=${OS_USERNAME}" \
+  -d "username=demo-reboot-only" \
   -d "password=${OS_PASSWORD}" \
   -d "grant_type=password" \
   -d "scope=openid")
@@ -73,7 +81,7 @@ if [ -z "${ACCESS_TOKEN}" ] || [ "${ACCESS_TOKEN}" == "None" ]; then
   echo "   ❌ Failed to obtain OAuth2 token"
   echo "   Response: ${TOKEN_RESPONSE}"
   echo ""
-  echo "   ℹ️  Note: The demo user may need to be created in Keycloak first"
+  echo "   ℹ️  Note: The demo-reboot-only user may need to be created in Keycloak first"
   exit 1
 fi
 
@@ -81,14 +89,14 @@ echo "   ✅ OAuth2 token obtained"
 echo "   Token (first 20 chars): ${ACCESS_TOKEN:0:20}..."
 echo ""
 
-# Verify instance exists and get current status
-echo "2. Verifying instance status..."
+# Verify instance exists and get current status (instance created by Keystone demo user)
+echo "2. Verifying instance status (created by Keystone demo user)..."
 INSTANCE_STATUS=$(openstack server show "${INSTANCE_ID}" -c status -f value 2>&1)
 if [ -z "${INSTANCE_STATUS}" ]; then
   echo "   ❌ Instance not found"
   exit 1
 fi
-echo "   ✅ Instance found"
+echo "   ✅ Instance found (created by Keystone demo user)"
 echo "   Current status: ${INSTANCE_STATUS}"
 echo ""
 
