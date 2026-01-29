@@ -8,10 +8,14 @@ metadata:
   name: initdb-{{ .db_name }}
 data:
   initdb.sql: |-
+    {{if (eq .db_name "keycloak")}}
+    CREATE DATABASE {{ .db_name }} character set utf8mb3;
+    {{else if (eq .db_name "nova")}}
     CREATE DATABASE {{ .db_name }};
-    {{if (eq .db_name "nova")}}
     CREATE DATABASE nova_cell0;
     CREATE DATABASE nova_api;
+    {{else}}
+    CREATE DATABASE {{ .db_name }};
     {{end}}
 ---
 apiVersion: v1
@@ -52,7 +56,7 @@ spec:
         app: mysql-{{ .db_name }}
     spec:
       containers:
-      - image: mariadb:10.7-focal
+      - image: mariadb:11.8-noble
         name: mysql-{{ .db_name }}
         env:
           # Use secret in real usage
