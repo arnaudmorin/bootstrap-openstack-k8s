@@ -47,6 +47,7 @@ alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --l
 alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-memcached='frep /root/bootstrap-openstack-k8s/k8s/memcached.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-blazar='frep /root/bootstrap-openstack-k8s/k8s/blazar.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -126,6 +127,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=blazar | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
@@ -135,6 +137,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-blazar
 
 # Memcached
 frep k8s/memcached.yaml.in:- --load config/config.yaml | kubectl apply -f -
