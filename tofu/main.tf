@@ -22,6 +22,14 @@ variable "openstack_version" {
   default     = "2025.2"
 }
 
+data "external" "git_branch" {
+  program = ["bash", "-c", "echo \"{\\\"branch\\\": \\\"$(git -C ${path.module} rev-parse --abbrev-ref HEAD)\\\"}\""]
+}
+
+locals {
+  git_branch = data.external.git_branch.result.branch
+}
+
 variable "compute_count" {
   description = "Number of compute nodes"
   type        = number
@@ -100,6 +108,7 @@ resource "openstack_compute_instance_v2" "k8s" {
       path_module = path.module,
       password    = random_password.password.result
       os_version  = var.openstack_version
+      git_branch  = local.git_branch
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index].mac_address
     }
   )
@@ -129,6 +138,7 @@ resource "openstack_compute_instance_v2" "computes" {
       password    = random_password.password.result
       k8s_ip      = openstack_compute_instance_v2.k8s[0].access_ip_v4
       os_version  = var.openstack_version
+      git_branch  = local.git_branch
       hostname    = "compute-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + 1].mac_address
@@ -167,6 +177,7 @@ resource "openstack_compute_instance_v2" "networks" {
       password    = random_password.password.result
       k8s_ip      = openstack_compute_instance_v2.k8s[0].access_ip_v4
       os_version  = var.openstack_version
+      git_branch  = local.git_branch
       hostname    = "network-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index + var.compute_count].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + var.compute_count + 1].mac_address

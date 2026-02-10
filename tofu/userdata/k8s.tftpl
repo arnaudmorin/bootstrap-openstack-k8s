@@ -67,7 +67,7 @@ echo \
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${git_branch}
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
 # Setup SSH config for easy access to computes and networks node
