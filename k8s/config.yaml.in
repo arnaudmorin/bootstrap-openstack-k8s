@@ -138,7 +138,7 @@ data:
     # debug = True
     auth_strategy = keystone
     core_plugin = ml2
-    service_plugins = router,segments,port_forwarding,qos
+    service_plugins = router,segments,port_forwarding,qos,wireguard
     allow_overlapping_ips = true
     notify_nova_on_port_status_changes = true
     notify_nova_on_port_data_changes = true
