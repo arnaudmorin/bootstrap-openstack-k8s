@@ -278,6 +278,7 @@ frep k8s/neutron.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/nova.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/mistral.yaml.in:- --load config/config.yaml | kubectl apply -f -
+frep k8s/keycloak.yaml.in:- --load config/config.yaml | kubectl apply -f -
 ```
 
 # compute-x and network-x
@@ -359,6 +360,10 @@ openstack server list
 # This will do an API call against `nova` API
 ```
 If this is answering an empty line, you're good! (you don't have any instance yet)
+
+### Keycloak OAuth2 (optional)
+
+Nova supports dual authentication: Keystone (X-Auth-Token) and Keycloak OAuth2 (Bearer token). See [Keycloak OAuth2 feature](docs/KEYCLOAK_OAUTH2_FEATURE.md) for details.
 
 ## Skyline
 

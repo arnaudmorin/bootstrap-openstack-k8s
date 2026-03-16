@@ -48,6 +48,7 @@ alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --l
 alias frep-memcached='frep /root/bootstrap-openstack-k8s/k8s/memcached.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-loki='frep /root/bootstrap-openstack-k8s/k8s/loki.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-keycloak='frep /root/bootstrap-openstack-k8s/k8s/keycloak.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -66,7 +67,7 @@ echo \
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b feature/keycloak-oauth2-integration-v2
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
 # Setup SSH config for easy access to computes and networks node
@@ -128,6 +129,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keycloak | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
@@ -137,6 +139,27 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-keycloak
+
+# Keycloak (OAuth2 authentication server)
+# Note: Keycloak uses MySQL (deployed above with db_name=keycloak)
+frep k8s/keycloak.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Install Java (required for Keycloak CLI)
+apt-get install -y default-jdk
+
+# Download Keycloak CLI binaries
+KEYCLOAK_VERSION=26.0.0
+if [ ! -d /root/keycloak-26.0.0 ]; then
+  echo "Downloading Keycloak 26.0.0..."
+  curl -sL https://github.com/keycloak/keycloak/releases/download/26.0.0/keycloak-26.0.0.tar.gz | tar xz -C /root
+fi
+
+# Add Keycloak bin directory to PATH
+echo 'export PATH="/root/keycloak-26.0.0/bin:$PATH"' >> /etc/profile.d/keycloak.sh
+
+# Create Keycloak configuration file (similar to openrc files)
+frep files/keycloakrc.in:/root/keycloakrc --load config/config.yaml
 
 # Memcached
 frep k8s/memcached.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -178,6 +201,18 @@ frep keystone-settings.yaml.in:keystone-settings.yaml --load ../config/config.ya
 source /opt/oscli/bin/activate
 source /root/openrc_admin
 ./keystone-bootstrap --settings keystone-settings.yaml
+cd ../
+
+# Configure Keycloak (realm, clients, roles, users)
+# Wait for Keycloak to be ready before configuration
+echo "Waiting for Keycloak to be ready..."
+kubectl wait --for=condition=available --timeout=300s deployment/keycloak || echo "Keycloak deployment may still be initializing"
+
+# Source Keycloak configuration and run bootstrap
+source /etc/profile.d/keycloak.sh
+source /root/keycloakrc
+cd keycloak-bootstrap
+./keycloak-bootstrap
 cd ../
 
 # Glance

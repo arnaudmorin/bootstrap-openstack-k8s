@@ -1,9 +1,14 @@
 gh-md-toc
 config/config.yaml
 *.swp
+*.patch
 order-ipfo/*.conf
 order-ipfo/order-venv/
 done-*
+.kube/
 **/*.terraform
 **/*.tfstate*
 **/*.lock.hcl
+# Image files (downloaded for tests)
+*.img
+*qcow2
