@@ -50,7 +50,7 @@ spec:
     spec:
       initContainers:
       - name: cinder
-        image: arnaudmorin/openstack-cinder:{{.openstack_version}}
+        image: antoninruan/openstack-cinder:{{.openstack_version}}
         command: ["/opt/openstack/cinder/bin/cinder-manage", "db", "sync"]
         volumeMounts:
         - name: cinder-conf
@@ -58,10 +58,10 @@ spec:
           subPath: cinder.conf
       containers:
       - name: cinder
-        image: arnaudmorin/openstack-cinder:{{.openstack_version}}
+        image: antoninruan/openstack-cinder:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/cinder/bin/uwsgi", "--http", ":8776", "--wsgi-file", "/opt/openstack/cinder/bin/cinder-wsgi" ]
+        command: [ "/opt/openstack/cinder/bin/uwsgi", "--http", ":8776", "--module", "cinder.wsgi.api" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
@@ -98,7 +98,7 @@ spec:
     spec:
       containers:
       - name: cinder-scheduler
-        image: arnaudmorin/openstack-cinder:{{.openstack_version}}
+        image: antoninruan/openstack-cinder:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]
@@ -137,7 +137,7 @@ spec:
     spec:
       containers:
       - name: cinder-volume
-        image: arnaudmorin/openstack-cinder:{{.openstack_version}}
+        image: antoninruan/openstack-cinder:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]
@@ -154,4 +154,3 @@ spec:
       - name: cinder-conf
         configMap:
           name: cinder-conf
-

@@ -110,14 +110,14 @@ spec:
     spec:
       initContainers:
       - name: nova-api-db-sync
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: ["/opt/openstack/nova/bin/nova-manage", "api_db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
       - name: nova-db-sync
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: ["/opt/openstack/nova/bin/nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf
@@ -125,10 +125,10 @@ spec:
           subPath: nova.conf
       containers:
       - name: nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8774", "--wsgi-file", "/opt/openstack/nova/bin/nova-api-wsgi" ]
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8774", "--module", "nova.wsgi.osapi_compute" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
@@ -162,8 +162,8 @@ spec:
     spec:
       containers:
       - name: nova-metadata-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
-        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "--wsgi-file", "/opt/openstack/nova/bin/nova-metadata-wsgi" ]
+        image: antoninruan/openstack-nova:{{.openstack_version}}
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "--module", "nova.wsgi.metadata" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8775
@@ -198,7 +198,7 @@ spec:
     spec:
       containers:
       - name: nova-conductor
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-conductor" ]
         #imagePullPolicy: Always
@@ -233,7 +233,7 @@ spec:
     spec:
       containers:
       - name: nova-scheduler
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-scheduler" ]
         #imagePullPolicy: Always
@@ -267,7 +267,7 @@ spec:
     spec:
       containers:
       - name: nova-vnc
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-novncproxy" ]
         #imagePullPolicy: Always
@@ -301,7 +301,7 @@ spec:
     spec:
       containers:
       - name: nova-spice
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-spicehtml5proxy" ]
         #imagePullPolicy: Always
@@ -335,7 +335,7 @@ spec:
     spec:
       containers:
       - name: nova-serial
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-serialproxy" ]
         #imagePullPolicy: Always

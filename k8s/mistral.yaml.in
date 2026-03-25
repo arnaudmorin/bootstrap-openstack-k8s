@@ -81,14 +81,14 @@ spec:
     spec:
       initContainers:
       - name: mistral-upgrade-head
-        image: arnaudmorin/openstack-mistral:{{.openstack_version}}
+        image: antoninruan/openstack-mistral:{{.openstack_version}}
         command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "upgrade", "head"]
         volumeMounts:
         - name: mistral-conf
           mountPath: "/etc/mistral/mistral.conf"
           subPath: mistral.conf
       - name: mistral-db-populate
-        image: arnaudmorin/openstack-mistral:{{.openstack_version}}
+        image: antoninruan/openstack-mistral:{{.openstack_version}}
         command: ["/opt/openstack/mistral/bin/mistral-db-manage", "--config-file", "/etc/mistral/mistral.conf", "populate"]
         volumeMounts:
         - name: mistral-conf
@@ -96,7 +96,7 @@ spec:
           subPath: mistral.conf
       containers:
       - name: mistral-api
-        image: arnaudmorin/openstack-mistral:{{.openstack_version}}
+        image: antoninruan/openstack-mistral:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         # Uncomment when https://review.opendev.org/c/openstack/mistral/+/959603 is ready
@@ -143,7 +143,7 @@ spec:
     spec:
       containers:
       - name: mistral-engine
-        image: arnaudmorin/openstack-mistral:{{.openstack_version}}
+        image: antoninruan/openstack-mistral:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "engine" ]
         volumeMounts:
@@ -179,7 +179,7 @@ spec:
     spec:
       containers:
       - name: mistral-executor
-        image: arnaudmorin/openstack-mistral:{{.openstack_version}}
+        image: antoninruan/openstack-mistral:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "executor" ]
         volumeMounts:
@@ -210,7 +210,7 @@ spec:
     spec:
       containers:
       - name: cloudflow
-        image: arnaudmorin/openstack-cloudflow:{{.openstack_version}}
+        image: antoninruan/openstack-cloudflow:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         imagePullPolicy: IfNotPresent

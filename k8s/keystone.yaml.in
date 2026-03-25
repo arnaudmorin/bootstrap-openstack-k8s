@@ -50,7 +50,7 @@ spec:
     spec:
       initContainers:
       - name: keystone-db-sync
-        image: arnaudmorin/openstack-keystone:{{.openstack_version}}
+        image: antoninruan/openstack-keystone:{{.openstack_version}}
         command: ["/opt/openstack/keystone/bin/keystone-manage", "db_sync"]
         volumeMounts:
         - name: keystone-conf
@@ -63,7 +63,7 @@ spec:
           mountPath: /etc/keystone/fernet-keys/1
           subPath: "1"
       - name: keystone-bootstrap
-        image: arnaudmorin/openstack-keystone:{{.openstack_version}}
+        image: antoninruan/openstack-keystone:{{.openstack_version}}
         command: ["/opt/openstack/keystone/bin/keystone-manage", "bootstrap",
           "--bootstrap-password", "{{.password}}",
           "--bootstrap-admin-url", "http://keystone.{{.domain}}/v3/",
@@ -82,7 +82,7 @@ spec:
           subPath: "1"
       containers:
       - name: keystone
-        image: arnaudmorin/openstack-keystone:{{.openstack_version}}
+        image: antoninruan/openstack-keystone:{{.openstack_version}}
         command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         args: [ "chmod 600 /etc/keystone/fernet-keys && /opt/openstack/keystone/bin/uwsgi --http :5000 -w keystone.wsgi.api:application" ]

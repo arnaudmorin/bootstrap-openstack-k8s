@@ -65,7 +65,7 @@ spec:
     spec:
       initContainers:
       - name: glance-init
-        image: arnaudmorin/openstack-glance:{{.openstack_version}}
+        image: antoninruan/openstack-glance:{{.openstack_version}}
         command: ["/opt/openstack/glance/bin/glance-manage", "db_sync"]
         volumeMounts:
         - name: glance-conf
@@ -73,10 +73,10 @@ spec:
           subPath: glance-api.conf
       containers:
       - name: glance
-        image: arnaudmorin/openstack-glance:{{.openstack_version}}
+        image: antoninruan/openstack-glance:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/glance/bin/uwsgi", "--http", ":9292", "--wsgi-file", "/opt/openstack/glance/bin/glance-wsgi-api" ]
+        command: [ "/opt/openstack/glance/bin/uwsgi", "--http", ":9292", "--module", "glance.wsgi.api" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0

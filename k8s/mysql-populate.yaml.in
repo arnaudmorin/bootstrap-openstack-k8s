@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       initContainers:
       - name: nova-init
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: ["/opt/openstack/nova/bin/init.sh"]
         volumeMounts:
         - name: nova-conf
@@ -20,7 +20,7 @@ spec:
           subPath: nova.conf
       containers:
       - name: nova-done
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: antoninruan/openstack-nova:{{.openstack_version}}
         command: ["echo", "done"]
       volumes:
       - name: nova-conf
@@ -37,7 +37,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: octavia
-        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
+        image: antoninruan/openstack-octavia:{{.openstack_version}}
         command: [ "/opt/openstack/octavia/bin/octavia-db-manage", "--config-file", "/etc/octavia/octavia.conf", "upgrade", "head" ]
         volumeMounts:
         - name: octavia-conf

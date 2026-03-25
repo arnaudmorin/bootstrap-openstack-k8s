@@ -19,7 +19,7 @@ provider "openstack" {
 variable "openstack_version" {
   type        = string
   description = "Openstack version to deploy the cluster, it used to reference branch of bootstrap-openstack-k8s openstack-docker repos and as the tag of the os services images to pull"
-  default     = "2025.2"
+  default     = "2026.1"
 }
 
 variable "compute_count" {
