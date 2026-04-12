@@ -126,6 +126,9 @@ spec:
       containers:
       - name: nova-api
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8774", "--module", "nova.wsgi.osapi_compute" ]
@@ -163,6 +166,9 @@ spec:
       containers:
       - name: nova-metadata-api
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "--module", "nova.wsgi.metadata" ]
         #imagePullPolicy: Always
         ports:
@@ -199,6 +205,9 @@ spec:
       containers:
       - name: nova-conductor
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-conductor" ]
         #command: [ "/bin/bash", "-c", "--" ]
@@ -236,6 +245,9 @@ spec:
       containers:
       - name: nova-scheduler
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-scheduler" ]
         #imagePullPolicy: Always
@@ -270,6 +282,9 @@ spec:
       containers:
       - name: nova-vnc
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-novncproxy" ]
         #imagePullPolicy: Always
@@ -304,6 +319,9 @@ spec:
       containers:
       - name: nova-spice
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-spicehtml5proxy" ]
         #imagePullPolicy: Always
@@ -338,6 +356,9 @@ spec:
       containers:
       - name: nova-serial
         image: antoninruan/openstack-nova:{{.openstack_version}}
+        env:
+        - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
+          value: "1"
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-serialproxy" ]
         #imagePullPolicy: Always
