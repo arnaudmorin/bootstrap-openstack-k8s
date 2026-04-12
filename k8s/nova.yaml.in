@@ -201,6 +201,8 @@ spec:
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/nova/bin/nova-conductor" ]
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
         #imagePullPolicy: Always
         volumeMounts:
         - name: nova-conf
