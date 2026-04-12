@@ -1,0 +1,341 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blazingmq-conf
+data:
+  bmqbrkrcfg.json: |
+    {
+        "taskConfig": {
+            "allocatorType": "STACKTRACETEST",
+            "allocationLimit": 34359738368,
+            "logController": {
+                "fileName": "/var/local/bmq/logs/logs.%T.%p",
+                "fileMaxAgeDays": 10,
+                "rotationBytes": 268435456,
+                "logfileFormat": "%d (%t) %s %F:%l %m\n\n",
+                "consoleFormat": "%d (%t) %s %F:%l %m\n",
+                "loggingVerbosity": "INFO",
+                "consoleSeverityThreshold": "INFO",
+                "categories": [
+                    "BMQBRKR:INFO:green",
+                    "BMQ*:INFO:green",
+                    "MQB*:INFO:green",
+                    "SIM*:INFO:gray",
+                    "BAEA.PERFORMANCEMONITOR:INFO:white"
+                ],
+                "syslog": {
+                    "enabled": false,
+                    "appName": "BMQ",
+                    "logFormat": "%d (%t) %s %F:%l %m\n\n",
+                    "verbosity": ""
+                }
+            }
+        },
+        "appConfig": {
+            "brokerInstanceName": "default",
+            "brokerVersion": 999999,
+            "configVersion": 999999,
+            "etcDir": "",
+            "hostName": "localhost",
+            "hostTags": "",
+            "hostDataCenter": "DC1",
+            "logsObserverMaxSize": 1000,
+            "dispatcherConfig": {
+                "sessions": {
+                    "numProcessors": 4,
+                    "processorConfig": {
+                        "queueSizeLowWatermark": 100000,
+                        "queueSizeHighWatermark": 200000,
+                        "queueSize": 500000
+                    }
+                },
+                "queues": {
+                    "numProcessors": 8,
+                    "processorConfig": {
+                        "queueSizeLowWatermark": 100000,
+                        "queueSizeHighWatermark": 200000,
+                        "queueSize": 500000
+                    }
+                },
+                "clusters": {
+                    "numProcessors": 4,
+                    "processorConfig": {
+                        "queueSizeLowWatermark": 100000,
+                        "queueSizeHighWatermark": 200000,
+                        "queueSize": 500000
+                    }
+                }
+            },
+            "stats": {
+                "snapshotInterval": 1,
+                "printer": {
+                    "printInterval": 60,
+                    "file": "/var/local/bmq/logs/stat.%T.%p",
+                    "maxAgeDays": 3,
+                    "rotateBytes": 268435456,
+                    "rotateDays": 1
+                }
+            },
+            "networkInterfaces": {
+                "heartbeats": {
+                    "client": 10,
+                    "downstreamBroker": 10,
+                    "upstreamBroker": 10,
+                    "clusterPeer": 10
+                },
+                "tcpInterface": {
+                    "name": "TCPInterface",
+                    "port": 30114,
+                    "ioThreads": 4,
+                    "maxConnections": 10000,
+                    "lowWatermark": 4194304,
+                    "highWatermark": 1073741824,
+                    "nodeLowWatermark": 5242880,
+                    "nodeHighWatermark": 10485760,
+                    "heartbeatIntervalMs": 3000
+                }
+            },
+            "bmqconfConfig": {
+                "cacheTTLSeconds": 30
+            }
+        }
+    }
+  clusters.json: |
+    {
+        "myClusters": [
+            {
+                "name": "local",
+                "clusterAttributes": {
+                    "isCSLModeEnabled": false,
+                    "isFSMWorkflow": false
+                },
+                "nodes": [
+                    {
+                        "id": 0,
+                        "dataCenter": "DC1",
+                        "name": "localhost",
+                        "transport": {
+                            "tcp": {
+                                "endpoint": "tcp://localhost:30114"
+                            }
+                        }
+                    }
+                ],
+                "partitionConfig": {
+                    "name": "local",
+                    "flushAtShutdown": true,
+                    "location": "/var/local/bmq/storage",
+                    "maxArchivedFileSets": 0,
+                    "maxDataFileSize": 268435456,
+                    "maxJournalFileSize": 67108864,
+                    "maxQlistFileSize": 8388608,
+                    "maxCSLFileSize": 8388608,
+                    "numPartitions": 1,
+                    "preallocate": false,
+                    "prefaultPages": false,
+                    "archiveLocation": "/var/local/bmq/storage/archive",
+                    "syncConfig": {
+                        "fileChunkSize": 0,
+                        "masterSyncMaxDurationMs": 0,
+                        "maxAttemptsStorageSync": 0,
+                        "partitionSyncDataReqTimeoutMs": 0,
+                        "partitionSyncEventSize": 0,
+                        "partitionSyncStateReqTimeoutMs": 0,
+                        "startupRecoveryMaxDurationMs": 0,
+                        "startupWaitDurationMs": 0,
+                        "storageSyncReqTimeoutMs": 0
+                    }
+                },
+                "masterAssignment": "E_LEADER_IS_MASTER_ALL",
+                "elector": {
+                    "electionResultTimeoutMs": 4000,
+                    "heartbeatBroadcastPeriodMs": 2000,
+                    "heartbeatCheckPeriodMs": 1000,
+                    "heartbeatMissCount": 10,
+                    "initialWaitTimeoutMs": 8000,
+                    "leaderSyncDelayMs": 80000,
+                    "maxRandomWaitTimeoutMs": 3000,
+                    "quorum": 0
+                },
+                "queueOperations": {
+                    "ackWindowSize": 500,
+                    "assignmentTimeoutMs": 15000,
+                    "closeTimeoutMs": 300000,
+                    "configureTimeoutMs": 300000,
+                    "consumptionMonitorPeriodMs": 30000,
+                    "keepaliveDurationMs": 1800000,
+                    "openTimeoutMs": 300000,
+                    "reopenMaxAttempts": 10,
+                    "reopenRetryIntervalMs": 5000,
+                    "reopenTimeoutMs": 43200000,
+                    "shutdownTimeoutMs": 20000,
+                    "stopTimeoutMs": 10000
+                },
+                "clusterMonitorConfig": {
+                    "maxTimeLeader": 60,
+                    "maxTimeMaster": 120,
+                    "maxTimeNode": 120,
+                    "maxTimeFailover": 240,
+                    "thresholdLeader": 30,
+                    "thresholdMaster": 60,
+                    "thresholdNode": 60,
+                    "thresholdFailover": 120
+                },
+                "messageThrottleConfig": {
+                    "lowThreshold": 2,
+                    "highThreshold": 4,
+                    "lowInterval": 1000,
+                    "highInterval": 3000
+                }
+            }
+        ],
+        "proxyClusters": []
+    }
+  bmq.openstack.priority.json: |
+    {
+        "definition": {
+            "location": "local",
+            "parameters": {
+                "maxDeliveryAttempts": 0,
+                "deduplicationTimeMs": 300000,
+                "consistency": {
+                    "eventual": {}
+                },
+                "storage": {
+                    "config": {
+                        "fileBacked": {}
+                    },
+                    "domainLimits": {
+                        "bytes": 67108864,
+                        "messages": 100000,
+                        "bytesWatermarkRatio": 0.8,
+                        "messagesWatermarkRatio": 0.8
+                    },
+                    "queueLimits": {
+                        "bytes": 33554432,
+                        "messages": 50000,
+                        "bytesWatermarkRatio": 0.8,
+                        "messagesWatermarkRatio": 0.8
+                    }
+                },
+                "messageTtl": 300,
+                "maxProducers": 0,
+                "maxConsumers": 0,
+                "maxQueues": 0,
+                "maxIdleTime": 0,
+                "mode": {
+                    "priority": {}
+                }
+            }
+        }
+    }
+  bmq.openstack.broadcast.json: |
+    {
+        "definition": {
+            "location": "local",
+            "parameters": {
+                "maxDeliveryAttempts": 0,
+                "deduplicationTimeMs": 300000,
+                "consistency": {
+                    "eventual": {}
+                },
+                "storage": {
+                    "config": {
+                        "inMemory": {}
+                    },
+                    "domainLimits": {
+                        "bytes": 67108864,
+                        "messages": 100000,
+                        "bytesWatermarkRatio": 0.8,
+                        "messagesWatermarkRatio": 0.8
+                    },
+                    "queueLimits": {
+                        "bytes": 33554432,
+                        "messages": 50000,
+                        "bytesWatermarkRatio": 0.8,
+                        "messagesWatermarkRatio": 0.8
+                    }
+                },
+                "messageTtl": 300,
+                "maxProducers": 0,
+                "maxConsumers": 0,
+                "maxQueues": 0,
+                "maxIdleTime": 0,
+                "mode": {
+                    "broadcast": {}
+                }
+            }
+        }
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blazingmq
+spec:
+  selector:
+    app: blazingmq
+  ports:
+  - port: 30114
+    name: bmq
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blazingmqpub
+spec:
+  selector:
+    app: blazingmq
+  ports:
+  - port: 30114
+    name: bmq
+    nodePort: 30674
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blazingmq
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: blazingmq
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: blazingmq
+    spec:
+      containers:
+      - image: arnaudmorin/openstack-blazingmq:local
+        imagePullPolicy: IfNotPresent
+        name: blazingmq
+        command: ["/usr/local/bin/bmqbrkr"]
+        args: ["/etc/local/bmq"]
+        ports:
+        - containerPort: 30114
+          name: bmq
+        volumeMounts:
+        - name: blazingmq-conf
+          mountPath: "/etc/local/bmq/bmqbrkrcfg.json"
+          subPath: "bmqbrkrcfg.json"
+        - name: blazingmq-conf
+          mountPath: "/etc/local/bmq/clusters.json"
+          subPath: "clusters.json"
+        - name: blazingmq-conf
+          mountPath: "/etc/local/bmq/domains/bmq.openstack.priority.json"
+          subPath: "bmq.openstack.priority.json"
+        - name: blazingmq-conf
+          mountPath: "/etc/local/bmq/domains/bmq.openstack.broadcast.json"
+          subPath: "bmq.openstack.broadcast.json"
+      volumes:
+      - name: blazingmq-conf
+        configMap:
+          name: blazingmq-conf

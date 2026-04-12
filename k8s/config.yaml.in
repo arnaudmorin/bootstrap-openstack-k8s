@@ -93,7 +93,8 @@ data:
     [DEFAULT]
     # debug = True
     auth_strategy = keystone
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = bmq://blazingmq:30114/bmq.openstack.priority
+    default_log_levels = blazingmq=WARN
     enabled_backends = nfs
     glance_api_servers = http://glance.{{.domain}}
     [database]
@@ -146,7 +147,8 @@ data:
     router_distributed = true
     l3_ha = true
     max_l3_agents_per_router = 2
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = bmq://blazingmq:30114/bmq.openstack.priority
+    default_log_levels = blazingmq=WARN
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-neutron/neutron
     [keystone_authtoken]
@@ -213,7 +215,9 @@ metadata:
 data:
   nova.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    debug=True
+    transport_url = bmq://blazingmq:30114/bmq.openstack.priority
+    default_log_levels = blazingmq=WARN
     [api_database]
     connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova_api
     os_region_name = RegionOne
@@ -322,7 +326,8 @@ metadata:
 data:
   mistral.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = bmq://blazingmq:30114/bmq.openstack.priority
+    default_log_levels = blazingmq=WARN
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
@@ -341,12 +346,6 @@ data:
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
-    [oslo_messaging_rabbit]
-    rabbit_quorum_queue = True
-    rabbit_transient_quorum_queue = True
-    rabbit_qos_prefetch_count = 1
-    use_queue_manager = True
-    rabbit_stream_fanout = True
   uwsgi.ini: |
     [uwsgi]
     # Listen on port 8989 and start as a full web server
@@ -483,7 +482,8 @@ metadata:
 data:
   octavia.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = bmq://blazingmq:30114/bmq.openstack.priority
+    default_log_levels = blazingmq=WARN
     debug = False
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-octavia/octavia
@@ -723,7 +723,8 @@ metadata:
 data:
   barbican.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = bmq://blazingmq:30114/bmq.openstack.priority
+    default_log_levels = blazingmq=WARN
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-barbican/barbican
     [keystone_authtoken]
