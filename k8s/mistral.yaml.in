@@ -114,10 +114,16 @@ spec:
         - name: mistral-conf
           mountPath: "/etc/uwsgi/mistral.ini"
           subPath: uwsgi.ini
+        #- name: om
+        #  mountPath: "/opt/openstack/mistral/lib/python3.13/site-packages/oslo_messaging/_drivers"
       volumes:
       - name: mistral-conf
         configMap:
           name: mistral-conf
+      - name: om
+        hostPath:
+          path: /root/bmq/oslo.messaging/oslo_messaging/_drivers
+          type: Directory
 
 ---
 
@@ -152,10 +158,16 @@ spec:
         - name: mistral-conf
           mountPath: "/etc/mistral/mistral.conf"
           subPath: mistral.conf
+        #- name: om
+        #  mountPath: "/opt/openstack/mistral/lib/python3.13/site-packages/oslo_messaging/_drivers"
       volumes:
       - name: mistral-conf
         configMap:
           name: mistral-conf
+      - name: om
+        hostPath:
+          path: /root/bmq/oslo.messaging/oslo_messaging/_drivers
+          type: Directory
 
 ---
 
@@ -188,10 +200,16 @@ spec:
         - name: mistral-conf
           mountPath: "/etc/mistral/mistral.conf"
           subPath: mistral.conf
+        #- name: om
+        #  mountPath: "/opt/openstack/mistral/lib/python3.13/site-packages/oslo_messaging/_drivers"
       volumes:
       - name: mistral-conf
         configMap:
           name: mistral-conf
+      - name: om
+        hostPath:
+          path: /root/bmq/oslo.messaging/oslo_messaging/_drivers
+          type: Directory
 
 ---
 apiVersion: apps/v1
