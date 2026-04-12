@@ -144,6 +144,8 @@ spec:
       containers:
       - name: mistral-engine
         image: antoninruan/openstack-mistral:{{.openstack_version}}
+        #command: [ "/bin/bash", "-c", "--" ]
+        #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "engine" ]
         volumeMounts:
