@@ -1,9 +1,26 @@
+# Tool used to build TOC
 gh-md-toc
+
+# Config files generated locally
 config/config.yaml
-*.swp
+keystone-bootstrap/keystone-settings.yaml
 order-ipfo/*.conf
 order-ipfo/order-venv/
-done-*
+
+# Vim stuff
+*.swp
+
+# Git stuff
+*.patch
+
+# Kube stuff
+.kube/
+
+# Terraform / tofu
 **/*.terraform
 **/*.tfstate*
 **/*.lock.hcl
+
+# Avoid committing downloaded files
+*.qcow2
+*.img
