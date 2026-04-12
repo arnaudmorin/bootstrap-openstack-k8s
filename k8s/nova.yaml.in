@@ -110,14 +110,14 @@ spec:
     spec:
       initContainers:
       - name: nova-api-db-sync
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         command: ["/opt/openstack/nova/bin/nova-manage", "api_db", "sync"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
       - name: nova-db-sync
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         command: ["/opt/openstack/nova/bin/nova-manage", "db", "sync"]
         volumeMounts:
         - name: nova-conf
@@ -125,7 +125,7 @@ spec:
           subPath: nova.conf
       containers:
       - name: nova-api
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -165,7 +165,7 @@ spec:
     spec:
       containers:
       - name: nova-metadata-api
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -204,7 +204,7 @@ spec:
     spec:
       containers:
       - name: nova-conductor
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -244,7 +244,7 @@ spec:
     spec:
       containers:
       - name: nova-scheduler
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -281,7 +281,7 @@ spec:
     spec:
       containers:
       - name: nova-vnc
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -318,7 +318,7 @@ spec:
     spec:
       containers:
       - name: nova-spice
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -355,7 +355,7 @@ spec:
     spec:
       containers:
       - name: nova-serial
-        image: antoninruan/openstack-nova:{{.openstack_version}}
+        image: arnaudmorin/openstack-nova:local
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"

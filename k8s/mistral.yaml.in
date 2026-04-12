@@ -96,7 +96,7 @@ spec:
           subPath: mistral.conf
       containers:
       - name: mistral-api
-        image: antoninruan/openstack-mistral:{{.openstack_version}}
+        image: arnaudmorin/openstack-mistral:local
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         # Uncomment when https://review.opendev.org/c/openstack/mistral/+/959603 is ready
@@ -143,7 +143,7 @@ spec:
     spec:
       containers:
       - name: mistral-engine
-        image: antoninruan/openstack-mistral:{{.openstack_version}}
+        image: arnaudmorin/openstack-mistral:local
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "dumb-init", "--single-child", "--" ]
@@ -181,7 +181,7 @@ spec:
     spec:
       containers:
       - name: mistral-executor
-        image: antoninruan/openstack-mistral:{{.openstack_version}}
+        image: arnaudmorin/openstack-mistral:local
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "executor" ]
         volumeMounts:
