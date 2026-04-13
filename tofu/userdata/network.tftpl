@@ -1,6 +1,13 @@
 ${file("${path_module}/userdata/generic")}
 echo "starting network postinstall"
 
+# Note: this is not very secure to use this key because:
+# - it is on github without any protection
+# - it does not have any password
+cat <<EOF >/root/.ssh/authorized_keys
+${file("${path_module}/../ansible/files/zob.pub")}
+EOF
+
 # Configure the network interfaces
 cat <<'EOF' >/etc/systemd/network/10-public.link
 [Match]
