@@ -1,7 +1,4 @@
 ---
-#
-# KEYSTONE
-#
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -13,6 +10,19 @@ data:
     CREATE DATABASE nova_cell0;
     CREATE DATABASE nova_api;
     {{end}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-custom-config
+data:
+  .my.cnf: |
+    [client]
+    user = root
+    password = {{ .password }}
+  50-server-custom.cnf: |
+    [mysqld]
+    max_connections       = 500
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -66,9 +76,12 @@ spec:
           mountPath: /var/lib/mysql
         - name: mysql-initdb-{{ .db_name }}
           mountPath: /docker-entrypoint-initdb.d
-        - name: my-cnf
+        - name: mysql-custom-config
           mountPath: /root/.my.cnf
           subPath: ".my.cnf"
+        - name: mysql-custom-config
+          mountPath: /etc/mysql/mariadb.conf.d/50-server-custom.cnf
+          subPath: "50-server-custom.cnf"
       volumes:
       - name: mysql-persistent-storage-{{ .db_name }}
         persistentVolumeClaim:
@@ -76,6 +89,6 @@ spec:
       - name: mysql-initdb-{{ .db_name }}
         configMap:
           name: initdb-{{ .db_name }}
-      - name: my-cnf
+      - name: mysql-custom-config
         configMap:
-          name: my-cnf
+          name: mysql-custom-config
