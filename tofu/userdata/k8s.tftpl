@@ -76,6 +76,15 @@ apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin do
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
+# Overwrite the zob key if this was changed locally
+cat <<EOF >/root/bootstrap-openstack-k8s/ansible/files/zob.pub
+${file("${path_module}/../ansible/files/zob.pub")}
+EOF
+
+cat <<EOF >/root/bootstrap-openstack-k8s/ansible/files/zob
+${file("${path_module}/../ansible/files/zob")}
+EOF
+
 # Setup SSH config for easy access to computes and networks node
 chmod 600 /root/bootstrap-openstack-k8s/ansible/files/zob
 

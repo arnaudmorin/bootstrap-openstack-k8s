@@ -34,6 +34,15 @@ sed -i -r "s/somewhere.net/${k8s_ip}.xip.opensteak.fr/" config/config.yaml
 sed -i -r "s/changeme/${password}/" config/config.yaml
 sed -i -r "s/os_version/${os_version}/" config/config.yaml
 
+# Overwrite the zob key if this was changed locally
+cat <<EOF >ansible/files/zob.pub
+${file("${path_module}/../ansible/files/zob.pub")}
+EOF
+
+cat <<EOF >ansible/files/zob
+${file("${path_module}/../ansible/files/zob")}
+EOF
+
 ansible-playbook ansible/bootstrap-compute.yaml
 
 echo "${k8s_ip} k8s" >> /etc/hosts
