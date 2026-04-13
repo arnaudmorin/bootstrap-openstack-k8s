@@ -9,6 +9,7 @@ order-ipfo/order-venv/
 
 # Vim stuff
 *.swp
+*.swo
 
 # Git stuff
 *.patch
