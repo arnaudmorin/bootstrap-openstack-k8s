@@ -50,7 +50,7 @@ spec:
     spec:
       containers:
       - name: octavia-api
-        image: antoninruan/openstack-octavia:{{.openstack_version}}
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/octavia/bin/octavia-api" ]
         # imagePullPolicy: Always
@@ -88,7 +88,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: octavia-worker
-        image: antoninruan/openstack-octavia:{{.openstack_version}}
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/octavia/bin/octavia-worker" ]
         volumeMounts:
@@ -108,7 +108,7 @@ spec:
           mountPath: /etc/octavia/certificates/client_ca.cert-and-key.pem
           subPath: client_cert_key
       - name: octavia-health-manager
-        image: antoninruan/openstack-octavia:{{.openstack_version}}
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/octavia/bin/octavia-health-manager" ]
         volumeMounts:
@@ -128,7 +128,7 @@ spec:
           mountPath: /etc/octavia/certificates/client_ca.cert-and-key.pem
           subPath: client_cert_key
       - name: octavia-housekeeing
-        image: antoninruan/openstack-octavia:{{.openstack_version}}
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/octavia/bin/octavia-housekeeping" ]
         volumeMounts:
