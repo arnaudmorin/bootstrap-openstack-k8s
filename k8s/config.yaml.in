@@ -328,6 +328,8 @@ data:
     connection = mysql+pymysql://root:{{.password}}@mysql-mistral/mistral
     #[oslo_policy]
     #policy_file = /etc/mistral/policy.yaml
+    [oslo_concurrency]
+    lock_path = /var/lock/mistral
     [cache]
     backend = oslo_cache.memcache_pool
     memcache_servers = memcached:11211
