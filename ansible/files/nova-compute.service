@@ -1,7 +1,7 @@
 [Unit]
 Description=OpenStack nova-compute
-After=libvirtd.service network-online.target local-fs.target remote-fs.target 
-Wants=libvirtd.service network-online.target 
+After=libvirtd.service network-online.target local-fs.target remote-fs.target
+Wants=libvirtd.service network-online.target
 
 [Service]
 User=nova
@@ -9,6 +9,7 @@ Group=nova
 WorkingDirectory=~
 RuntimeDirectory=nova lock/nova
 CacheDirectory=nova
+Environment="OS_NOVA_DISABLE_EVENTLET_PATCHING=true"
 ExecStart=/opt/openstack/nova/bin/nova-compute --config-dir /etc/nova/ --log-file /var/log/nova-compute.log
 Restart=on-failure
 LimitNOFILE=65535
