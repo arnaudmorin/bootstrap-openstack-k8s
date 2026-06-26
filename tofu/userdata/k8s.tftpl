@@ -52,7 +52,7 @@ alias frep-nova='frep /root/bootstrap-openstack-k8s/k8s/nova.yaml.in:- --load /r
 alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
-alias frep-memcached='frep /root/bootstrap-openstack-k8s/k8s/memcached.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-redis='frep /root/bootstrap-openstack-k8s/k8s/redis.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-loki='frep /root/bootstrap-openstack-k8s/k8s/loki.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
@@ -154,8 +154,8 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
 
-# Memcached
-frep k8s/memcached.yaml.in:- --load config/config.yaml | kubectl apply -f -
+# Redis (oslo.cache backend)
+frep k8s/redis.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -166,8 +166,8 @@ kubectl wait --for=condition=complete --timeout=60s jobs/nova-init
 
 
 # Keystone
-# wait for memcached because we need it for a working keystone
-kubectl wait --for=condition=available --timeout=60s deployment/memcached
+# wait for redis because we need it for a working keystone
+kubectl wait --for=condition=available --timeout=60s deployment/redis
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/keystone
 

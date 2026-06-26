@@ -18,8 +18,9 @@ data:
     # avoid a bcrypt warning
     max_password_length = 72
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
   0: |
     {{ index .keystone.fernet 0 }}
   1: |
@@ -65,8 +66,9 @@ data:
     [image_import_opts]
     image_import_plugins = ['image_conversion']
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
   glance-image-import.conf: |
     [image_conversion]
     output_format = raw
@@ -108,8 +110,9 @@ data:
     nfs_snapshot_support=True
     nfs_mount_options='vers=3,nolock'
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -192,8 +195,9 @@ data:
     [securitygroup]
     enable_ipset = true
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
 
 ---
 apiVersion: v1
@@ -262,8 +266,9 @@ data:
     server_listen = 0.0.0.0
     server_proxyclient_address = $my_ip
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -301,8 +306,9 @@ data:
     max_allocation_candidates = 1000
     allocation_candidates_generation_strategy = breadth-first
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
 
 ---
 apiVersion: v1
@@ -331,8 +337,9 @@ data:
     [oslo_concurrency]
     lock_path = /var/lock/mistral
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -518,8 +525,9 @@ data:
     region_name = RegionOne
     auth_type = password
     [cache]
-    backend = oslo_cache.memcache_pool
-    memcache_servers = memcached:11211
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    redis_password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
