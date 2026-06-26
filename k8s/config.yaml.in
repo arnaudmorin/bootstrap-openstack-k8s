@@ -20,7 +20,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
   0: |
     {{ index .keystone.fernet 0 }}
   1: |
@@ -68,7 +68,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
   glance-image-import.conf: |
     [image_conversion]
     output_format = raw
@@ -112,7 +112,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -197,7 +197,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
 
 ---
 apiVersion: v1
@@ -268,7 +268,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -308,7 +308,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
 
 ---
 apiVersion: v1
@@ -339,7 +339,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -527,7 +527,7 @@ data:
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
-    redis_password = {{ .password }}
+    password = {{ .password }}
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
