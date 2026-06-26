@@ -18,9 +18,17 @@ data:
     # avoid a bcrypt warning
     max_password_length = 72
     [cache]
+    enabled = True
     backend = dogpile.cache.redis
     redis_server = redis:6379
     password = {{ .password }}
+    # os --os-profile {{ .password }} token issue
+    # then /opt/oscli/bin/osprofiler trace show --html --connection-string redis://:{{.password}}@{{.domain}}:30679 TRACEID
+    [profiler]
+    enabled = True
+    trace_sqlalchemy = True
+    hmac_keys = {{ .password }}
+    connection_string = redis://:{{ .password }}@redis:6379
   0: |
     {{ index .keystone.fernet 0 }}
   1: |
