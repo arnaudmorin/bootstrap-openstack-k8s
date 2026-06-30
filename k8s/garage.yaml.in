@@ -110,7 +110,7 @@ spec:
     spec:
       containers:
       - name: garage
-        image: dxflrs/garage:v1.0.1
+        image: dxflrs/garage:v2.3.0
         ports:
         - containerPort: 3900
           name: s3
@@ -197,7 +197,7 @@ spec:
         - name: S3_REGION
           value: "RegionOne"
         # Require a login (user "admin", shared password). The "username:bcrypt"
-        # value is generated at bootstrap (frep's sprig has no htpasswd function).
+        # value is generated at bootstrap from cloud-init
         - name: AUTH_USER_PASS
           value: "{{ .garage_webui_auth }}"
         # garage-webui still reads garage.toml on startup, so mount the same
