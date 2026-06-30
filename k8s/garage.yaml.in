@@ -53,6 +53,8 @@ spec:
     name: s3
   - port: 3901
     name: rpc
+  - port: 3903
+    name: admin
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -177,3 +179,72 @@ spec:
       - name: garage-conf
         configMap:
           name: garage-conf
+
+---
+# Web UI: object browser + bucket/key management + cluster status.
+# Talks to the garage admin API (3903) and S3 API (3900) over the service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage-webui
+spec:
+  selector:
+    app: garage-webui
+  ports:
+  - port: 3909
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: garage-webui
+  annotations:
+    spec.ingressClassName: traefik
+spec:
+  rules:
+  - host: s3ui.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: garage-webui
+            port:
+              number: 3909
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage-webui
+  labels:
+    app: garage-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garage-webui
+  template:
+    metadata:
+      labels:
+        app: garage-webui
+    spec:
+      containers:
+      - name: garage-webui
+        image: khairul169/garage-webui:v1.1.0
+        ports:
+        - containerPort: 3909
+        env:
+        - name: API_BASE_URL
+          value: "http://garage:3903"
+        - name: API_ADMIN_KEY
+          value: "{{.password}}"
+        - name: S3_ENDPOINT_URL
+          value: "http://garage:3900"
+        - name: S3_REGION
+          value: "RegionOne"
+        # Require a login (user "admin", shared password). htpasswd renders the
+        # expected "username:bcrypt_hash" format from the password.
+        - name: AUTH_USER_PASS
+          value: "{{ htpasswd "admin" .password }}"

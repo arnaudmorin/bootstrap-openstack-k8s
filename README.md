@@ -377,6 +377,12 @@ The S3 endpoint is available at:
 
 http://s3.${ip}.xip.opensteak.fr
 
+A web UI to browse buckets/objects and manage keys is available at:
+
+http://s3ui.${ip}.xip.opensteak.fr
+
+> Login with user `admin` and the password from your `config/config.yaml`.
+
 At bootstrap, a default access key (`my-app`) and bucket (`my-bucket`) are created, and the credentials are stored on `k8s-0` in `/root/garagerc`. Source it to use any S3 client (the region is `RegionOne`):
 
 ```bash
