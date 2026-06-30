@@ -116,9 +116,28 @@ curl -fSL https://github.com/subchen/frep/releases/download/v1.3.12/frep-1.3.12-
 chmod +x /usr/local/bin/frep
 
 # Install osconsole (apache2-utils provides htpasswd for the garage-webui login)
-apt-get install -y jq apache2-utils
+apt-get install -y jq apache2-utils unzip
 curl -fSL https://github.com/arnaudmorin/osconsole/releases/download/0.0.3/osconsole -o /usr/local/bin/osconsole
 chmod +x /usr/local/bin/osconsole
+
+# Install aws cli (v2) in /opt/aws with a symlink in /usr/local/bin (like openstack)
+curl -fSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install --install-dir /opt/aws --bin-dir /usr/local/bin
+rm -rf /tmp/awscliv2.zip /tmp/aws
+# Enable aws cli bash completion (aws_completer is symlinked into /usr/local/bin).
+# 's3' is a function (not an alias) so completion works: the wrapper rewrites the
+# line to "aws s3 ..." and proxies it to aws_completer.
+cat << 'EOF' > /etc/profile.d/aws_completion.sh
+complete -C aws_completer aws
+
+s3() { aws s3 "$@"; }
+_s3_complete() {
+    local line="aws s3 $${COMP_LINE#s3}"
+    COMPREPLY=( $(COMP_LINE="$line" COMP_POINT="$${#line}" aws_completer) )
+}
+complete -F _s3_complete s3
+EOF
 
 cd /root/bootstrap-openstack-k8s
 cp config/config.yaml.sample config/config.yaml
