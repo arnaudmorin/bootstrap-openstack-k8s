@@ -399,7 +399,23 @@ k exec deploy/garage -- /garage bucket create another-bucket
 k exec deploy/garage -- /garage bucket allow --read --write another-bucket --key another-app
 ```
 
-> The node layout, default key and bucket are set up automatically by the `garage-layout` kube job at bootstrap. You can check the cluster status with: `k exec deploy/garage -- /garage status`
+> The node layout, default key and bucket are set up automatically at bootstrap. You can check the cluster status with: `k exec deploy/garage -- /garage status`
+
+For reference, here are the commands cloud-init runs to set this up (the garage image is built `FROM scratch`, so we drive the `/garage` binary with `kubectl exec`).
+
+> Note that you do not need to execute any of this for now, because it's already done by cloud-init :)
+
+```bash
+# Assign the one-time node layout (a fresh garage node serves no S3 without it)
+node=$(k exec deploy/garage -- /garage node id -q | cut -d@ -f1)
+k exec deploy/garage -- /garage layout assign -z dc1 -c 10G $node
+k exec deploy/garage -- /garage layout apply --version 1
+
+# Create the default access key and bucket
+k exec deploy/garage -- /garage key create my-app
+k exec deploy/garage -- /garage bucket create my-bucket
+k exec deploy/garage -- /garage bucket allow --read --write my-bucket --key my-app
+```
 
 ## In case of error - debugging
 

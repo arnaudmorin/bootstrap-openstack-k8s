@@ -133,54 +133,6 @@ spec:
           claimName: garage-pv-claim
 
 ---
-# One-time layout assignment: a fresh garage node serves no S3 until a layout
-# is assigned and applied. Runs the garage CLI against the daemon over RPC.
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: garage-layout
-spec:
-  backoffLimit: 10
-  template:
-    spec:
-      restartPolicy: OnFailure
-      containers:
-      - name: garage-layout
-        image: dxflrs/garage:v1.0.1
-        command:
-        - /bin/sh
-        - -c
-        - |
-          set -e
-          # -c reads rpc_secret from config; --rpc-host targets the service
-          G="/garage -c /etc/garage.toml --rpc-host garage:3901"
-          echo "waiting for garage daemon..."
-          until $G status >/dev/null 2>&1; do sleep 2; done
-
-          # Assign the node layout (idempotent: only if not already done)
-          if $G layout show | grep -q dc1; then
-            echo "layout already configured"
-          else
-            node=$($G status | grep -oE '[0-9a-f]{16,}' | head -1)
-            echo "assigning layout to node $node"
-            $G layout assign -z dc1 -c 10G "$node"
-            $G layout apply --version 1
-          fi
-
-          # Create a default access key and bucket (idempotent)
-          $G key info my-app >/dev/null 2>&1 || $G key create my-app
-          $G bucket info my-bucket >/dev/null 2>&1 || $G bucket create my-bucket
-          $G bucket allow --read --write my-bucket --key my-app
-        volumeMounts:
-        - name: garage-conf
-          mountPath: /etc/garage.toml
-          subPath: garage.toml
-      volumes:
-      - name: garage-conf
-        configMap:
-          name: garage-conf
-
----
 # Web UI: object browser + bucket/key management + cluster status.
 # Talks to the garage admin API (3903) and S3 API (3900) over the service.
 apiVersion: v1

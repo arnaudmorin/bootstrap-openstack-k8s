@@ -222,11 +222,23 @@ frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/barbican.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Garage (S3)
-# The garage-layout job (in the manifest) assigns the one-time node layout
-# and creates a default 'my-app' key + 'my-bucket' bucket
-# See: https://garagehq.deuxfleurs.fr/documentation/reference-manual/layout/
+# NOTE(arnaud) we drive the garage binary via 'kubectl exec' because the garage
+# image is built FROM scratch and has no /bin/sh to run a job script in-container
 frep k8s/garage.yaml.in:- --load config/config.yaml | kubectl apply -f -
-kubectl wait --for=condition=complete --timeout=120s jobs/garage-layout
+kubectl wait --for=condition=available --timeout=120s deployment/garage
+
+# Assign the one-time node layout (a fresh garage node serves no S3 without it)
+# See: https://garagehq.deuxfleurs.fr/documentation/reference-manual/layout/
+if ! kubectl exec deploy/garage -- /garage layout show | grep -q dc1; then
+  garage_node=$(kubectl exec deploy/garage -- /garage node id -q | cut -d@ -f1)
+  kubectl exec deploy/garage -- /garage layout assign -z dc1 -c 10G $${garage_node}
+  kubectl exec deploy/garage -- /garage layout apply --version 1
+fi
+
+# Create a default access key and bucket (idempotent)
+kubectl exec deploy/garage -- /garage key info my-app >/dev/null 2>&1 || kubectl exec deploy/garage -- /garage key create my-app
+kubectl exec deploy/garage -- /garage bucket info my-bucket >/dev/null 2>&1 || kubectl exec deploy/garage -- /garage bucket create my-bucket
+kubectl exec deploy/garage -- /garage bucket allow --read --write my-bucket --key my-app
 
 # Export the garage S3 credentials to /root for convenience (source it to use the aws cli)
 garage_key=$(kubectl exec deploy/garage -- /garage key info my-app --show-secret)
