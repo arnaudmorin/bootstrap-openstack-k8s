@@ -184,7 +184,7 @@ spec:
     spec:
       containers:
       - name: garage-webui
-        image: khairul169/garage-webui:v1.1.0
+        image: khairul169/garage-webui:1.1.0
         ports:
         - containerPort: 3909
         env:
