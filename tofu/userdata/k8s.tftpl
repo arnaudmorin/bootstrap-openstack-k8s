@@ -55,6 +55,7 @@ alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --l
 alias frep-redis='frep /root/bootstrap-openstack-k8s/k8s/redis.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-loki='frep /root/bootstrap-openstack-k8s/k8s/loki.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-garage='frep /root/bootstrap-openstack-k8s/k8s/garage.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 EOF
 
 # We may need docker to build images
@@ -216,6 +217,23 @@ frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Barbican
 frep k8s/barbican.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
+# Garage (S3)
+# The garage-layout job (in the manifest) assigns the one-time node layout
+# and creates a default 'my-app' key + 'my-bucket' bucket
+# See: https://garagehq.deuxfleurs.fr/documentation/reference-manual/layout/
+frep k8s/garage.yaml.in:- --load config/config.yaml | kubectl apply -f -
+kubectl wait --for=condition=complete --timeout=120s jobs/garage-layout
+
+# Export the garage S3 credentials to /root for convenience (source it to use the aws cli)
+garage_key=$(kubectl exec deploy/garage -- /garage key info my-app --show-secret)
+cat <<EOF >/root/garagerc
+export AWS_ACCESS_KEY_ID=$(echo "$${garage_key}" | awk '/Key ID/ {print $NF}')
+export AWS_SECRET_ACCESS_KEY=$(echo "$${garage_key}" | awk '/Secret key/ {print $NF}')
+export AWS_DEFAULT_REGION=RegionOne
+export AWS_ENDPOINT_URL=http://s3.$${ip}.xip.opensteak.fr
+EOF
+chmod 600 /root/garagerc
 
 kubectl wait --for=condition=available --timeout=60s deployment/nova-api
 kubectl wait --for=condition=available --timeout=60s deployment/glance

@@ -27,6 +27,7 @@ Table of Contents
   * [Neutron](#neutron)
   * [Nova](#nova)
   * [Skyline](#skyline)
+  * [Garage (S3)](#garage-s3)
   * [In case of error \- debugging](#in-case-of-error---debugging)
   * [Collect and centralize logs](#collect-and-centralize-logs)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
@@ -367,6 +368,32 @@ Skyline is a web interface, so you should browse the page.
 http://skyline.${ip}.xip.opensteak.fr
 
 > Note that you can grab your skyline URI by listing the kube ingress: `k get ingress`
+
+## Garage (S3)
+
+`Garage` provides an S3-compatible object storage API.
+
+The S3 endpoint is available at:
+
+http://s3.${ip}.xip.opensteak.fr
+
+At bootstrap, a default access key (`my-app`) and bucket (`my-bucket`) are created, and the credentials are stored on `k8s-0` in `/root/garagerc`. Source it to use any S3 client (the region is `RegionOne`):
+
+```bash
+source /root/garagerc
+aws s3 ls
+aws s3 cp myfile s3://my-bucket/
+```
+
+You can create additional keys and buckets if needed (run on `k8s-0` as root):
+
+```bash
+k exec deploy/garage -- /garage key create another-app
+k exec deploy/garage -- /garage bucket create another-bucket
+k exec deploy/garage -- /garage bucket allow --read --write another-bucket --key another-app
+```
+
+> The node layout, default key and bucket are set up automatically by the `garage-layout` kube job at bootstrap. You can check the cluster status with: `k exec deploy/garage -- /garage status`
 
 ## In case of error - debugging
 

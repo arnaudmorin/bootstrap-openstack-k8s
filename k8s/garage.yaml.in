@@ -1,0 +1,179 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: garage-conf
+data:
+  garage.toml: |
+    metadata_dir = "/var/lib/garage/meta"
+    data_dir = "/var/lib/garage/data"
+    db_engine = "lmdb"
+
+    # Single node deployment
+    replication_factor = 1
+
+    rpc_bind_addr = "[::]:3901"
+    rpc_public_addr = "127.0.0.1:3901"
+    # Garage requires a 32-byte (64 hex char) key, so we derive one
+    # deterministically from the shared password (sha256 = 64 hex chars)
+    rpc_secret = "{{ sha256sum .password }}"
+
+    [s3_api]
+    s3_region = "RegionOne"
+    api_bind_addr = "[::]:3900"
+    root_domain = ".s3.{{.domain}}"
+
+    [admin]
+    api_bind_addr = "[::]:3903"
+    admin_token = "{{.password}}"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: garage-pv-claim
+spec:
+  storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage
+spec:
+  selector:
+    app: garage
+  ports:
+  - port: 3900
+    name: s3
+  - port: 3901
+    name: rpc
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: garage
+  annotations:
+    spec.ingressClassName: traefik
+spec:
+  rules:
+  # Path-style and vhost-style (*.s3.<domain>) bucket access
+  - host: s3.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: garage
+            port:
+              number: 3900
+  - host: "*.s3.{{.domain}}"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: garage
+            port:
+              number: 3900
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage
+  labels:
+    app: garage
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: garage
+  template:
+    metadata:
+      labels:
+        app: garage
+    spec:
+      containers:
+      - name: garage
+        image: dxflrs/garage:v1.0.1
+        ports:
+        - containerPort: 3900
+          name: s3
+        - containerPort: 3901
+          name: rpc
+        - containerPort: 3903
+          name: admin
+        volumeMounts:
+        - name: garage-conf
+          mountPath: /etc/garage.toml
+          subPath: garage.toml
+        - name: garage-data
+          mountPath: /var/lib/garage
+      volumes:
+      - name: garage-conf
+        configMap:
+          name: garage-conf
+      - name: garage-data
+        persistentVolumeClaim:
+          claimName: garage-pv-claim
+
+---
+# One-time layout assignment: a fresh garage node serves no S3 until a layout
+# is assigned and applied. Runs the garage CLI against the daemon over RPC.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-layout
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: garage-layout
+        image: dxflrs/garage:v1.0.1
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          # -c reads rpc_secret from config; --rpc-host targets the service
+          G="/garage -c /etc/garage.toml --rpc-host garage:3901"
+          echo "waiting for garage daemon..."
+          until $G status >/dev/null 2>&1; do sleep 2; done
+
+          # Assign the node layout (idempotent: only if not already done)
+          if $G layout show | grep -q dc1; then
+            echo "layout already configured"
+          else
+            node=$($G status | grep -oE '[0-9a-f]{16,}' | head -1)
+            echo "assigning layout to node $node"
+            $G layout assign -z dc1 -c 10G "$node"
+            $G layout apply --version 1
+          fi
+
+          # Create a default access key and bucket (idempotent)
+          $G key info my-app >/dev/null 2>&1 || $G key create my-app
+          $G bucket info my-bucket >/dev/null 2>&1 || $G bucket create my-bucket
+          $G bucket allow --read --write my-bucket --key my-app
+        volumeMounts:
+        - name: garage-conf
+          mountPath: /etc/garage.toml
+          subPath: garage.toml
+      volumes:
+      - name: garage-conf
+        configMap:
+          name: garage-conf
