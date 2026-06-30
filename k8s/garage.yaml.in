@@ -200,3 +200,13 @@ spec:
         # value is generated at bootstrap (frep's sprig has no htpasswd function).
         - name: AUTH_USER_PASS
           value: "{{ .garage_webui_auth }}"
+        # garage-webui still reads garage.toml on startup, so mount the same
+        # config the daemon uses (env vars above point it at the service)
+        volumeMounts:
+        - name: garage-conf
+          mountPath: /etc/garage.toml
+          subPath: garage.toml
+      volumes:
+      - name: garage-conf
+        configMap:
+          name: garage-conf
