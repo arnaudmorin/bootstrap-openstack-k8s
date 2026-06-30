@@ -244,7 +244,7 @@ spec:
           value: "http://garage:3900"
         - name: S3_REGION
           value: "RegionOne"
-        # Require a login (user "admin", shared password). htpasswd renders the
-        # expected "username:bcrypt_hash" format from the password.
+        # Require a login (user "admin", shared password). The "username:bcrypt"
+        # value is generated at bootstrap (frep's sprig has no htpasswd function).
         - name: AUTH_USER_PASS
-          value: "{{ htpasswd "admin" .password }}"
+          value: "{{ .garage_webui_auth }}"
