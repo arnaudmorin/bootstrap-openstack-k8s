@@ -1,5 +1,84 @@
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neutron-conf
+data:
+  neutron.conf: |
+    [DEFAULT]
+    # debug = True
+    auth_strategy = keystone
+    core_plugin = ml2
+    service_plugins = router,segments,port_forwarding,qos,wireguard
+    allow_overlapping_ips = true
+    notify_nova_on_port_status_changes = true
+    notify_nova_on_port_data_changes = true
+    interface_driver = openvswitch
+    router_distributed = true
+    l3_ha = true
+    max_l3_agents_per_router = 2
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-neutron/neutron
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = neutron
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [nova]
+    region_name = RegionOne
+    auth_url = http://keystone.{{.domain}}/v3
+    auth_type = password
+    password = {{.password}}
+    project_domain_name = Default
+    project_name = service
+    user_domain_name = Default
+    username = nova
+    [oslo_concurrency]
+    lock_path = /var/lib/neutron/tmp
+    [oslo_policy]
+    policy_file = /etc/neutron/policy.json
+    policy_dirs = /etc/neutron/policy.d
+    [placement]
+    region_name = RegionOne
+    auth_url = http://keystone.{{.domain}}/v3
+    auth_type = password
+    password = {{.password}}
+    project_domain_name = Default
+    project_name = service
+    user_domain_name = Default
+    username = placement
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
+  ml2_conf.ini: |
+    [ml2]
+    type_drivers = flat,vlan,vxlan
+    tenant_network_types = vxlan
+    mechanism_drivers = openvswitch,l2population
+    extension_drivers = port_security,qos
+    [ml2_type_flat]
+    flat_networks = *
+    [ml2_type_vxlan]
+    vni_ranges = 1:1000
+    [securitygroup]
+    enable_ipset = true
+    [cache]
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    password = {{ .password }}
+
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: neutron

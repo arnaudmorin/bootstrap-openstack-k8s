@@ -42,7 +42,6 @@ cat << 'EOF' > /etc/profile.d/aliases.sh
 alias k=kubectl
 alias l=stern
 alias os=openstack
-alias frep-config='frep /root/bootstrap-openstack-k8s/k8s/config.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-rabbit='frep /root/bootstrap-openstack-k8s/k8s/rabbit.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-keystone='frep /root/bootstrap-openstack-k8s/k8s/keystone.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-glance='frep /root/bootstrap-openstack-k8s/k8s/glance.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
@@ -152,9 +151,6 @@ sed -i "s|webui_auth_hash|$${webui_auth}|" config/config.yaml
 # Stakater reloader
 # This is not mandatory, but useful to auto-restart deployments / statefulset when a configmap change
 kubectl apply -f https://raw.githubusercontent.com/stakater/Reloader/v1.4.8/deployments/kubernetes/reloader.yaml
-
-# Config
-frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 # Mysql
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=keystone | kubectl apply -f -
@@ -331,8 +327,6 @@ sed -ir "s/amp_flavor_id/$${octavia_flavor}/" config/config.yaml
 sed -ir "s/amp_boot_network_list/$${octavia_net}/" config/config.yaml
 sed -ir "s/amp_secgroup_list/$${octavia_secgroup}/" config/config.yaml
 
-# Octavia
-frep k8s/config.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/octavia.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/octavia-api
 

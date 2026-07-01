@@ -1,5 +1,54 @@
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: glance-conf
+data:
+  glance-api.conf: |
+    [DEFAULT]
+    # debug = True
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-glance/glance
+    [glance_store]
+    stores = file,http
+    default_store = file
+    filesystem_store_datadir = /var/lib/glance/images/
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = glance
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [oslo_concurrency]
+    lock_path = /var/lock/glance
+    [paste_deploy]
+    flavor = keystone
+    [taskflow_executor]
+    conversion_format = raw
+    [task]
+    task_executor = taskflow
+    work_dir = /tmp
+    [image_conversion]
+    output_format = raw
+    [image_import_opts]
+    image_import_plugins = ['image_conversion']
+    [cache]
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    password = {{ .password }}
+  glance-image-import.conf: |
+    [image_conversion]
+    output_format = raw
+    [image_import_opts]
+    image_import_plugins = ['image_conversion']
+
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: glance-pv-claim

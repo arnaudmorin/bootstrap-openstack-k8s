@@ -2,6 +2,83 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: nova-conf
+data:
+  nova.conf: |
+    [DEFAULT]
+    transport_url = rabbit://openstack:{{.password}}@rabbit
+    [api_database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova_api
+    os_region_name = RegionOne
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova
+    [glance]
+    api_servers = http://glance.{{.domain}}
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = nova
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [neutron]
+    default_floating_pool = ext-net
+    service_metadata_proxy = true
+    metadata_proxy_shared_secret = {{.password}}
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = neutron
+    user_domain_name = Default
+    password = {{.password}}
+    service_name = neutron
+    url = http://neutron.{{.domain}}
+    region_name = RegionOne
+    [oslo_concurrency]
+    lock_path = /var/lib/nova/tmp
+    [placement]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    [scheduler]
+    discover_hosts_in_cells_interval = 60
+    [serial_console]
+    enabled = true
+    [spice]
+    enabled = true
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+    # This does not work, I dont know why...
+    html5proxy_base_url = http://nova.{{.domain}}:6082/spice_auto.html
+    [vnc]
+    enabled = true
+    server_listen = 0.0.0.0
+    server_proxyclient_address = $my_ip
+    [cache]
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    password = {{ .password }}
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: nova-init-script
 data:
   init.sh: |

@@ -1,5 +1,39 @@
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: placement-conf
+data:
+  placement.conf: |
+    [DEFAULT]
+    [api]
+    auth_strategy = keystone
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = placement
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    #memcached_servers = keystone:11211
+    auth_type = password
+    [oslo_policy]
+    policy_dirs = /etc/placement/policy.d
+    [placement_database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-placement/placement
+    [placement]
+    # See https://bugs.launchpad.net/placement/+bug/2070257
+    max_allocation_candidates = 1000
+    allocation_candidates_generation_strategy = breadth-first
+    [cache]
+    backend = dogpile.cache.redis
+    redis_server = redis:6379
+    password = {{ .password }}
+
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: placement
