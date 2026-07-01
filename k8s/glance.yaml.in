@@ -135,7 +135,10 @@ spec:
         image: arnaudmorin/openstack-glance:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/glance/bin/uwsgi", "--http", ":9292", "--module", "glance.wsgi.api" ]
+        # --http-raw-body is required for chunked image uploads: glance reads the
+        # body with uwsgi.chunked_read(), which only works when uwsgi passes the
+        # raw (still-chunked) body to the app instead of buffering/de-chunking it.
+        command: [ "/opt/openstack/glance/bin/uwsgi", "--http", ":9292", "--http-raw-body", "--module", "glance.wsgi.api" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
