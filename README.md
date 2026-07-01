@@ -28,6 +28,7 @@ Table of Contents
   * [Nova](#nova)
   * [Skyline](#skyline)
   * [Garage (S3)](#garage-s3)
+  * [Tempest](#tempest)
   * [In case of error \- debugging](#in-case-of-error---debugging)
   * [Collect and centralize logs](#collect-and-centralize-logs)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
@@ -415,6 +416,30 @@ k exec deploy/garage -- /garage key create my-app
 k exec deploy/garage -- /garage bucket create my-bucket
 k exec deploy/garage -- /garage bucket allow --read --write my-bucket --key my-app
 ```
+
+## Tempest
+
+For an automated integration test of your deployment, run the [Tempest](https://docs.openstack.org/tempest/latest/) smoke suite from `k8s-0` (as root):
+
+```bash
+cd bootstrap-openstack-k8s
+bash tempest/run-tests.sh
+```
+
+The first run installs a `tempest` + `python-tempestconf` + `neutron-tempest-plugin` + `mistral-tempest-plugin` venv in `/opt/tempest` (takes a few minutes), then:
+
+* auto-generates `tempest.conf` by discovering the running cloud from `/root/openrc_admin`,
+* runs `tempest run --smoke`, a fast, core subset covering keystone / nova / neutron / glance.
+
+You can scope the run by passing arguments through to `tempest run`, for example:
+
+```bash
+bash tempest/run-tests.sh --regex tempest.api.compute
+bash tempest/run-tests.sh --regex tempest.api.identity.v3
+bash tempest/run-tests.sh --regex mistral_tempest_tests   # mistral specific because there is no smoke on mistral for now
+```
+
+The workspace (config, results, logs) lives in `/root/tempest-workspace` (`etc/tempest.conf`, `.stestr/`).
 
 ## In case of error - debugging
 

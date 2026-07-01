@@ -82,6 +82,7 @@ frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 - `ansible/` — data-plane playbooks (`bootstrap-compute.yaml`, `bootstrap-network.yaml`) and the systemd unit files / ssh key in `ansible/files/`.
 - `keystone-bootstrap/` — a Python tool (`keystone-bootstrap`) that creates keystone projects/users/roles/endpoints from a frep-rendered `keystone-settings.yaml`.
 - `files/` — `helper` (the `create_*` bash functions for populating OpenStack) and `openrc.in`.
+- `tempest/` — `run-tests.sh` runs the Tempest smoke suite from a self-installing `/opt/tempest` venv on k8s-0; `tempest.conf` is auto-generated from `/root/openrc_admin` by `python-tempestconf`.
 - `extra/` — `add-project.sh` / `clean-project.sh` for managing tenant projects post-deploy.
 - `order-ipfo/` — standalone Python tool (own venv) to order an OVH failover-IP block via the OVH API.
 
