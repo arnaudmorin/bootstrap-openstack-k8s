@@ -270,7 +270,6 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
-frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -448,13 +447,11 @@ k logs nova-api-b6995b597-xmvfm    # replace nova-api-b6995b597-xmvfm with your 
 
 One of the most common race condition is the failure on nova db sync.
 
-You can restart it by deleting the jobs and do it again
+The nova db sync and cell setup run in the `nova-init` init container of the
+`nova-api` deployment (idempotent). You can re-run it simply by restarting the
+deployment:
 ```bash
-k get jobs | grep nova
-k delete job nova-init
-
-# And then apply again the mysql-populate
-frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
+k rollout restart deployment/nova-api
 ```
 
 ## Collect and centralize logs

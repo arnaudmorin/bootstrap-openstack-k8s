@@ -1,5 +1,37 @@
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-init-script
+data:
+  init.sh: |
+    #!/bin/bash
+    # Every command below is idempotent, so this script is safe to run on every
+    # (re)start
+    set -e
+
+    shopt -s expand_aliases
+    alias nova-manage="/opt/openstack/nova/bin/nova-manage"
+
+    # Schema syncs are no-ops when the DB is already up to date
+    nova-manage api_db sync
+
+    # map_cell0 updates the existing mapping if present (idempotent)
+    nova-manage cell_v2 map_cell0
+
+    # create_cell is NOT idempotent (nova allows duplicate cells with the same
+    # name), so only create cell1 when it is missing.
+    # NOTE: no 'set -o pipefail' on purpose -- with 'grep -q' it would misfire, as
+    # grep closes the pipe on the first match and nova-manage then dies on SIGPIPE.
+    if ! nova-manage cell_v2 list_cells | grep -q cell1; then
+        nova-manage cell_v2 create_cell --name=cell1 --verbose
+    fi
+
+    # Db sync is also idempotent
+    nova-manage db sync
+
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: nova-api
@@ -109,20 +141,17 @@ spec:
         app: nova-api
     spec:
       initContainers:
-      - name: nova-api-db-sync
+      # Runs api_db sync + cell_v2 setup + db sync (idempotent; see the
+      # nova-init-script ConfigMap above).
+      - name: nova-init
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
-        command: ["/opt/openstack/nova/bin/nova-manage", "api_db", "sync"]
+        command: ["bash", "/scripts/init.sh"]
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
-      - name: nova-db-sync
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
-        command: ["/opt/openstack/nova/bin/nova-manage", "db", "sync"]
-        volumeMounts:
-        - name: nova-conf
-          mountPath: /etc/nova/nova.conf
-          subPath: nova.conf
+        - name: nova-init-script
+          mountPath: /scripts
       containers:
       - name: nova-api
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
@@ -143,6 +172,9 @@ spec:
       - name: nova-conf
         configMap:
           name: nova-conf
+      - name: nova-init-script
+        configMap:
+          name: nova-init-script
 
 ---
 apiVersion: apps/v1
@@ -163,6 +195,12 @@ spec:
       labels:
         app: nova-metadata-api
     spec:
+      initContainers:
+      # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
+      # serves once that init container has finished, so this gates the migration
+      - name: wait-nova-api
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-metadata-api
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
@@ -202,6 +240,12 @@ spec:
       labels:
         app: nova-conductor
     spec:
+      initContainers:
+      # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
+      # serves once that init container has finished, so this gates the migration
+      - name: wait-nova-api
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-conductor
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
@@ -242,6 +286,12 @@ spec:
       labels:
         app: nova-scheduler
     spec:
+      initContainers:
+      # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
+      # serves once that init container has finished, so this gates the migration
+      - name: wait-nova-api
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-scheduler
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
@@ -279,6 +329,12 @@ spec:
       labels:
         app: nova-vnc
     spec:
+      initContainers:
+      # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
+      # serves once that init container has finished, so this gates the migration
+      - name: wait-nova-api
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-vnc
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
@@ -316,6 +372,12 @@ spec:
       labels:
         app: nova-spice
     spec:
+      initContainers:
+      # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
+      # serves once that init container has finished, so this gates the migration
+      - name: wait-nova-api
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-spice
         image: arnaudmorin/openstack-nova:{{.openstack_version}}
@@ -353,6 +415,12 @@ spec:
       labels:
         app: nova-serial
     spec:
+      initContainers:
+      # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
+      # serves once that init container has finished, so this gates the migration
+      - name: wait-nova-api
+        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-serial
         image: arnaudmorin/openstack-nova:{{.openstack_version}}

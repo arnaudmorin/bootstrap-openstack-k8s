@@ -183,11 +183,6 @@ frep k8s/redis.yaml.in:- --load config/config.yaml | kubectl apply -f -
 # Rabbit
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
-# MySQL populate
-frep k8s/mysql-populate.yaml.in:- --load config/config.yaml | kubectl apply -f -
-kubectl wait --for=condition=complete --timeout=60s jobs/nova-init
-
-
 # Keystone
 # wait for redis because we need it for a working keystone
 kubectl wait --for=condition=available --timeout=60s deployment/redis
