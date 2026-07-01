@@ -5,4 +5,5 @@ export OS_USER_DOMAIN_NAME=Default
 export OS_PROJECT_DOMAIN_NAME=Default
 export OS_AUTH_URL=http://keystone.{{.domain}}/v3
 export OS_IDENTITY_API_VERSION=3
+export OS_REGION_NAME=RegionOne
 export debian_chroot=$OS_USERNAME
