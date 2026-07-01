@@ -48,6 +48,14 @@ spec:
       labels:
         app: octavia-api
     spec:
+      initContainers:
+      - name: octavia-db-upgrade
+        image: arnaudmorin/openstack-octavia:{{.openstack_version}}
+        command: [ "/opt/openstack/octavia/bin/octavia-db-manage", "--config-file", "/etc/octavia/octavia.conf", "upgrade", "head" ]
+        volumeMounts:
+        - name: octavia-conf
+          mountPath: /etc/octavia/octavia.conf
+          subPath: octavia.conf
       containers:
       - name: octavia-api
         image: arnaudmorin/openstack-octavia:{{.openstack_version}}
