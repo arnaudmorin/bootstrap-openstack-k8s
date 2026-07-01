@@ -40,3 +40,7 @@ amp:
 
 # garage-webui admin login as "username:bcrypt_hash" (generated at bootstrap)
 garage_webui_auth: "webui_auth_hash"
+
+# Garage S3 credentials for the glance image backend (generated at bootstrap)
+garage_glance_key: "glance_s3_key"
+garage_glance_secret: "glance_s3_secret"

@@ -7,12 +7,22 @@ data:
   glance-api.conf: |
     [DEFAULT]
     # debug = True
+    enabled_backends = s3:s3
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-glance/glance
     [glance_store]
-    stores = file,http
-    default_store = file
-    filesystem_store_datadir = /var/lib/glance/images/
+    default_backend = s3
+    [s3]
+    s3_store_host = http://garage:3900
+    s3_store_region_name = RegionOne
+    s3_store_access_key = {{.garage_glance_key}}
+    s3_store_secret_key = {{.garage_glance_secret}}
+    s3_store_bucket = glance
+    s3_store_create_bucket_on_put = False
+    # path-style (garage:3900/glance/...) not vhost-style (glance.garage:3900):
+    # the internal 'garage' service has no wildcard DNS, and garage only routes
+    # vhost buckets under its root_domain (.s3.{{.domain}}), not 'garage'
+    s3_store_bucket_url_format = path
     [keystone_authtoken]
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
