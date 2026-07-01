@@ -25,18 +25,21 @@ endpoints:
       public: http://glance.{{.domain}}
       admin: http://glance.{{.domain}}
       internal: http://glance.{{.domain}}
-  cinderv2:
-    service_type: volumev2
-    endpoints:
-      public: http://cinder.{{.domain}}/v2/%(project_id)s
-      admin: http://cinder.{{.domain}}/v2/%(project_id)s
-      internal: http://cinder.{{.domain}}/v2/%(project_id)s
-  cinderv3:
-    service_type: volumev3
-    endpoints:
-      public: http://cinder.{{.domain}}/v3/%(project_id)s
-      admin: http://cinder.{{.domain}}/v3/%(project_id)s
-      internal: http://cinder.{{.domain}}/v3/%(project_id)s
+  # NOTE(arnaud): cinder is not deployed for now, so we do not register its
+  # service/endpoints. Uncomment when cinder is deployed -- leaving it registered
+  # makes clients (and tempest discovery) hit a dead endpoint.
+  # cinderv2:
+  #   service_type: volumev2
+  #   endpoints:
+  #     public: http://cinder.{{.domain}}/v2/%(project_id)s
+  #     admin: http://cinder.{{.domain}}/v2/%(project_id)s
+  #     internal: http://cinder.{{.domain}}/v2/%(project_id)s
+  # cinderv3:
+  #   service_type: volumev3
+  #   endpoints:
+  #     public: http://cinder.{{.domain}}/v3/%(project_id)s
+  #     admin: http://cinder.{{.domain}}/v3/%(project_id)s
+  #     internal: http://cinder.{{.domain}}/v3/%(project_id)s
   mistral:
     service_type: workflowv2
     endpoints:
@@ -49,12 +52,14 @@ endpoints:
       public: http://octavia.{{.domain}}
       admin: http://octavia.{{.domain}}
       internal: http://octavia.{{.domain}}
-  designate:
-    service_type: dns
-    endpoints:
-      public: http://designate.{{.domain}}
-      admin: http://designate.{{.domain}}
-      internal: http://designate.{{.domain}}
+  # NOTE(arnaud): designate is not deployed for now, so we do not register its
+  # service/endpoints. Uncomment when designate is deployed.
+  # designate:
+  #   service_type: dns
+  #   endpoints:
+  #     public: http://designate.{{.domain}}
+  #     admin: http://designate.{{.domain}}
+  #     internal: http://designate.{{.domain}}
   barbican:
     service_type: key-manager
     endpoints:
