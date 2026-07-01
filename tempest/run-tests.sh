@@ -42,7 +42,7 @@ if [ ! -x "$VENV/bin/tempest" ]; then
     title.print "Creating venv (${VENV})"
     python3 -m venv "$VENV"
     "$VENV/bin/pip" install --upgrade pip
-    "$VENV/bin/pip" install tempest python-tempestconf neutron-tempest-plugin mistral-tempest-tests
+    "$VENV/bin/pip" install tempest os-testr python-tempestconf neutron-tempest-plugin mistral-tempest-tests
     ln -sf "$VENV/bin/tempest" /usr/local/bin/tempest
 fi
 
@@ -63,5 +63,19 @@ if [ "$RECREATE" = "1" ] || [ ! -f "$WS/etc/tempest.conf" ]; then
 fi
 
 # Run the tests (defaults to --smoke if no args are given)
-title.print "Run tempest (workspace in ${WS}"
+cd "$WS"
+title.print "Run tempest ($VENV/bin/tempest run ${@:---smoke})"
+# Don't abort on test failures -- we still want to produce the report -- but keep
+# the real exit status to return at the end.
+set +e
 "$VENV/bin/tempest" run "${@:---smoke}"
+rc=$?
+
+# Build an HTML report from the last run's results.
+title.print "Generating HTML report (${WS}/report.html)"
+"$VENV/bin/stestr" last --subunit > last.subunit
+"$VENV/bin/subunit2html" last.subunit report.html
+set -e
+echo "HTML report: ${WS}/report.html"
+
+exit $rc
