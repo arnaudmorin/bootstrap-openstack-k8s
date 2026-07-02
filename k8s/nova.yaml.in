@@ -4,6 +4,32 @@ kind: ConfigMap
 metadata:
   name: nova-conf
 data:
+  uwsgi-api.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:8774
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/nova/
+    module = nova.wsgi.osapi_compute
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
+  uwsgi-metadata.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:8775
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/nova/
+    module = nova.wsgi.metadata
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
   nova.conf: |
     [DEFAULT]
     transport_url = rabbit://openstack:{{.password}}@rabbit
@@ -237,7 +263,7 @@ spec:
           value: "1"
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8774", "--module", "nova.wsgi.osapi_compute" ]
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--ini", "/etc/uwsgi/nova-api.ini" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
@@ -245,6 +271,9 @@ spec:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
+        - name: nova-conf
+          mountPath: /etc/uwsgi/nova-api.ini
+          subPath: uwsgi-api.ini
       volumes:
       - name: nova-conf
         configMap:
@@ -284,7 +313,7 @@ spec:
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
-        command: [ "/opt/openstack/nova/bin/uwsgi", "--http", ":8775", "--module", "nova.wsgi.metadata" ]
+        command: [ "/opt/openstack/nova/bin/uwsgi", "--ini", "/etc/uwsgi/nova-metadata.ini" ]
         #imagePullPolicy: Always
         ports:
         - containerPort: 8775
@@ -292,6 +321,9 @@ spec:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
           subPath: nova.conf
+        - name: nova-conf
+          mountPath: /etc/uwsgi/nova-metadata.ini
+          subPath: uwsgi-metadata.ini
       volumes:
       - name: nova-conf
         configMap:

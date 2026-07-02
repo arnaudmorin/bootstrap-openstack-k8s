@@ -4,6 +4,19 @@ kind: ConfigMap
 metadata:
   name: cinder-conf
 data:
+  uwsgi.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:8776
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/cinder/
+    module = cinder.wsgi.api
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
   cinder.conf: |
     [DEFAULT]
     # debug = True
@@ -106,7 +119,7 @@ spec:
         image: arnaudmorin/openstack-cinder:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/cinder/bin/uwsgi", "--http", ":8776", "--module", "cinder.wsgi.api" ]
+        command: [ "/opt/openstack/cinder/bin/uwsgi", "--ini", "/etc/uwsgi/cinder.ini" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
@@ -117,6 +130,9 @@ spec:
         - name: cinder-conf
           mountPath: /etc/cinder/cinder.conf
           subPath: cinder.conf
+        - name: cinder-conf
+          mountPath: /etc/uwsgi/cinder.ini
+          subPath: uwsgi.ini
       volumes:
       - name: cinder-conf
         configMap:

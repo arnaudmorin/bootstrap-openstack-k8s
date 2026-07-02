@@ -4,6 +4,19 @@ kind: ConfigMap
 metadata:
   name: neutron-conf
 data:
+  uwsgi.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:9696
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/neutron/
+    module = neutron.wsgi.api
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
   neutron.conf: |
     [DEFAULT]
     # debug = True
@@ -143,7 +156,7 @@ spec:
         image: arnaudmorin/openstack-neutron:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        command: [ "/opt/openstack/neutron/bin/uwsgi", "--http", ":9696", "--module", "neutron.wsgi.api" ]
+        command: [ "/opt/openstack/neutron/bin/uwsgi", "--ini", "/etc/uwsgi/neutron.ini" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 9696
@@ -154,6 +167,9 @@ spec:
         - name: neutron-conf
           mountPath: /etc/neutron/plugins/ml2/ml2_conf.ini
           subPath: ml2_conf.ini
+        - name: neutron-conf
+          mountPath: /etc/uwsgi/neutron.ini
+          subPath: uwsgi.ini
       volumes:
       - name: neutron-conf
         configMap:

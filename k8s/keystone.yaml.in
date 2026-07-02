@@ -4,6 +4,19 @@ kind: ConfigMap
 metadata:
   name: keystone-conf
 data:
+  uwsgi.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:5000
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/keystone/
+    module = keystone.wsgi.api:application
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
   keystone.conf: |
     [DEFAULT]
     [database]
@@ -121,7 +134,7 @@ spec:
         image: arnaudmorin/openstack-keystone:{{.openstack_version}}
         command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        args: [ "chmod 600 /etc/keystone/fernet-keys && /opt/openstack/keystone/bin/uwsgi --http :5000 -w keystone.wsgi.api:application" ]
+        args: [ "chmod 600 /etc/keystone/fernet-keys && /opt/openstack/keystone/bin/uwsgi --ini /etc/uwsgi/keystone.ini" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -135,6 +148,9 @@ spec:
         - name: keystone-conf
           mountPath: /etc/keystone/fernet-keys/1
           subPath: "1"
+        - name: keystone-conf
+          mountPath: /etc/uwsgi/keystone.ini
+          subPath: uwsgi.ini
       volumes:
       - name: keystone-conf
         configMap:

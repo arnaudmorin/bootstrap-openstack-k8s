@@ -4,6 +4,19 @@ kind: ConfigMap
 metadata:
   name: placement-conf
 data:
+  uwsgi.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:8778
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/placement/
+    module = placement.wsgi.api:application
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
   placement.conf: |
     [DEFAULT]
     [api]
@@ -93,7 +106,7 @@ spec:
       containers:
       - name: placement
         image: arnaudmorin/openstack-placement:{{.openstack_version}}
-        command: [ "/opt/openstack/placement/bin/uwsgi", "--http", "0.0.0.0:8778", "--module", "placement.wsgi.api:application", "-b", "65535"]
+        command: [ "/opt/openstack/placement/bin/uwsgi", "--ini", "/etc/uwsgi/placement.ini" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 8778
@@ -101,6 +114,9 @@ spec:
         - name: placement-conf
           mountPath: /etc/placement/placement.conf
           subPath: placement.conf
+        - name: placement-conf
+          mountPath: /etc/uwsgi/placement.ini
+          subPath: uwsgi.ini
       volumes:
       - name: placement-conf
         configMap:

@@ -4,6 +4,19 @@ kind: ConfigMap
 metadata:
   name: glance-conf
 data:
+  uwsgi.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:9292
+    stats = 0.0.0.0:9191
+    virtualenv = /opt/openstack/glance/
+    module = glance.wsgi.api
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 8
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
   glance-api.conf: |
     [DEFAULT]
     # debug = True
@@ -135,10 +148,7 @@ spec:
         image: arnaudmorin/openstack-glance:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        # --http-raw-body is required for chunked image uploads: glance reads the
-        # body with uwsgi.chunked_read(), which only works when uwsgi passes the
-        # raw (still-chunked) body to the app instead of buffering/de-chunking it.
-        command: [ "/opt/openstack/glance/bin/uwsgi", "--http", ":9292", "--http-raw-body", "--module", "glance.wsgi.api" ]
+        command: [ "/opt/openstack/glance/bin/uwsgi", "--ini", "/etc/uwsgi/glance.ini" ]
         #securityContext:
         #  allowPrivilegeEscalation: false
         #  runAsUser: 0
@@ -149,6 +159,9 @@ spec:
         - name: glance-conf
           mountPath: /etc/glance/glance-api.conf
           subPath: glance-api.conf
+        - name: glance-conf
+          mountPath: /etc/uwsgi/glance.ini
+          subPath: uwsgi.ini
         - name: glance-persistent-storage
           mountPath: /var/lib/glance
       volumes:
