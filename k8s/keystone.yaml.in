@@ -27,6 +27,9 @@ data:
     policy_dirs = /etc/keystone/policy.d
     [token]
     provider = fernet
+    [credential]
+    # demo: reuse the same key material as the fernet token keys
+    key_repository = /etc/keystone/credential-keys
     [identity]
     # avoid a bcrypt warning
     max_password_length = 72
@@ -134,10 +137,21 @@ spec:
         image: arnaudmorin/openstack-keystone:{{.openstack_version}}
         command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
-        args: [ "chmod 600 /etc/keystone/fernet-keys && /opt/openstack/keystone/bin/uwsgi --ini /etc/uwsgi/keystone.ini" ]
+        args: [ "chmod 600 /etc/keystone/fernet-keys /etc/keystone/credential-keys && /opt/openstack/keystone/bin/uwsgi --ini /etc/uwsgi/keystone.ini" ]
         # imagePullPolicy: Always
         ports:
         - containerPort: 5000
+        # Keep not-ready replicas out of the Service so traefik never routes to a
+        # pod whose uwsgi isn't serving yet (avoids 502s during rollout/reload).
+        # GET /v3 is the unauthenticated version endpoint.
+        readinessProbe:
+          httpGet:
+            path: /v3
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: keystone-conf
           mountPath: /etc/keystone/keystone.conf
@@ -147,6 +161,12 @@ spec:
           subPath: "0"
         - name: keystone-conf
           mountPath: /etc/keystone/fernet-keys/1
+          subPath: "1"
+        - name: keystone-conf
+          mountPath: /etc/keystone/credential-keys/0
+          subPath: "0"
+        - name: keystone-conf
+          mountPath: /etc/keystone/credential-keys/1
           subPath: "1"
         - name: keystone-conf
           mountPath: /etc/uwsgi/keystone.ini
