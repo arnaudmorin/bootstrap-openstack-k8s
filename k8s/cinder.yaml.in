@@ -112,7 +112,7 @@ spec:
         app: cinder
     spec:
       initContainers:
-      - name: cinder
+      - name: cinder-db-sync
         image: arnaudmorin/openstack-cinder:{{.openstack_version}}
         command: ["/opt/openstack/cinder/bin/cinder-manage", "db", "sync"]
         volumeMounts:
