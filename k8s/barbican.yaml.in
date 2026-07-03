@@ -31,7 +31,7 @@ data:
     auth_url = http://keystone.{{.domain}}/v3
     project_name = service
     project_domain_name = Default
-    username = glance
+    username = barbican
     user_domain_name = Default
     password = {{.password}}
     www_authenticate_uri = http://keystone.{{.domain}}
