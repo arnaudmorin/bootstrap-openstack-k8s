@@ -47,6 +47,11 @@ data:
     enable-threads = true
     master = true
     thunder-lock = true
+    # NOTE(arnaud) advertise Connection: close so traefik does not pool and
+    # reuse backend keepalive connections. A reused-but-dropped connection
+    # makes POSTs fail non-retryably as an intermittent traefik 500/502
+    # under concurrent load (e.g. tempest create_subnet).
+    add-header = Connection: close
 
 ---
 apiVersion: v1
