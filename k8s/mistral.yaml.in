@@ -168,6 +168,14 @@ spec:
         #imagePullPolicy: Never
         ports:
         - containerPort: 8989
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8989
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: mistral-conf
           mountPath: "/etc/mistral/mistral.conf"
