@@ -267,6 +267,14 @@ spec:
         #imagePullPolicy: Always
         ports:
         - containerPort: 8774
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8774
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf
@@ -317,6 +325,14 @@ spec:
         #imagePullPolicy: Always
         ports:
         - containerPort: 8775
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8775
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: nova-conf
           mountPath: /etc/nova/nova.conf

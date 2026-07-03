@@ -117,6 +117,14 @@ spec:
         # imagePullPolicy: Always
         ports:
         - containerPort: 9311
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9311
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: barbican-conf
           mountPath: /etc/barbican/barbican.conf

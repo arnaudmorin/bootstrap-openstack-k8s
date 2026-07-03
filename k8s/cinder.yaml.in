@@ -126,6 +126,14 @@ spec:
         # imagePullPolicy: Always
         ports:
         - containerPort: 8776
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8776
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: cinder-conf
           mountPath: /etc/cinder/cinder.conf

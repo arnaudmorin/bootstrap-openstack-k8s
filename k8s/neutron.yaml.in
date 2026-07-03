@@ -160,6 +160,14 @@ spec:
         # imagePullPolicy: Always
         ports:
         - containerPort: 9696
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9696
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: neutron-conf
           mountPath: /etc/neutron/neutron.conf

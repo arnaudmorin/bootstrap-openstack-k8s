@@ -110,6 +110,14 @@ spec:
         # imagePullPolicy: Always
         ports:
         - containerPort: 8778
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8778
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: placement-conf
           mountPath: /etc/placement/placement.conf
