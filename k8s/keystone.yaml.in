@@ -96,7 +96,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: keystone
