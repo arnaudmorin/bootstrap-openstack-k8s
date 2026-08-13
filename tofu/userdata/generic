@@ -16,7 +16,7 @@ exec &> >(log_handler)
 apt-get update
 
 # Wesh va voir ailleurs si jy suis
-apt-get purge unattended-upgrades
+apt-get purge -y unattended-upgrades
 
 # Install some useful stuff
 apt-get -y install tmux curl vim wget ipcalc mosh git ansible jq unzip locales-all
