@@ -28,6 +28,11 @@ data:
     backend = dogpile.cache.redis
     redis_server = redis:6379
     password = {{ .password }}
+    [cron_trigger]
+    # NOTE(arnaud) cron triggers are processed by the dedicated periodic
+    # server (mistral-periodic statefulset), not inside the API workers
+    # (deprecated, see https://review.opendev.org/c/openstack/mistral/+/1001403)
+    run_in_api = False
     [oslo_messaging_rabbit]
     rabbit_quorum_queue = True
     rabbit_transient_quorum_queue = True
@@ -258,6 +263,42 @@ spec:
         image: arnaudmorin/openstack-mistral:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "executor" ]
+        volumeMounts:
+        - name: mistral-conf
+          mountPath: "/etc/mistral/mistral.conf"
+          subPath: mistral.conf
+      volumes:
+      - name: mistral-conf
+        configMap:
+          name: mistral-conf
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mistral-periodic
+  labels:
+    app: mistral-periodic
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  serviceName: mistral-periodic
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: mistral-periodic
+  template:
+    metadata:
+      labels:
+        app: mistral-periodic
+    spec:
+      containers:
+      - name: mistral-periodic
+        image: arnaudmorin/openstack-mistral:{{.openstack_version}}
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/mistral/bin/mistral-server", "--server", "periodic" ]
         volumeMounts:
         - name: mistral-conf
           mountPath: "/etc/mistral/mistral.conf"
