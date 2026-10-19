@@ -71,6 +71,15 @@ spec:
         ports:
         - containerPort: 3306
           name: mysql-{{ .db_name }}
+        # NOTE(arnaud) the entrypoint runs the initdb scripts with networking
+        # disabled, so 3306 only opens once the real server is up
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: mysql-persistent-storage-{{ .db_name }}
           mountPath: /var/lib/mysql

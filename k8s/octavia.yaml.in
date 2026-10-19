@@ -305,6 +305,15 @@ spec:
         # imagePullPolicy: Always
         ports:
         - containerPort: 9876
+        # NOTE(arnaud) GET / is the unauthenticated version endpoint
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9876
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: octavia-conf
           mountPath: /etc/octavia/octavia.conf

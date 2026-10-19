@@ -77,6 +77,14 @@ spec:
           name: rabbit
         - containerPort: 15672
           name: management
+        # NOTE(arnaud) the AMQP listener only opens late in the boot
+        readinessProbe:
+          tcpSocket:
+            port: 5672
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: rabbit-conf
           mountPath: "/etc/rabbitmq/rabbitmq.conf"

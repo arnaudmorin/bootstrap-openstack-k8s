@@ -43,6 +43,13 @@ spec:
         ports:
         - containerPort: 6379
           name: redis
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: redis-conf
           mountPath: "/etc/redis/redis.conf"
