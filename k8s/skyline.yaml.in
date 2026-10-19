@@ -12,8 +12,12 @@ data:
       cors_allow_origins: []
       database_url: mysql+pymysql://root:{{.password}}@mysql-skyline/skyline
       debug: False
-      log_dir: /var/log/skyline/
-      log_file: skyline.log
+      # NOTE(arnaud) log to the container output instead of files in /var/log/skyline
+      # log_dir is also used by skyline-nginx-generator for nginx logs
+      log_dir: /dev
+      log_file: stderr
+      access_log_file: stdout
+      error_log_file: stderr
       policy_file_path: /etc/skyline/policy
       policy_file_suffix: policy.yaml
       prometheus_basic_auth_password: ''
@@ -78,6 +82,21 @@ data:
       - nvidia_t4
       usb_models:
       - usb_c
+  # NOTE(arnaud) same as upstream etc/gunicorn.py, but logging to the container
+  # output instead of files in /var/log/skyline
+  gunicorn.py: |
+    import multiprocessing
+
+    bind = "unix:/var/lib/skyline/skyline.sock"
+    reuse_port = False
+    workers = (1 + multiprocessing.cpu_count()) // 2
+    worker_class = "uvicorn.workers.UvicornWorker"
+    timeout = 300
+    keepalive = 5
+    proc_name = "skyline"
+    errorlog = "-"
+    accesslog = "-"
+    loglevel = "info"
 
 ---
 apiVersion: v1
@@ -147,10 +166,23 @@ spec:
         #imagePullPolicy: Always
         ports:
         - containerPort: 8080
+        # NOTE(arnaud) / is served by nginx alone, so check an API path that
+        # goes through nginx to gunicorn, it does not need authentication
+        readinessProbe:
+          httpGet:
+            path: /api/openstack/skyline/api/v1/contrib/regions
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         volumeMounts:
         - name: skyline-conf
           mountPath: /etc/skyline/skyline.yaml
           subPath: skyline.yaml
+        - name: skyline-conf
+          mountPath: /etc/skyline/gunicorn.py
+          subPath: gunicorn.py
       volumes:
       - name: skyline-conf
         configMap:
