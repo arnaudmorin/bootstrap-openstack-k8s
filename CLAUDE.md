@@ -40,7 +40,7 @@ frep k8s/<service>.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 ## Versioning convention
 
-**Git branches are OpenStack release names** (`2024.2`, `2025.1`, `2025.2`, `2026.1`). The branch name is the OpenStack version: `var.openstack_version` in `tofu/main.tf` defaults to the current branch's release and is used to (a) check out the matching branch of this repo and of `openstack-docker` on the node, and (b) tag the container images pulled. PRs target `2026.1` (the current release branch) unless working a release-specific change. Keep `openstack_version` and the branch consistent.
+**Git branches are OpenStack release names** (`2024.2`, `2025.1`, `2025.2`, `2026.1`, `2026.2`). The branch name is the OpenStack version: `var.openstack_version` in `tofu/main.tf` defaults to the current branch's release and is used to (a) check out the matching branch of this repo and of `openstack-docker` on the node, and (b) tag the container images pulled. PRs target `2026.2` (the current release branch) unless working a release-specific change. Keep `openstack_version` and the branch consistent.
 
 ## Common commands
 
