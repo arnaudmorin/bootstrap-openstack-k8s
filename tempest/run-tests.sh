@@ -37,6 +37,15 @@ for arg in "$@"; do
 done
 set -- "${ARGS[@]}"
 
+# NOTE(arnaud) without an external network there is no floating IP to reach the
+# servers, so tests that need to ssh into them must be skipped
+# (use --recreate after adding an external network to run them again)
+source /root/openrc_admin
+NO_EXTERNAL_NET=0
+if [ -z "$(openstack network list --external -f value -c ID)" ]; then
+    NO_EXTERNAL_NET=1
+fi
+
 # venv
 if [ ! -x "$VENV/bin/tempest" ]; then
     title.print "Creating venv (${VENV})"
@@ -55,20 +64,33 @@ if [ "$RECREATE" = "1" ] || [ ! -f "$WS/etc/tempest.conf" ]; then
 
     # generate tempest.conf by discovering the running cloud as admin.
     title.print "Generating tempest.conf"
-    source /root/openrc_admin
+    OVERRIDES=()
+    if [ "$NO_EXTERNAL_NET" = "1" ]; then
+        echo "No external network, disabling validation (no ssh into servers)"
+        OVERRIDES=(validation.run_validation false)
+    fi
     cd "$WS"
     "$VENV/bin/discover-tempest-config" \
         --create \
-        --out etc/tempest.conf
+        --out etc/tempest.conf \
+        "${OVERRIDES[@]}"
 fi
 
 # Run the tests (defaults to --smoke if no args are given)
+if [ $# -eq 0 ]; then
+    set -- --smoke
+    # NOTE(arnaud) these neutron plugin tests create floating IPs even when
+    # validation is disabled
+    if [ "$NO_EXTERNAL_NET" = "1" ]; then
+        set -- --smoke --exclude-regex 'test_tag\.Tag(Filter)?FloatingIpTestJSON'
+    fi
+fi
 cd "$WS"
-title.print "Run tempest ($VENV/bin/tempest run ${@:---smoke})"
+title.print "Run tempest ($VENV/bin/tempest run $*)"
 # Don't abort on test failures -- we still want to produce the report -- but keep
 # the real exit status to return at the end.
 set +e
-"$VENV/bin/tempest" run "${@:---smoke}"
+"$VENV/bin/tempest" run "$@"
 rc=$?
 
 # Build an HTML report from the last run's results.
