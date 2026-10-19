@@ -280,6 +280,9 @@ kubectl wait --for=condition=available --timeout=60s deployment/neutron-api
 source /root/openrc_admin
 source /root/helper
 
+# NOTE(arnaud) ingress can lag a few seconds behind the deployments being available
+timeout 120 bash -c 'until openstack flavor list >/dev/null 2>&1; do sleep 2; done'
+
 create_flavors
 create_image_cirros
 create_image_debian
