@@ -10,7 +10,7 @@ data:
       access_token_renew: 1800
       cafile: ''
       cors_allow_origins: []
-      database_url: mysql://root:{{.password}}@mysql-skyline/skyline
+      database_url: mysql+pymysql://root:{{.password}}@mysql-skyline/skyline
       debug: False
       log_dir: /var/log/skyline/
       log_file: skyline.log
