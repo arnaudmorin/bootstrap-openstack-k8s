@@ -104,7 +104,7 @@ spec:
     spec:
       initContainers:
       - name: barbican-init
-        image: arnaudmorin/openstack-barbican:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-barbican:{{.openstack_version}}
         command: ["/opt/openstack/barbican/bin/barbican-manage", "db", "upgrade"]
         volumeMounts:
         - name: barbican-conf
@@ -112,7 +112,7 @@ spec:
           subPath: barbican.conf
       containers:
       - name: barbican
-        image: arnaudmorin/openstack-barbican:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-barbican:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/opt/openstack/barbican/bin/uwsgi", "--ini", "/etc/uwsgi/barbican.ini" ]
@@ -162,7 +162,7 @@ spec:
     spec:
       containers:
       - name: barbican
-        image: arnaudmorin/openstack-barbican:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-barbican:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/opt/openstack/barbican/bin/barbican-worker" ]
@@ -199,7 +199,7 @@ spec:
     spec:
       containers:
       - name: barbican
-        image: arnaudmorin/openstack-barbican:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-barbican:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/opt/openstack/barbican/bin/barbican-keystone-listener" ]

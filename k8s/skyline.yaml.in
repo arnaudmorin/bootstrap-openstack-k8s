@@ -131,7 +131,7 @@ spec:
     spec:
       initContainers:
       - name: skyline-init
-        image: arnaudmorin/openstack-skyline:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-skyline:{{.openstack_version}}
         #imagePullPolicy: Always
         command: ["/usr/local/bin/skyline-db-sync"]
         volumeMounts:
@@ -140,7 +140,7 @@ spec:
           subPath: skyline.yaml
       containers:
       - name: skyline
-        image: arnaudmorin/openstack-skyline:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-skyline:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/usr/local/bin/skyline-start"]

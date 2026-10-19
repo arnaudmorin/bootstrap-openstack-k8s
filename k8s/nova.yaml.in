@@ -257,7 +257,7 @@ spec:
       # Runs api_db sync + cell_v2 setup + db sync (idempotent; see the
       # nova-init-script ConfigMap above).
       - name: nova-init
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "/scripts/init.sh"]
         volumeMounts:
         - name: nova-conf
@@ -267,7 +267,7 @@ spec:
           mountPath: /scripts
       containers:
       - name: nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -323,11 +323,11 @@ spec:
       # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
       # serves once that init container has finished, so this gates the migration
       - name: wait-nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-metadata-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -379,11 +379,11 @@ spec:
       # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
       # serves once that init container has finished, so this gates the migration
       - name: wait-nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-conductor
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -425,11 +425,11 @@ spec:
       # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
       # serves once that init container has finished, so this gates the migration
       - name: wait-nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-scheduler
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -468,11 +468,11 @@ spec:
       # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
       # serves once that init container has finished, so this gates the migration
       - name: wait-nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-vnc
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -511,11 +511,11 @@ spec:
       # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
       # serves once that init container has finished, so this gates the migration
       - name: wait-nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-spice
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"
@@ -554,11 +554,11 @@ spec:
       # Wait for nova-api, which runs the idempotent db/cell init; nova-api only
       # serves once that init container has finished, so this gates the migration
       - name: wait-nova-api
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
       containers:
       - name: nova-serial
-        image: arnaudmorin/openstack-nova:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
         env:
         - name: OS_NOVA_DISABLE_EVENTLET_PATCHING
           value: "1"

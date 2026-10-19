@@ -147,7 +147,7 @@ spec:
     spec:
       initContainers:
       - name: neutron
-        image: arnaudmorin/openstack-neutron:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-neutron:{{.openstack_version}}
         command: ["/opt/openstack/neutron/bin/neutron-db-manage", "--config-file", "/etc/neutron/neutron.conf", "--config-file", "/etc/neutron/plugins/ml2/ml2_conf.ini", "upgrade", "head"]
         volumeMounts:
         - name: neutron-conf
@@ -158,7 +158,7 @@ spec:
           subPath: ml2_conf.ini
       containers:
       - name: neutron-api
-        image: arnaudmorin/openstack-neutron:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-neutron:{{.openstack_version}}
         #command: [ "/bin/bash", "-c", "--" ]
         #args: [ "while true; do sleep 30; done;" ]
         command: [ "/opt/openstack/neutron/bin/uwsgi", "--ini", "/etc/uwsgi/neutron.ini" ]
@@ -208,7 +208,7 @@ spec:
     spec:
       containers:
       - name: neutron-rpc
-        image: arnaudmorin/openstack-neutron:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-neutron:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/neutron/bin/neutron-rpc-server" ]
         volumeMounts:
@@ -244,7 +244,7 @@ spec:
     spec:
       containers:
       - name: neutron-wireguard-rpc
-        image: arnaudmorin/openstack-neutron:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-neutron:{{.openstack_version}}
         command: [ "dumb-init", "--single-child", "--" ]
         args: [ "/opt/openstack/neutron/bin/neutron-wireguard-rpc" ]
         volumeMounts:

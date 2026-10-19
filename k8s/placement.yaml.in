@@ -102,7 +102,7 @@ spec:
     spec:
       initContainers:
       - name: placement-init
-        image: arnaudmorin/openstack-placement:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-placement:{{.openstack_version}}
         command: ["/opt/openstack/placement/bin/placement-manage", "db", "sync"]
         volumeMounts:
         - name: placement-conf
@@ -110,7 +110,7 @@ spec:
           subPath: placement.conf
       containers:
       - name: placement
-        image: arnaudmorin/openstack-placement:{{.openstack_version}}
+        image: ghcr.io/arnaudmorin/openstack-placement:{{.openstack_version}}
         command: [ "/opt/openstack/placement/bin/uwsgi", "--ini", "/etc/uwsgi/placement.ini" ]
         # imagePullPolicy: Always
         ports:
