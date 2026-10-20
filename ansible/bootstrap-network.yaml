@@ -21,18 +21,29 @@
     args:
       creates: /usr/local/bin/lnav
 
+  # NOTE(arnaud) deb_release is "latest" or a pinned version, see config.yaml
+  - name: list openstack-debian releases
+    uri:
+      url: "https://api.github.com/repos/arnaudmorin/openstack-debian/releases?per_page=100"
+    register: releases
+    when: deb_release == 'latest'
+
+  - name: pick the openstack-debian release
+    set_fact:
+      deb_version: "{{ (releases.json | selectattr('tag_name', 'match', '^v' ~ openstack_version ~ '-') | first).tag_name[1:] if deb_release == 'latest' else deb_release }}"
+
   - name: grab neutron
     get_url:
-      url: "https://github.com/arnaudmorin/openstack-debian/releases/download/v2026.2-38%2B0e20d52/{{item}}"
+      url: "https://github.com/arnaudmorin/openstack-debian/releases/download/v{{ deb_version | urlencode }}/{{item}}"
       dest: "/root/{{item}}"
     with_items:
-      - openstack-neutron_2026.2-38+0e20d52_all.deb
+      - "openstack-neutron_{{ deb_version }}_all.deb"
 
   - name: install neutron
     apt:
       deb: "/root/{{item}}"
     with_items:
-      - openstack-neutron_2026.2-38+0e20d52_all.deb
+      - "openstack-neutron_{{ deb_version }}_all.deb"
 
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
     ansible.posix.sysctl:

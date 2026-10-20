@@ -23,6 +23,12 @@ domain: somewhere.net
 # This could be something like: 2025.1
 openstack_version: "os_version"
 
+# Debian packages for nova and neutron on the compute and network nodes, from
+# https://github.com/arnaudmorin/openstack-debian/releases
+# "latest" picks the newest release of openstack_version,
+# or pin one, e.g.: "2026.2-38+0e20d52"
+deb_release: latest
+
 # Keystone fernet
 # These are the keys keystone will use to generate tokens
 # You can keep the following values, or regenerate new ones with:
