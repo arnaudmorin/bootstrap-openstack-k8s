@@ -30,7 +30,7 @@
 
   - name: pick the openstack-debian release
     set_fact:
-      deb_version: "{{ (releases.json | selectattr('tag_name', 'match', '^v' ~ openstack_version ~ '-') | first).tag_name[1:] if deb_release == 'latest' else deb_release }}"
+      deb_version: "{{ (releases.json | selectattr('tag_name', 'match', '^v' ~ openstack_version ~ '-') | sort(attribute='published_at', reverse=true) | first).tag_name[1:] if deb_release == 'latest' else deb_release }}"
 
   - name: grab nova and neutron
     get_url:
