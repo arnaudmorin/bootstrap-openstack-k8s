@@ -26,7 +26,7 @@ data:
     [DEFAULT]
     # debug = True
     auth_strategy = keystone
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = {{ index .transport_url .messaging }}
     enabled_backends = nfs
     glance_api_servers = http://glance.{{.domain}}
     [database]

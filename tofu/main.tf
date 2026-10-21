@@ -22,6 +22,22 @@ variable "openstack_version" {
   default     = "2026.2"
 }
 
+variable "bootstrap_branch" {
+  type        = string
+  description = "Branch of bootstrap-openstack-k8s cloned on the nodes, to test changes before merging them (default: openstack_version)"
+  default     = ""
+}
+
+variable "messaging" {
+  type        = string
+  description = "Messaging backend: rabbit (RabbitMQ) or bmq (BlazingMQ)"
+  default     = "rabbit"
+  validation {
+    condition     = contains(["rabbit", "bmq"], var.messaging)
+    error_message = "messaging must be rabbit or bmq."
+  }
+}
+
 variable "compute_count" {
   description = "Number of compute nodes"
   type        = number
@@ -100,6 +116,8 @@ resource "openstack_compute_instance_v2" "k8s" {
       path_module = path.module,
       password    = random_password.password.result
       os_version  = var.openstack_version
+      branch      = coalesce(var.bootstrap_branch, var.openstack_version)
+      messaging   = var.messaging
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index].mac_address
     }
   )
@@ -129,6 +147,8 @@ resource "openstack_compute_instance_v2" "computes" {
       password    = random_password.password.result
       k8s_ip      = openstack_compute_instance_v2.k8s[0].access_ip_v4
       os_version  = var.openstack_version
+      branch      = coalesce(var.bootstrap_branch, var.openstack_version)
+      messaging   = var.messaging
       hostname    = "compute-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + 1].mac_address
@@ -167,6 +187,8 @@ resource "openstack_compute_instance_v2" "networks" {
       password    = random_password.password.result
       k8s_ip      = openstack_compute_instance_v2.k8s[0].access_ip_v4
       os_version  = var.openstack_version
+      branch      = coalesce(var.bootstrap_branch, var.openstack_version)
+      messaging   = var.messaging
       hostname    = "network-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index + var.compute_count].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + var.compute_count + 1].mac_address

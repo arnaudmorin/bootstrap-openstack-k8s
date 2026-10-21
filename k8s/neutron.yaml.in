@@ -35,7 +35,7 @@ data:
     router_distributed = true
     l3_ha = true
     max_l3_agents_per_router = 2
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = {{ index .transport_url .messaging }}
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-neutron/neutron
     [keystone_authtoken]

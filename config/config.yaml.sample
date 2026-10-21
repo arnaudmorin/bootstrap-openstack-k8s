@@ -29,6 +29,20 @@ openstack_version: "os_version"
 # or pin one, e.g.: "2026.2-38+0e20d52"
 deb_release: latest
 
+# Messaging backend: rabbit (RabbitMQ) or bmq (BlazingMQ)
+# NOTE(arnaud) bmq relies on the BlazingMQ driver of
+# https://github.com/arnaudmorin/oslo.messaging, installed in all images and debs
+messaging: rabbit
+
+# transport_url for each messaging backend, used from inside k8s and from the
+# compute/network nodes (through the k8s NodePort)
+transport_url:
+  rabbit: "rabbit://openstack:changeme@rabbit"
+  bmq: "bmq://blazingmq:30114/bmq.openstack.priority"
+transport_url_external:
+  rabbit: "rabbit://openstack:changeme@somewhere.net:30672"
+  bmq: "bmq://somewhere.net:30674/bmq.openstack.priority"
+
 # Keystone fernet
 # These are the keys keystone will use to generate tokens
 # You can keep the following values, or regenerate new ones with:

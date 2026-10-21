@@ -12,7 +12,7 @@ Read `README.md` first — it is a detailed, step-by-step walkthrough of the who
 
 Three node roles, all with public IPs:
 
-- **k8s-0** (control plane): runs k3s. All OpenStack *API* services (keystone, glance, nova-api, neutron-server, placement, skyline, mistral, octavia, barbican, cinder), plus mysql, rabbitmq, and redis, run as k8s Deployments/StatefulSets here. This node also acts as the operator workstation (kubectl, ansible, openstack CLI all run from here).
+- **k8s-0** (control plane): runs k3s. All OpenStack *API* services (keystone, glance, nova-api, neutron-server, placement, skyline, mistral, octavia, barbican, cinder), plus mysql, the messaging broker (rabbitmq, or blazingmq with `messaging: bmq`), and redis, run as k8s Deployments/StatefulSets here. This node also acts as the operator workstation (kubectl, ansible, openstack CLI all run from here).
 - **compute-N** (data plane): runs `nova-compute` and neutron OVS/L3/metadata agents as **systemd services, not in k8s**. Configured by Ansible. Has an extra interface on the public vRack (vlan 0).
 - **network-N** (data plane): runs neutron agents for `dvr_snat` + DHCP (OpenStack can't do DVR-with-SNAT on computes — see README for the upstream bug link). Also Ansible-configured.
 

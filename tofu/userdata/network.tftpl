@@ -25,7 +25,7 @@ EOF
 
 systemctl restart systemd-udev-trigger.service
 
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${branch}
 
 cd /root/bootstrap-openstack-k8s
 
@@ -33,6 +33,7 @@ cp config/config.yaml.sample config/config.yaml
 sed -i -r "s/somewhere.net/${k8s_ip}.xip.opensteak.fr/" config/config.yaml
 sed -i -r "s/changeme/${password}/" config/config.yaml
 sed -i -r "s/os_version/${os_version}/" config/config.yaml
+sed -i -r "s/^messaging: .*/messaging: ${messaging}/" config/config.yaml
 
 # Overwrite the zob key if this was changed locally
 cat <<EOF >ansible/files/zob.pub

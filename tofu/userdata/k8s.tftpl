@@ -43,6 +43,7 @@ alias k=kubectl
 alias l=stern
 alias os=openstack
 alias frep-rabbit='frep /root/bootstrap-openstack-k8s/k8s/rabbit.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-blazingmq='frep /root/bootstrap-openstack-k8s/k8s/blazingmq.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-keystone='frep /root/bootstrap-openstack-k8s/k8s/keystone.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-glance='frep /root/bootstrap-openstack-k8s/k8s/glance.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-placement='frep /root/bootstrap-openstack-k8s/k8s/placement.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
@@ -73,7 +74,7 @@ echo \
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${os_version}
+git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${branch}
 git clone https://github.com/arnaudmorin/openstack-docker.git /root/openstack-docker -b ${os_version}
 
 # Overwrite the zob key if this was changed locally
@@ -144,6 +145,7 @@ ip=$(hostname -I | awk '{print $1}')
 sed -i -r "s/somewhere.net/$${ip}.xip.opensteak.fr/" config/config.yaml
 sed -i -r "s/changeme/${password}/" config/config.yaml
 sed -i -r "s/os_version/${os_version}/" config/config.yaml
+sed -i -r "s/^messaging: .*/messaging: ${messaging}/" config/config.yaml
 # garage-webui login: bcrypt "admin:hash" (use | as sed delimiter, the hash contains /)
 webui_auth=$(htpasswd -nbBC 10 admin "${password}")
 sed -i "s|webui_auth_hash|$${webui_auth}|" config/config.yaml
@@ -176,8 +178,12 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
 # Redis (oslo.cache backend)
 frep k8s/redis.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
-# Rabbit
+# Messaging broker (RabbitMQ or BlazingMQ, see messaging in config.yaml)
+%{ if messaging == "bmq" ~}
+frep k8s/blazingmq.yaml.in:- --load config/config.yaml | kubectl apply -f -
+%{ else ~}
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
+%{ endif ~}
 
 # Keystone
 # wait for redis because we need it for a working keystone

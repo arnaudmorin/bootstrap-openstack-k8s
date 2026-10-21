@@ -6,7 +6,7 @@ metadata:
 data:
   octavia.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = {{ index .transport_url .messaging }}
     debug = False
     [database]
     connection = mysql+pymysql://root:{{.password}}@mysql-octavia/octavia

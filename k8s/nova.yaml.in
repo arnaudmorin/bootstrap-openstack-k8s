@@ -42,7 +42,7 @@ data:
     add-header = Connection: close
   nova.conf: |
     [DEFAULT]
-    transport_url = rabbit://openstack:{{.password}}@rabbit
+    transport_url = {{ index .transport_url .messaging }}
     [api_database]
     connection = mysql+pymysql://root:{{.password}}@mysql-nova/nova_api
     os_region_name = RegionOne

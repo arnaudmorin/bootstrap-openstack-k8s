@@ -172,6 +172,31 @@ This will create 6 instances:
 * network-0
 * network-1
 
+### Messaging backend
+
+By default, OpenStack services talk through RabbitMQ.
+To use [BlazingMQ](https://github.com/bloomberg/blazingmq) instead:
+
+```bash
+tofu apply -var messaging=bmq
+```
+
+This deploys the BlazingMQ broker (`k8s/blazingmq.yaml.in`) instead of RabbitMQ, and points every
+service (and the compute/network nodes) to it, see `messaging` and `transport_url` in
+`config/config.yaml`. It relies on the BlazingMQ driver of the
+[oslo.messaging fork](https://github.com/arnaudmorin/oslo.messaging) installed in the images and packages.
+
+Note that the BlazingMQ driver has no authentication yet: the broker is reachable by anyone on its NodePort (30674).
+
+### Testing a branch
+
+The nodes clone this repository from GitHub, on the branch named after `openstack_version` (e.g. `2026.2`).
+To test changes before merging them, push them to another branch and deploy it with:
+
+```bash
+tofu apply -var bootstrap_branch=my-branch
+```
+
 
 `tofu` is used to deploy all nodes, and a cloud-init postinstall script is then executed to install everything.
 
@@ -271,6 +296,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
+# or k8s/blazingmq.yaml.in, if messaging is bmq
 frep k8s/rabbit.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 frep k8s/glance.yaml.in:- --load config/config.yaml | kubectl apply -f -
