@@ -186,7 +186,17 @@ service (and the compute/network nodes) to it, see `messaging` and `transport_ur
 `config/config.yaml`. It relies on the BlazingMQ driver of the
 [oslo.messaging fork](https://github.com/arnaudmorin/oslo.messaging) installed in the images and packages.
 
-Note that the BlazingMQ driver has no authentication yet: the broker is reachable by anyone on its NodePort (30674).
+The broker requires the `openstack` user and the deployment password (BASIC authentication, anonymous clients
+are refused). Its NodePort (30674), used by the compute/network nodes, only accepts TLS: tofu generates a
+certificate authority and the broker certificate, and the nodes verify the broker with the CA
+(`/etc/blazingmq/ca.pem`, `[oslo_messaging_bmq] ssl_ca_file`). Inside k8s, the services use the plain listener,
+like RabbitMQ.
+
+Authentication and TLS rely on forks, until they are merged upstream:
+[blazingmq](https://github.com/arnaudmorin/blazingmq/tree/tls) for the broker, and
+[blazingmq-sdk-python](https://github.com/arnaudmorin/blazingmq-sdk-python/tree/secure) for the client.
+
+The certificates come from the `tls` provider: run `tofu init` again after updating.
 
 ### Testing a branch
 

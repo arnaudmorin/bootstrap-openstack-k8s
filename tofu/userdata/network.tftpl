@@ -35,6 +35,11 @@ sed -i -r "s/changeme/${password}/" config/config.yaml
 sed -i -r "s/os_version/${os_version}/" config/config.yaml
 sed -i -r "s/^messaging: .*/messaging: ${messaging}/" config/config.yaml
 
+# BlazingMQ certificate authority, to verify the broker certificate (see bmq_ssl_ca_file in config.yaml)
+mkdir -p /etc/blazingmq
+cat <<EOF >/etc/blazingmq/ca.pem
+${bmq_ca_cert}EOF
+
 # Overwrite the zob key if this was changed locally
 cat <<EOF >ansible/files/zob.pub
 ${file("${path_module}/../ansible/files/zob.pub")}

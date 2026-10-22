@@ -36,12 +36,16 @@ messaging: rabbit
 
 # transport_url for each messaging backend, used from inside k8s and from the
 # compute/network nodes (through the k8s NodePort)
+# NOTE(arnaud) the BlazingMQ broker requires the openstack user (BASIC
+# authentication), and its NodePort only accepts TLS: the compute/network nodes
+# verify the broker certificate with bmq_ssl_ca_file (written by the userdata)
 transport_url:
   rabbit: "rabbit://openstack:changeme@rabbit"
-  bmq: "bmq://blazingmq:30114/bmq.openstack.priority"
+  bmq: "bmq://openstack:changeme@blazingmq:30114/bmq.openstack.priority"
 transport_url_external:
   rabbit: "rabbit://openstack:changeme@somewhere.net:30672"
-  bmq: "bmq://somewhere.net:30674/bmq.openstack.priority"
+  bmq: "bmq://openstack:changeme@somewhere.net:30674/bmq.openstack.priority"
+bmq_ssl_ca_file: /etc/blazingmq/ca.pem
 
 # Keystone fernet
 # These are the keys keystone will use to generate tokens

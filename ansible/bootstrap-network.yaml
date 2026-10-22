@@ -221,6 +221,7 @@
       value: "{{item.value}}"
     with_items:
       - { section: "DEFAULT", option: "transport_url", value: "{{ transport_url_external[messaging] }}" }
+      - { section: "oslo_messaging_bmq", option: "ssl_ca_file", value: "{{ bmq_ssl_ca_file if messaging == 'bmq' else '' }}" }
       - { section: "DEFAULT", option: "auth_strategy", value: "keystone" }
       - { section: "oslo_concurrency", option: "lock_path", value: "/var/lib/neutron/tmp" }
       - { section: "keystone_authtoken", option: "www_authenticate_uri", value: "http://keystone.{{domain}}" }

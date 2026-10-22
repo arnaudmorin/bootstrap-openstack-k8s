@@ -55,6 +55,44 @@ resource "random_password" "password" {
   special = false
 }
 
+# BlazingMQ TLS: a certificate authority, and the broker certificate signed by it
+# NOTE(arnaud) the clients verify the broker certificate against the CA, not its name
+resource "tls_private_key" "bmq_ca" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "bmq_ca" {
+  private_key_pem       = tls_private_key.bmq_ca.private_key_pem
+  is_ca_certificate     = true
+  validity_period_hours = 87600
+  allowed_uses          = ["cert_signing", "crl_signing"]
+  subject {
+    common_name = "blazingmq-ca"
+  }
+}
+
+resource "tls_private_key" "bmq" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_cert_request" "bmq" {
+  private_key_pem = tls_private_key.bmq.private_key_pem
+  dns_names       = ["blazingmq", "*.xip.opensteak.fr"]
+  subject {
+    common_name = "blazingmq"
+  }
+}
+
+resource "tls_locally_signed_cert" "bmq" {
+  cert_request_pem      = tls_cert_request.bmq.cert_request_pem
+  ca_private_key_pem    = tls_private_key.bmq_ca.private_key_pem
+  ca_cert_pem           = tls_self_signed_cert.bmq_ca.cert_pem
+  validity_period_hours = 87600
+  allowed_uses          = ["digital_signature", "key_encipherment", "server_auth"]
+}
+
 data "openstack_networking_network_v2" "public" {
   name = "public"
 }
@@ -92,7 +130,7 @@ resource "openstack_networking_port_v2" "octavia_port" {
 # Server group
 #
 resource "openstack_compute_servergroup_v2" "compute-server-group" {
-  name = "${terraform.workspace}-compute-server-group"
+  name     = "${terraform.workspace}-compute-server-group"
   policies = ["soft-anti-affinity"]
 }
 
@@ -118,6 +156,9 @@ resource "openstack_compute_instance_v2" "k8s" {
       os_version  = var.openstack_version
       branch      = coalesce(var.bootstrap_branch, var.openstack_version)
       messaging   = var.messaging
+      bmq_ca_cert = tls_self_signed_cert.bmq_ca.cert_pem
+      bmq_cert    = tls_locally_signed_cert.bmq.cert_pem
+      bmq_key     = tls_private_key.bmq.private_key_pem_pkcs8
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index].mac_address
     }
   )
@@ -149,6 +190,7 @@ resource "openstack_compute_instance_v2" "computes" {
       os_version  = var.openstack_version
       branch      = coalesce(var.bootstrap_branch, var.openstack_version)
       messaging   = var.messaging
+      bmq_ca_cert = tls_self_signed_cert.bmq_ca.cert_pem
       hostname    = "compute-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + 1].mac_address
@@ -189,6 +231,7 @@ resource "openstack_compute_instance_v2" "networks" {
       os_version  = var.openstack_version
       branch      = coalesce(var.bootstrap_branch, var.openstack_version)
       messaging   = var.messaging
+      bmq_ca_cert = tls_self_signed_cert.bmq_ca.cert_pem
       hostname    = "network-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index + var.compute_count].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + var.compute_count + 1].mac_address
