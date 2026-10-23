@@ -23,7 +23,7 @@ PermanentMACAddress=${mac_octavia}
 Address=172.21.0.5/16
 EOF
 
-systemctl restart systemd-udev-trigger.service
+wait_for_interfaces octavia
 systemctl restart systemd-networkd.service
 
 # Tune a little bit the number of open files

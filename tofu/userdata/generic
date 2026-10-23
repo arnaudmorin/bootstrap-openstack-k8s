@@ -12,6 +12,24 @@ function log_handler {
 
 exec &> >(log_handler)
 
+# NOTE(arnaud) the public and octavia ports are attached by tofu after the
+# instance is created (see the attach_* resources in main.tf), so their
+# interfaces can show up before or after the .link files that name them are
+# written. udev only applies a .link file when an interface is added: trigger
+# it again until every interface has its name.
+function wait_for_interfaces {
+  local name i
+  for name in "$@"; do
+    for i in $(seq 1 60); do
+      ip link show "$name" &>/dev/null && break
+      udevadm trigger --action=add --subsystem-match=net
+      udevadm settle
+      sleep 5
+    done
+    ip link show "$name" &>/dev/null || echo "WARNING: no interface named $name"
+  done
+}
+
 # Update apt cache
 apt-get update
 

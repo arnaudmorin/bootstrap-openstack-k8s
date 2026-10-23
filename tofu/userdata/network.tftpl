@@ -23,7 +23,7 @@ PermanentMACAddress=${mac_octavia}
 Name=octavia
 EOF
 
-systemctl restart systemd-udev-trigger.service
+wait_for_interfaces public octavia
 
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${branch}
 
