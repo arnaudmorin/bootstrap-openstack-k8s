@@ -29,6 +29,7 @@ Table of Contents
   * [Skyline](#skyline)
   * [Garage (S3)](#garage-s3)
   * [Tempest](#tempest)
+    * [Without an external network](#without-an-external-network)
   * [In case of error \- debugging](#in-case-of-error---debugging)
   * [Collect and centralize logs](#collect-and-centralize-logs)
 * [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)
@@ -476,6 +477,26 @@ bash tempest/run-tests.sh --regex mistral_tempest_tests   # mistral specific bec
 ```
 
 The workspace (config, results, logs) lives in `/root/tempest-workspace` (`etc/tempest.conf`, `.stestr/`).
+
+### Without an external network
+
+Tempest can run before any external network is created (see `create_network_public` in [Populate your OpenStack with default values](#populate-your-openstack-with-default-values)).
+There is then no floating IP to reach the servers, and `run-tests.sh` detects it (`openstack network list --external` is empty):
+
+* `tempest.conf` is generated with `validation.run_validation = false`: tests do not ssh into the servers, and the tests which need it are skipped,
+* the default smoke run excludes the neutron plugin tests which create floating IPs anyway (`test_tag.TagFloatingIpTestJSON` and `test_tag.TagFilterFloatingIpTestJSON`).
+
+When you pass your own arguments (e.g. `--regex`), nothing is excluded: tests which need a floating IP fail. Exclude them yourself, for example:
+
+```bash
+bash tempest/run-tests.sh --regex neutron_tempest_plugin.api --exclude-regex 'FloatingIp'
+```
+
+`tempest.conf` is only generated once: after adding an external network, regenerate it to run the validation tests again:
+
+```bash
+bash tempest/run-tests.sh --recreate
+```
 
 ## In case of error - debugging
 
