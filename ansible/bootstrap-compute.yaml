@@ -46,6 +46,10 @@
     with_items:
       - "openstack-nova_{{ deb_version }}_all.deb"
       - "openstack-neutron_{{ deb_version }}_all.deb"
+    # NOTE(arnaud) restart the services on upgrades, so that they run the new code
+    notify:
+      - restart nova
+      - restart neutron
 
   - name: "[workaround] disable ipv6"   # NOTE(arnaud) we cant use IPv6 for now, because we are all using the same flat vlan 0 network for public routing, and IPv6 is detecting duplicates IPs.
     ansible.posix.sysctl:
