@@ -22,6 +22,8 @@ data:
     # makes POSTs fail non-retryably as an intermittent traefik 500/502
     # under concurrent load (e.g. tempest create_subnet).
     add-header = Connection: close
+    # NOTE(arnaud) do not log the kubelet readiness probe requests
+    route-user-agent = ^kube-probe/ donotlog:
   placement.conf: |
     [DEFAULT]
     [api]
