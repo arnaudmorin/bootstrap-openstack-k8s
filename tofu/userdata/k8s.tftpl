@@ -219,6 +219,9 @@ frep files/openrc.in:/root/openrc_admin --load config/config.yaml \
      -e openrc_user=admin -e openrc_project=admin
 frep files/openrc.in:/root/openrc_demo --load config/config.yaml \
      -e openrc_user=demo -e openrc_project=demo
+mkdir -p /root/.config/openstack
+frep files/clouds.yaml.in:/root/.config/openstack/clouds.yaml --load config/config.yaml
+chmod 600 /root/.config/openstack/clouds.yaml
 cp files/helper /root/helper
 
 # Create keystone resources

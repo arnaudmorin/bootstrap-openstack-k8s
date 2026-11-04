@@ -22,6 +22,7 @@ Table of Contents
   * [playbook](#playbook)
 * [Test your OpenStack deployment](#test-your-openstack-deployment)
   * [openrc\_admin](#openrc_admin)
+  * [clouds\.yaml](#cloudsyaml)
   * [Keystone](#keystone)
   * [Glance](#glance)
   * [Neutron](#neutron)
@@ -354,6 +355,20 @@ Source this file:
 ```bash
 source /root/openrc_admin
 ```
+
+## clouds.yaml
+
+The same credentials are also in `/root/.config/openstack/clouds.yaml`, with one cloud per user: `admin`, `demo` and `octavia`.
+`extra/add-project.sh` adds an entry for each new project.
+
+Pick a cloud instead of sourcing an openrc file:
+```bash
+export OS_CLOUD=admin
+# or, for a single command
+openstack --os-cloud demo server list
+```
+
+Do not mix both in the same shell: the `OS_*` variables from an openrc file override the values from `clouds.yaml`.
 
 Now try each element of your `OpenStack`
 

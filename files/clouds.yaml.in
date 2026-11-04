@@ -1,0 +1,31 @@
+clouds:
+  admin:
+    auth:
+      auth_url: http://keystone.{{.domain}}/v3
+      username: admin
+      password: "{{.password}}"
+      project_name: admin
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    identity_api_version: 3
+  demo:
+    auth:
+      auth_url: http://keystone.{{.domain}}/v3
+      username: demo
+      password: "{{.password}}"
+      project_name: demo
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    identity_api_version: 3
+  octavia:
+    auth:
+      auth_url: http://keystone.{{.domain}}/v3
+      username: octavia
+      password: "{{.password}}"
+      project_name: service
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    identity_api_version: 3

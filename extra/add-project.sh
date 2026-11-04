@@ -42,3 +42,22 @@ rm /tmp/add-project-keystone-$$
 
 echo_green "Creating /root/openrc_$1"
 frep /root/bootstrap-openstack-k8s/files/openrc.in:/root/openrc_$1 --load /root/bootstrap-openstack-k8s/config/config.yaml -e openrc_user=$1_user1 -e openrc_project=$1 -e password=$2
+
+if grep -q "^  $1:$" /root/.config/openstack/clouds.yaml; then
+    echo_green "Cloud $1 already in /root/.config/openstack/clouds.yaml"
+    exit 0
+fi
+echo_green "Adding cloud $1 to /root/.config/openstack/clouds.yaml"
+DOMAIN=$(awk '/^domain:/ {print $2}' /root/bootstrap-openstack-k8s/config/config.yaml)
+cat <<EOF >> /root/.config/openstack/clouds.yaml
+  $1:
+    auth:
+      auth_url: http://keystone.${DOMAIN}/v3
+      username: $1_user1
+      password: "$2"
+      project_name: $1
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    identity_api_version: 3
+EOF
