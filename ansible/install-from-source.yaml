@@ -1,0 +1,58 @@
+---
+# Install an openstack project from its master branch in /opt/openstack/<project>
+# Vars: project, packages (apt dependencies), extra_pip (pip requirements)
+- name: install {{ project }} dependencies
+  apt:
+    name: "{{ ['git', 'build-essential', 'pkgconf', 'python3-dev', 'python3-venv'] + packages }}"
+    update_cache: yes
+
+- name: clone {{ project }}
+  git:
+    repo: "https://opendev.org/openstack/{{ project }}.git"
+    dest: "/opt/openstack/src/{{ project }}"
+    version: master
+    force: yes
+  register: src
+
+- name: "[workaround] use the venv rootwrap"   # NOTE(arnaud) nova does not allow to configure the rootwrap path
+  replace:
+    path: /opt/openstack/src/nova/nova/utils.py
+    regexp: "sudo nova-rootwrap"
+    replace: "sudo /opt/openstack/nova/bin/nova-rootwrap"
+  when: project == 'nova'
+
+- name: create {{ project }} venv
+  command: python3 -m venv /opt/openstack/{{ project }}
+  args:
+    creates: /opt/openstack/{{ project }}/bin/pip
+
+- name: check if {{ project }} is installed
+  stat:
+    path: /opt/openstack/{{ project }}/bin/{{ project }}-rootwrap
+  register: installed
+
+- name: install {{ project }}
+  pip:
+    name: "{{ ['/opt/openstack/src/' ~ project] + extra_pip }}"
+    executable: /opt/openstack/{{ project }}/bin/pip
+    extra_args: "-c https://opendev.org/openstack/requirements/raw/branch/master/upper-constraints.txt"
+  when: src.changed or not installed.stat.exists
+  notify:
+    - restart {{ project }}
+
+# NOTE(arnaud) out of upper-constraints, which pins oslo.messaging
+- name: install custom oslo.messaging and blazingmq in {{ project }}
+  pip:
+    name:
+      - git+https://github.com/arnaudmorin/oslo.messaging.git@master
+      - https://github.com/arnaudmorin/blazingmq-sdk-python/releases/download/v1.2.3-secure.cdec8fc/blazingmq-1.2.3-cp313-cp313-manylinux_2_28_x86_64.whl
+    executable: /opt/openstack/{{ project }}/bin/pip
+  when: src.changed or not installed.stat.exists
+  notify:
+    - restart {{ project }}
+
+- name: set {{ project }} rootwrap exec_dirs
+  lineinfile:
+    path: /opt/openstack/{{ project }}/etc/{{ project }}/rootwrap.conf
+    regexp: "^exec_dirs"
+    line: "exec_dirs=/opt/openstack/{{ project }}/bin,/sbin,/usr/sbin,/bin,/usr/bin,/usr/local/bin,/usr/local/sbin,/etc/neutron/kill_scripts"

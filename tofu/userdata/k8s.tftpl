@@ -150,6 +150,14 @@ sed -i -r "s/^messaging: .*/messaging: ${messaging}/" config/config.yaml
 webui_auth=$(htpasswd -nbBC 10 admin "${password}")
 sed -i "s|webui_auth_hash|$${webui_auth}|" config/config.yaml
 
+# NOTE(arnaud) master branch: build the images from the master branch of each
+# project, this takes a while. The BlazingMQ broker is only built when used.
+%{ if messaging == "bmq" ~}
+bash /root/openstack-docker/build-for-k3s.sh
+%{ else ~}
+bash /root/openstack-docker/build-for-k3s.sh $(cd /root/openstack-docker && ls -d */ | tr -d / | grep -vx blazingmq)
+%{ endif ~}
+
 # Stakater reloader
 # This is not mandatory, but useful to auto-restart deployments / statefulset when a configmap change
 kubectl apply -f https://raw.githubusercontent.com/stakater/Reloader/v1.4.8/deployments/kubernetes/reloader.yaml

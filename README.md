@@ -200,6 +200,14 @@ Authentication and TLS rely on forks, until they are merged upstream:
 
 The certificates come from the `tls` provider: run `tofu init` again after updating.
 
+### Master branch
+
+On the `master` branch, everything runs from the master branch of each OpenStack project:
+- k8s-0 builds the images itself, from the master branch of `openstack-docker`
+  (`build-for-k3s.sh`). Building takes a while; logs land in `/var/log/build-<image>.log`.
+- the compute and network nodes install nova and neutron from source instead of the debs
+  (`ansible/install-from-source.yaml`).
+
 ### Testing a branch
 
 The nodes clone this repository from GitHub, on the branch named after `openstack_version` (e.g. `2026.2`).
