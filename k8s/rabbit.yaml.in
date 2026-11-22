@@ -7,6 +7,41 @@ data:
   rabbitmq.conf: |
     default_pass = {{.password}}
     default_user = openstack
+    # NOTE(arnaud) rabbit has no persistent volume, so policies are (re)loaded
+    # from definitions.json at every boot instead of using rabbitmqctl set_policy
+    load_definitions = /etc/rabbitmq/definitions.json
+  # The openstack user/vhost/permissions are also declared here so that they
+  # exist no matter how the definitions import interacts with default_user.
+  definitions.json: |
+    {
+      "users": [
+        {"name": "openstack", "password": "{{.password}}", "tags": ["administrator"]}
+      ],
+      "vhosts": [
+        {"name": "/"}
+      ],
+      "permissions": [
+        {"user": "openstack", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}
+      ],
+      "policies": [
+        {
+          "vhost": "/",
+          "name": "quorum-policy",
+          "pattern": "^(?!amq\\.).*",
+          "apply-to": "quorum_queues",
+          "priority": 0,
+          "definition": {"expires": 86400000, "message-ttl": 600000}
+        },
+        {
+          "vhost": "/",
+          "name": "stream-policy",
+          "pattern": ".*_fanout.*",
+          "apply-to": "streams",
+          "priority": 0,
+          "definition": {"max-length-bytes": 15000000, "stream-max-segment-size-bytes": 5000000}
+        }
+      ]
+    }
 ---
 apiVersion: v1
 kind: Service
@@ -89,6 +124,9 @@ spec:
         - name: rabbit-conf
           mountPath: "/etc/rabbitmq/rabbitmq.conf"
           subPath: "rabbitmq.conf"
+        - name: rabbit-conf
+          mountPath: "/etc/rabbitmq/definitions.json"
+          subPath: "definitions.json"
       volumes:
       - name: rabbit-conf
         configMap:
