@@ -600,8 +600,8 @@ openstack server list
 ssh cirros@ip_of_server         # password is gocubsgo
 
 # If you dont have a real public IP, you can reach the console using the serial and osconsole
-openstack console url show p1 --serial
-osconsole 'ws://xyz'
+osconsole_search p1
+# More info about osconsole: https://github.com/arnaudmorin/osconsole
 ```
 
 # Notes
