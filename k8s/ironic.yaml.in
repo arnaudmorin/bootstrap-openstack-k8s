@@ -1,0 +1,406 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ironic-conf
+data:
+  uwsgi-api.ini: |
+    [uwsgi]
+    http-socket = 0.0.0.0:6385
+    virtualenv = /opt/openstack/ironic/
+    module = ironic.wsgi.api
+    buffer-size = 65535
+    lazy-apps = true
+    processes = 4
+    harakiri = 60
+    enable-threads = true
+    master = true
+    thunder-lock = true
+    add-header = Connection: close
+    route-user-agent = ^kube-probe/ donotlog:
+  ironic.conf: |
+    [DEFAULT]
+    transport_url = {{ index .transport_url .messaging }}
+    auth_strategy = keystone
+    # NOTE(aruan) fixed name, so the nodes keep their conductor when the pod is recreated
+    host = ironic-conductor
+    my_ip = {{.baremetal_conductor_ip}}
+    enabled_hardware_types = redfish
+    enabled_bios_interfaces = no-bios
+    enabled_boot_interfaces = ipxe
+    enabled_console_interfaces = no-console
+    enabled_deploy_interfaces = direct
+    enabled_firmware_interfaces = no-firmware
+    enabled_inspect_interfaces = agent,no-inspect
+    enabled_management_interfaces = redfish
+    enabled_network_interfaces = flat
+    enabled_power_interfaces = redfish
+    enabled_raid_interfaces = no-raid
+    enabled_rescue_interfaces = no-rescue
+    enabled_vendor_interfaces = no-vendor
+    default_network_interface = flat
+    # NOTE(aruan) lets nova-compute, with the service role in the service project, see every node
+    rbac_service_role_elevated_access = true
+    [agent]
+    # NOTE(aruan) glance stores images in garage (S3), not swift: the conductor
+    # downloads them and serves them to the agent over http
+    image_download_source = http
+    [conductor]
+    automated_clean = true
+    # NOTE(aruan) a power off is a graceful nova stop, which can take more than the
+    # default 60 seconds when the guest ignores the ACPI request
+    power_state_change_timeout = 180
+    [database]
+    connection = mysql+pymysql://root:{{.password}}@mysql-ironic/ironic
+    [deploy]
+    http_url = http://{{.baremetal_conductor_ip}}:8080
+    http_root = /var/lib/ironic/httpboot
+    fast_track = true
+    [keystone_authtoken]
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = ironic
+    user_domain_name = Default
+    password = {{.password}}
+    www_authenticate_uri = http://keystone.{{.domain}}
+    region_name = RegionOne
+    auth_type = password
+    [service_catalog]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = ironic
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    # NOTE(aruan) the agent runs on the provisioning network, it cannot reach the public endpoint
+    endpoint_override = http://{{.baremetal_conductor_ip}}:6385
+    [pxe]
+    tftp_root = /var/lib/ironic/tftpboot
+    tftp_master_path = /var/lib/ironic/tftpboot/master_images
+    [neutron]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = ironic
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    cleaning_network = provisioning
+    provisioning_network = provisioning
+    [glance]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = ironic
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    [nova]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = ironic
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+    [oslo_concurrency]
+    lock_path = /var/lib/ironic/tmp
+    [oslo_messaging_rabbit]
+    rabbit_quorum_queue = True
+    rabbit_transient_quorum_queue = True
+    rabbit_qos_prefetch_count = 1
+    use_queue_manager = True
+    rabbit_stream_fanout = True
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ironic
+spec:
+  selector:
+    app: ironic
+  ports:
+    - port: 6385
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ironic
+  annotations:
+    spec.ingressClassName: traefik
+spec:
+  rules:
+  - host: ironic.{{.domain}}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ironic
+            port:
+              number: 6385
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ironic
+  labels:
+    app: ironic
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  # NOTE(aruan) the hostPorts below cannot be held by two pods: stop the old one first
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ironic
+  template:
+    metadata:
+      labels:
+        app: ironic
+    spec:
+      initContainers:
+      - name: ironic-dbsync
+        image: ghcr.io/arnaudmorin/openstack-ironic:{{.openstack_version}}
+        command: [ "/opt/openstack/ironic/bin/ironic-dbsync", "--config-file", "/etc/ironic/ironic.conf", "upgrade" ]
+        volumeMounts:
+        - name: ironic-conf
+          mountPath: /etc/ironic/ironic.conf
+          subPath: ironic.conf
+      containers:
+      - name: ironic-api
+        image: ghcr.io/arnaudmorin/openstack-ironic:{{.openstack_version}}
+        command: [ "/opt/openstack/ironic/bin/uwsgi", "--ini", "/etc/uwsgi/ironic-api.ini" ]
+        # NOTE(aruan) the agent on the provisioning network reaches the API and the
+        # http server through the conductor IP of k8s-0 (see tofu/userdata/k8s.tftpl)
+        ports:
+        - containerPort: 6385
+          hostPort: 6385
+          hostIP: {{.baremetal_conductor_ip}}
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 6385
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: ironic-conf
+          mountPath: /etc/ironic/ironic.conf
+          subPath: ironic.conf
+        - name: ironic-conf
+          mountPath: /etc/uwsgi/ironic-api.ini
+          subPath: uwsgi-api.ini
+      - name: ironic-conductor
+        image: ghcr.io/arnaudmorin/openstack-ironic:{{.openstack_version}}
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/ironic/bin/ironic-conductor", "--config-file", "/etc/ironic/ironic.conf" ]
+        volumeMounts:
+        - name: ironic-conf
+          mountPath: /etc/ironic/ironic.conf
+          subPath: ironic.conf
+        - name: ironic-data
+          mountPath: /var/lib/ironic
+      - name: ironic-http
+        image: ghcr.io/arnaudmorin/openstack-ironic:{{.openstack_version}}
+        command: [ "bash", "-c", "mkdir -p /var/lib/ironic/httpboot && exec python3 -m http.server 8080 --directory /var/lib/ironic/httpboot" ]
+        ports:
+        - containerPort: 8080
+          hostPort: 8080
+          hostIP: {{.baremetal_conductor_ip}}
+        volumeMounts:
+        - name: ironic-data
+          mountPath: /var/lib/ironic
+      volumes:
+      - name: ironic-conf
+        configMap:
+          name: ironic-conf
+      - name: ironic-data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sushy-conf
+data:
+  emulator.conf: |
+    SUSHY_EMULATOR_LISTEN_IP = '0.0.0.0'
+    SUSHY_EMULATOR_LISTEN_PORT = 8000
+    SUSHY_EMULATOR_OS_CLOUD = 'ovh'
+    SUSHY_EMULATOR_OS_RESCUE_PXE_BOOT = True
+    SUSHY_EMULATOR_OS_RESCUE_PXE_IMAGE_BIOS = '{{.baremetal_prefix}}-ipxe-bios'
+    SUSHY_EMULATOR_OS_RESCUE_PXE_IMAGE_UEFI = '{{.baremetal_prefix}}-ipxe-uefi'
+    SUSHY_EMULATOR_STATE_DIR = '/var/lib/sushy'
+    # NOTE(aruan) the credential can act on every instance of the project: only expose
+    # the bare metal ones, listed by sync_baremetal_nodes (files/helper). None until then.
+    try:
+        with open('/etc/sushy/allowed/instances') as f:
+            SUSHY_EMULATOR_ALLOWED_INSTANCES = f.read().split()
+    except FileNotFoundError:
+        SUSHY_EMULATOR_ALLOWED_INSTANCES = []
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sushy-state
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sushy-emulator
+spec:
+  selector:
+    app: sushy-emulator
+  ports:
+    - port: 8000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sushy-emulator
+  labels:
+    app: sushy-emulator
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: sushy-emulator
+  template:
+    metadata:
+      labels:
+        app: sushy-emulator
+    spec:
+      containers:
+      - name: sushy-emulator
+        image: ghcr.io/arnaudmorin/openstack-sushy-tools:{{.openstack_version}}
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/sushy-tools/bin/sushy-emulator", "--config", "/etc/sushy/emulator.conf" ]
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: sushy-conf
+          mountPath: /etc/sushy/emulator.conf
+          subPath: emulator.conf
+        - name: sushy-allowed
+          mountPath: /etc/sushy/allowed
+        - name: sushy-clouds
+          mountPath: /etc/openstack/clouds.yaml
+          subPath: clouds.yaml
+        - name: sushy-state
+          mountPath: /var/lib/sushy
+      volumes:
+      - name: sushy-conf
+        configMap:
+          name: sushy-conf
+      - name: sushy-allowed
+        configMap:
+          name: sushy-allowed
+          optional: true
+      - name: sushy-clouds
+        secret:
+          secretName: sushy-clouds
+      - name: sushy-state
+        persistentVolumeClaim:
+          claimName: sushy-state
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-ironic-conf
+data:
+  nova-ironic.conf: |
+    [DEFAULT]
+    host = ironic
+    compute_driver = ironic.IronicDriver
+    reserved_host_memory_mb = 0
+    # NOTE(aruan) the nodes have no route to the metadata service from the provisioning network
+    force_config_drive = true
+    [compute]
+    # NOTE(aruan) a failed bare metal build rarely means this service is broken: never disable it
+    consecutive_build_service_disable_threshold = 0
+    [ironic]
+    auth_type = password
+    auth_url = http://keystone.{{.domain}}/v3
+    project_name = service
+    project_domain_name = Default
+    username = ironic
+    user_domain_name = Default
+    password = {{.password}}
+    region_name = RegionOne
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nova-compute-ironic
+  labels:
+    app: nova-compute-ironic
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nova-compute-ironic
+  template:
+    metadata:
+      labels:
+        app: nova-compute-ironic
+    spec:
+      initContainers:
+      - name: wait-for-nova-api
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: ["bash", "-c", "until curl -s --max-time 5 -o /dev/null http://nova-api:8774/; do echo 'waiting for nova-api db/cell init...'; sleep 3; done"]
+      containers:
+      - name: nova-compute
+        image: ghcr.io/arnaudmorin/openstack-nova:{{.openstack_version}}
+        command: [ "dumb-init", "--single-child", "--" ]
+        args: [ "/opt/openstack/nova/bin/nova-compute", "--config-file", "/etc/nova/nova.conf", "--config-file", "/etc/nova/nova-ironic.conf" ]
+        volumeMounts:
+        - name: nova-conf
+          mountPath: /etc/nova/nova.conf
+          subPath: nova.conf
+        - name: nova-ironic-conf
+          mountPath: /etc/nova/nova-ironic.conf
+          subPath: nova-ironic.conf
+        - name: nova-state
+          mountPath: /var/lib/nova
+      volumes:
+      - name: nova-conf
+        configMap:
+          name: nova-conf
+      - name: nova-ironic-conf
+        configMap:
+          name: nova-ironic-conf
+      - name: nova-state
+        emptyDir: {}

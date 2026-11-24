@@ -142,14 +142,22 @@
     command: ovs-vsctl set-fail-mode br-flat standalone
     when: ovs_br_flat_fail_mode.stdout != 'standalone'
 
-# NOTE(arnaud): this was used for ironic
-# maybe later
-#  - name: add third network card in br-flat
-#    openvswitch_port:
-#      bridge: br-flat
-#      port: "{{ allNetworkInterfaces[2].device }}"
-#      state: present
-#    when: allNetworkInterfaces | length > 2
+  # NOTE(aruan) the baremetal interface exists only when tofu creates bare metal nodes,
+  # it carries the Ironic provisioning network (physnet flat)
+  - name: check baremetal port in br-flat
+    command: ovs-vsctl port-to-br baremetal
+    register: ovs_br_flat_port
+    ignore_errors: true
+    when: "'baremetal' in ansible_interfaces"
+
+  - name: set baremetal port in br-flat
+    command: ovs-vsctl add-port br-flat baremetal
+    when: "'baremetal' in ansible_interfaces and ovs_br_flat_port.stdout != 'br-flat'"
+
+  - name: setting baremetal interface up
+    command: ip link set baremetal up
+    changed_when: false
+    when: "'baremetal' in ansible_interfaces"
 
 
   - name: create systemd files

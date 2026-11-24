@@ -68,3 +68,10 @@ garage_webui_auth: "webui_auth_hash"
 # Garage S3 credentials for the glance image backend (generated at bootstrap)
 garage_glance_key: "glance_s3_key"
 garage_glance_secret: "glance_s3_secret"
+
+# Ironic, enabled by tofu with baremetal_count > 0: the bare metal nodes are the
+# instances <prefix>-baremetal-N of the cloud hosting the cluster
+baremetal: false
+baremetal_prefix: "baremetal_prefix"
+baremetal_firmware: "baremetal_firmware"
+baremetal_conductor_ip: 172.22.0.5

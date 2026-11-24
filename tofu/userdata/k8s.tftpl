@@ -22,9 +22,33 @@ PermanentMACAddress=${mac_octavia}
 [Network]
 Address=172.21.0.5/16
 EOF
+%{ if baremetal ~}
 
-wait_for_interfaces octavia
+cat <<'EOF' >/etc/systemd/network/10-baremetal.link
+[Match]
+PermanentMACAddress=${mac_baremetal}
+[Link]
+Name=baremetal
+EOF
+
+cat <<'EOF' >/etc/systemd/network/10-baremetal.network
+[Match]
+PermanentMACAddress=${mac_baremetal}
+[Network]
+Address=172.22.0.5/16
+EOF
+%{ endif ~}
+
+wait_for_interfaces octavia%{ if baremetal } baremetal%{ endif }
 systemctl restart systemd-networkd.service
+%{ if baremetal ~}
+
+# Credential of sushy-emulator, to drive the bare metal instances (see tofu/main.tf)
+install -d -m 700 /root/baremetal
+(umask 077; cat <<'EOF' >/root/baremetal/clouds.yaml
+${sushy_cloud}EOF
+)
+%{ endif ~}
 
 # Tune a little bit the number of open files
 # This is useful for stern
@@ -149,6 +173,11 @@ sed -i -r "s/^messaging: .*/messaging: ${messaging}/" config/config.yaml
 # garage-webui login: bcrypt "admin:hash" (use | as sed delimiter, the hash contains /)
 webui_auth=$(htpasswd -nbBC 10 admin "${password}")
 sed -i "s|webui_auth_hash|$${webui_auth}|" config/config.yaml
+%{ if baremetal ~}
+sed -i -r "s/^baremetal: .*/baremetal: true/" config/config.yaml
+sed -i -r "s/^baremetal_prefix: .*/baremetal_prefix: ${baremetal_prefix}/" config/config.yaml
+sed -i -r "s/^baremetal_firmware: .*/baremetal_firmware: ${baremetal_firmware}/" config/config.yaml
+%{ endif ~}
 
 # Stakater reloader
 # This is not mandatory, but useful to auto-restart deployments / statefulset when a configmap change
@@ -165,6 +194,9 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
+%{ if baremetal ~}
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=ironic | kubectl apply -f -
+%{ endif ~}
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-placement
@@ -174,6 +206,9 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
+%{ if baremetal ~}
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-ironic
+%{ endif ~}
 
 # Redis (oslo.cache backend)
 frep k8s/redis.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -210,6 +245,9 @@ python3 -m venv /opt/oscli || echo "Venv creation failed"
 /opt/oscli/bin/pip install --upgrade pip
 /opt/oscli/bin/pip install python-openstackclient python-mistralclient python-octaviaclient osc-placement osprofiler redis
 /opt/oscli/bin/pip install git+https://github.com/arnaudmorin/neutron-wireguard-client
+%{ if baremetal ~}
+/opt/oscli/bin/pip install python-ironicclient
+%{ endif ~}
 
 ln -s /opt/oscli/bin/openstack /usr/local/bin/openstack
 mkdir -p /etc/bash_completion.d/
@@ -366,5 +404,20 @@ sed -ir "s/amp_secgroup_list/$${octavia_secgroup}/" config/config.yaml
 
 frep k8s/octavia.yaml.in:- --load config/config.yaml | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/octavia-api
+%{ if baremetal ~}
+
+# Ironic: the bare metal nodes are instances of the cloud hosting the cluster,
+# driven by sushy-emulator with the credential written above (see tofu/main.tf)
+echo "alias frep-ironic='frep /root/bootstrap-openstack-k8s/k8s/ironic.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'" >> /etc/profile.d/aliases.sh
+source /root/openrc_admin
+create_network_provisioning
+create_images_ipa
+create_flavor_baremetal
+kubectl create secret generic sushy-clouds --from-file=clouds.yaml=/root/baremetal/clouds.yaml
+frep k8s/ironic.yaml.in:- --load config/config.yaml | kubectl apply -f -
+kubectl wait --for=condition=available --timeout=120s deployment/ironic
+kubectl wait --for=condition=available --timeout=60s deployment/sushy-emulator
+sync_baremetal_nodes
+%{ endif ~}
 
 echo "done"

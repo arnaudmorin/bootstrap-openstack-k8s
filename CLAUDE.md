@@ -88,6 +88,6 @@ frep k8s/keystone.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
 ## Conventions when editing
 
-- Keep code comments in the existing `# NOTE(arnaud) ...` style used across the templates and playbooks.
+- Keep code comments in the existing `# NOTE(<author>) ...` style used across the templates and playbooks, signed by whoever writes them (`NOTE(aruan)` for aruan's changes): never sign a new comment as someone else.
 - The bring-up order in `k8s.tftpl` matters and is guarded by `kubectl wait` calls — preserve dependency ordering (redis/rabbit/mysql before keystone, keystone before the rest). Race conditions on first boot are expected; README documents the `rollout restart` / job-delete recovery steps.
 - `config/config.yaml`, `keystone-settings.yaml`, tfstate, `*.qcow2`, and the per-tool venvs are gitignored — don't commit them.

@@ -66,6 +66,14 @@ endpoints:
       public: http://barbican.{{.domain}}
       admin: http://barbican.{{.domain}}
       internal: http://barbican.{{.domain}}
+{{- if .baremetal }}
+  ironic:
+    service_type: baremetal
+    endpoints:
+      public: http://ironic.{{.domain}}
+      admin: http://ironic.{{.domain}}
+      internal: http://ironic.{{.domain}}
+{{- end }}
 users_roles:
   default:
     service:
@@ -115,6 +123,11 @@ users_roles:
         - service
         password: {{.password}}
       designate:
+        roles:
+        - admin
+        - service
+        password: {{.password}}
+      ironic:
         roles:
         - admin
         - service

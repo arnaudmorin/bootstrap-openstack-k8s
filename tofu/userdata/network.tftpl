@@ -22,8 +22,17 @@ PermanentMACAddress=${mac_octavia}
 [Link]
 Name=octavia
 EOF
+%{ if baremetal ~}
 
-wait_for_interfaces public octavia
+cat <<'EOF' >/etc/systemd/network/10-baremetal.link
+[Match]
+PermanentMACAddress=${mac_baremetal}
+[Link]
+Name=baremetal
+EOF
+%{ endif ~}
+
+wait_for_interfaces public octavia%{ if baremetal } baremetal%{ endif }
 
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${branch}
 

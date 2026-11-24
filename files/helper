@@ -163,3 +163,90 @@ function osconsole_search() {
     local url=$(openstack console url show --serial $1 -f json | jq -r ".url")
     osconsole $url
 }
+
+function create_network_provisioning(){(
+    set -xv
+    openstack network create \
+     --share \
+     --provider-physical-network flat \
+     --provider-network-type flat \
+     provisioning
+
+    openstack subnet create \
+     --network provisioning \
+     --subnet-range 172.22.0.0/16 \
+     --allocation-pool start=172.22.1.0,end=172.22.255.254 \
+     --gateway none \
+     provisioning
+)}
+
+function create_images_ipa(){(
+    set -xve
+    release=$(awk -F'"' '/^openstack_version:/ {print $2}' /root/bootstrap-openstack-k8s/config/config.yaml)
+    cd /root
+    for f in kernel initramfs; do
+        curl -fLO https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-debian-stable-$release.$f
+        curl -fLO https://tarballs.opendev.org/openstack/ironic-python-agent/dib/files/ipa-debian-stable-$release.$f.sha256
+        sha256sum -c ipa-debian-stable-$release.$f.sha256
+    done
+    openstack image create --file ipa-debian-stable-$release.kernel --container-format aki --disk-format aki --community ipa-kernel
+    openstack image create --file ipa-debian-stable-$release.initramfs --container-format ari --disk-format ari --community ipa-ramdisk
+)}
+
+function create_flavor_baremetal(){(
+    set -xv
+    openstack flavor create --vcpus 1 --ram 1024 --disk 10 \
+     --property resources:CUSTOM_BAREMETAL=1 \
+     --property resources:VCPU=0 \
+     --property resources:MEMORY_MB=0 \
+     --property resources:DISK_GB=0 \
+     baremetal
+)}
+
+# NOTE(aruan) enrolls the instances <prefix>-baremetal-N in Ironic and removes the nodes
+# whose instance is gone: run it again after changing baremetal_count in tofu
+function sync_baremetal_nodes(){(
+    set -e
+    config=/root/bootstrap-openstack-k8s/config/config.yaml
+    prefix=$(awk '/^baremetal_prefix:/ {print $2}' $config | tr -d '"')
+    firmware=$(awk '/^baremetal_firmware:/ {print $2}' $config | tr -d '"')
+    # The cloud hosting the cluster, with the credential of sushy-emulator
+    host_cloud() {( unset $(compgen -v OS_); OS_CLIENT_CONFIG_FILE=/root/baremetal/clouds.yaml openstack --os-cloud ovh "$@" )}
+
+    instances=$(host_cloud server list --name "^$prefix-baremetal-" -f value -c ID -c Name)
+    echo "bare metal instances:"
+    echo "$instances"
+
+    kubectl create configmap sushy-allowed --from-literal=instances="$(echo "$instances" | awk '{print $1}' | xargs)" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    kubectl rollout restart deployment/sushy-emulator
+    kubectl rollout status deployment/sushy-emulator --timeout=180s
+
+    kernel=$(openstack image show ipa-kernel -f value -c id)
+    ramdisk=$(openstack image show ipa-ramdisk -f value -c id)
+    echo "$instances" | while read -r id name; do
+        [ -n "$id" ] || continue
+        openstack baremetal node show "$name" >/dev/null 2>&1 && continue
+        mac=$(host_cloud port list --server "$id" -f value -c "MAC Address" | head -1)
+        uuid=$(openstack baremetal node create --name "$name" --driver redfish \
+            --driver-info redfish_address=http://sushy-emulator:8000 \
+            --driver-info redfish_system_id=/redfish/v1/Systems/$id \
+            --driver-info deploy_kernel=$kernel \
+            --driver-info deploy_ramdisk=$ramdisk \
+            --resource-class baremetal \
+            --property capabilities=boot_mode:$firmware \
+            -f value -c uuid)
+        openstack baremetal port create "$mac" --node "$uuid" --physical-network flat
+        openstack baremetal node manage "$name" --wait 300
+        openstack baremetal node provide "$name"
+    done
+
+    openstack baremetal node list -f value -c Name -c "Provisioning State" | while read -r name state; do
+        case "$name" in "$prefix"-baremetal-*) ;; *) continue ;; esac
+        echo "$instances" | awk '{print $2}' | grep -qx "$name" && continue
+        case "$state" in
+            available|manageable|enroll) openstack baremetal node delete "$name" ;;
+            *) echo "WARNING: the instance of $name is gone but the node is $state: undeploy it first" ;;
+        esac
+    done
+)}
