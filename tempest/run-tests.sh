@@ -64,10 +64,10 @@ if [ "$RECREATE" = "1" ] || [ ! -f "$WS/etc/tempest.conf" ]; then
 
     # generate tempest.conf by discovering the running cloud as admin.
     title.print "Generating tempest.conf"
-    OVERRIDES=()
+    OVERRIDES=(volume.storage_protocol nfs)
     if [ "$NO_EXTERNAL_NET" = "1" ]; then
         echo "No external network, disabling validation (no ssh into servers)"
-        OVERRIDES=(validation.run_validation false)
+        OVERRIDES+=(validation.run_validation false)
     fi
     cd "$WS"
     "$VENV/bin/discover-tempest-config" \

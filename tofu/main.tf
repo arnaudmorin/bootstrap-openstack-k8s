@@ -125,6 +125,22 @@ resource "openstack_networking_port_v2" "octavia_port" {
   admin_state_up = "true"
 }
 
+# NOTE(arnaud) private network for the cinder NFS share, served by k8s-0
+resource "openstack_networking_network_v2" "storage" {
+  name                  = "${terraform.workspace}-storage"
+  port_security_enabled = false
+  value_specs = {
+    "provider:network_type" = "vrack"
+  }
+}
+
+resource "openstack_networking_port_v2" "storage_port" {
+  count          = var.compute_count + 1
+  name           = "${terraform.workspace}-storage-port-${count.index}"
+  network_id     = openstack_networking_network_v2.storage.id
+  admin_state_up = "true"
+}
+
 
 #
 # Server group
@@ -160,6 +176,7 @@ resource "openstack_compute_instance_v2" "k8s" {
       bmq_cert    = tls_locally_signed_cert.bmq.cert_pem
       bmq_key     = tls_private_key.bmq.private_key_pem_pkcs8
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index].mac_address
+      mac_storage = openstack_networking_port_v2.storage_port[count.index].mac_address
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -174,6 +191,12 @@ resource "openstack_compute_interface_attach_v2" "attach_octavia_k8s" {
   count       = 1
   instance_id = openstack_compute_instance_v2.k8s[count.index].id
   port_id     = openstack_networking_port_v2.octavia_port[count.index].id
+}
+
+resource "openstack_compute_interface_attach_v2" "attach_storage_k8s" {
+  count       = 1
+  instance_id = openstack_compute_instance_v2.k8s[count.index].id
+  port_id     = openstack_networking_port_v2.storage_port[count.index].id
 }
 
 resource "openstack_compute_instance_v2" "computes" {
@@ -194,6 +217,8 @@ resource "openstack_compute_instance_v2" "computes" {
       hostname    = "compute-${count.index}"
       mac_public  = openstack_networking_port_v2.public_port[count.index].mac_address
       mac_octavia = openstack_networking_port_v2.octavia_port[count.index + 1].mac_address
+      mac_storage = openstack_networking_port_v2.storage_port[count.index + 1].mac_address
+      ip_storage  = "172.22.0.${count.index + 10}"
     }
   )
   key_pair = openstack_compute_keypair_v2.zob.name
@@ -215,6 +240,12 @@ resource "openstack_compute_interface_attach_v2" "attach_octavia_computes" {
   count       = var.compute_count
   instance_id = openstack_compute_instance_v2.computes[count.index].id
   port_id     = openstack_networking_port_v2.octavia_port[count.index + 1].id
+}
+
+resource "openstack_compute_interface_attach_v2" "attach_storage_computes" {
+  count       = var.compute_count
+  instance_id = openstack_compute_instance_v2.computes[count.index].id
+  port_id     = openstack_networking_port_v2.storage_port[count.index + 1].id
 }
 
 resource "openstack_compute_instance_v2" "networks" {

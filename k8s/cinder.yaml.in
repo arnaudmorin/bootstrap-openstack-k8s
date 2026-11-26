@@ -47,12 +47,25 @@ data:
     auth_type = password
     [oslo_concurrency]
     lock_path = /var/lock/cinder
+    [nova]
+    auth_url = http://keystone.{{.domain}}/v3
+    auth_type = password
+    project_domain_name = Default
+    user_domain_name = Default
+    project_name = service
+    username = cinder
+    password = {{.password}}
+    region_name = RegionOne
     [nfs]
-    volume_driver=cinder.volume.drivers.nfs.NfsDriver
-    nas_host=10.201.95.118
-    nas_share_path=/zpool-bhs-000917/cinder-k8s
-    nfs_snapshot_support=True
-    nfs_mount_options='vers=3,nolock'
+    volume_driver = cinder.volume.drivers.nfs.NfsDriver
+    volume_backend_name = nfs
+    # NOTE(arnaud) NFS server on k8s-0, see k8s.tftpl
+    nas_host = 172.22.0.5
+    nas_share_path = /srv/cinder
+    nfs_snapshot_support = True
+    nfs_mount_options = vers=4.2
+    nas_secure_file_operations = False
+    nas_secure_file_permissions = False
     [cache]
     backend = dogpile.cache.redis
     redis_server = redis:6379
