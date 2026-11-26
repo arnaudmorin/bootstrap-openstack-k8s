@@ -48,7 +48,8 @@ data:
     buffer-size = 65535
     lazy-apps = true
     processes = 8
-    harakiri = 60
+    harakiri = 300
+    harakiri-verbose = true
     enable-threads = true
     master = true
     thunder-lock = true

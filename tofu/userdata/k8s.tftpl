@@ -99,6 +99,22 @@ Match host="compute-*,network-*"
       IdentityFile /root/bootstrap-openstack-k8s/ansible/files/zob
 EOF
 
+# NOTE(arnaud) traefik v3 cuts request bodies after 60s by default, which
+# breaks long image uploads to glance
+mkdir -p /var/lib/rancher/k3s/server/manifests
+cat <<EOF > /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    additionalArguments:
+      - "--entryPoints.web.transport.respondingTimeouts.readTimeout=0"
+      - "--entryPoints.websecure.transport.respondingTimeouts.readTimeout=0"
+EOF
+
 # Install k3s
 curl -sfL https://get.k3s.io | sh -
 
