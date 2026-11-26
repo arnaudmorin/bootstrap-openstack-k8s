@@ -23,7 +23,23 @@ PermanentMACAddress=${mac_octavia}
 Name=octavia
 EOF
 
-wait_for_interfaces public octavia
+cat <<'EOF' >/etc/systemd/network/10-storage.link
+[Match]
+PermanentMACAddress=${mac_storage}
+[Link]
+Name=storage
+EOF
+
+cat <<'EOF' >/etc/systemd/network/10-storage.network
+[Match]
+PermanentMACAddress=${mac_storage}
+[Network]
+Address=${ip_storage}/16
+EOF
+
+wait_for_interfaces public octavia storage
+# NOTE(arnaud) reload, not restart: a restart drops DNS for a few seconds
+networkctl reload
 
 git clone https://github.com/arnaudmorin/bootstrap-openstack-k8s.git /root/bootstrap-openstack-k8s -b ${branch}
 

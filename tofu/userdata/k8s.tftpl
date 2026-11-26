@@ -23,7 +23,21 @@ PermanentMACAddress=${mac_octavia}
 Address=172.21.0.5/16
 EOF
 
-wait_for_interfaces octavia
+cat <<'EOF' >/etc/systemd/network/10-storage.link
+[Match]
+PermanentMACAddress=${mac_storage}
+[Link]
+Name=storage
+EOF
+
+cat <<'EOF' >/etc/systemd/network/10-storage.network
+[Match]
+PermanentMACAddress=${mac_storage}
+[Network]
+Address=172.22.0.5/16
+EOF
+
+wait_for_interfaces octavia storage
 systemctl restart systemd-networkd.service
 
 # Tune a little bit the number of open files
@@ -53,6 +67,7 @@ alias frep-skyline='frep /root/bootstrap-openstack-k8s/k8s/skyline.yaml.in:- --l
 alias frep-mistral='frep /root/bootstrap-openstack-k8s/k8s/mistral.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-octavia='frep /root/bootstrap-openstack-k8s/k8s/octavia.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-redis='frep /root/bootstrap-openstack-k8s/k8s/redis.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
+alias frep-cinder='frep /root/bootstrap-openstack-k8s/k8s/cinder.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-barbican='frep /root/bootstrap-openstack-k8s/k8s/barbican.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-loki='frep /root/bootstrap-openstack-k8s/k8s/loki.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
 alias frep-garage='frep /root/bootstrap-openstack-k8s/k8s/garage.yaml.in:- --load /root/bootstrap-openstack-k8s/config/config.yaml | kubectl apply -f -'
@@ -114,6 +129,15 @@ spec:
       - "--entryPoints.web.transport.respondingTimeouts.readTimeout=0"
       - "--entryPoints.websecure.transport.respondingTimeouts.readTimeout=0"
 EOF
+
+# NOTE(arnaud) NFS share for the cinder volumes, reachable from the computes
+# (storage network) and from the cinder-volume pod (k3s pod network)
+apt-get install -y nfs-kernel-server
+mkdir -p /srv/cinder /etc/exports.d
+cat <<'EOF' >/etc/exports.d/cinder.exports
+/srv/cinder 172.22.0.0/16(rw,sync,no_root_squash,no_subtree_check,insecure) 10.42.0.0/16(rw,sync,no_root_squash,no_subtree_check,insecure)
+EOF
+exportfs -ra
 
 # Install k3s
 curl -sfL https://get.k3s.io | sh -
@@ -180,6 +204,7 @@ frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=skyline | kubec
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=mistral | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=octavia | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=barbican | kubectl apply -f -
+frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=cinder | kubectl apply -f -
 frep k8s/mysql.yaml.in:- --load config/config.yaml --env db_name=designate | kubectl apply -f -
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-keystone
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-nova
@@ -190,6 +215,7 @@ kubectl wait --for=condition=available --timeout=60s deployment/mysql-skyline
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-mistral
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-octavia
 kubectl wait --for=condition=available --timeout=60s deployment/mysql-barbican
+kubectl wait --for=condition=available --timeout=60s deployment/mysql-cinder
 
 # Redis (oslo.cache backend)
 frep k8s/redis.yaml.in:- --load config/config.yaml | kubectl apply -f -
@@ -310,9 +336,13 @@ frep k8s/skyline.yaml.in:- --load config/config.yaml | kubectl apply -f -
 # Barbican
 frep k8s/barbican.yaml.in:- --load config/config.yaml | kubectl apply -f -
 
+# Cinder
+frep k8s/cinder.yaml.in:- --load config/config.yaml | kubectl apply -f -
+
 kubectl wait --for=condition=available --timeout=60s deployment/nova-api
 kubectl wait --for=condition=available --timeout=60s deployment/glance
 kubectl wait --for=condition=available --timeout=60s deployment/neutron-api
+kubectl wait --for=condition=available --timeout=60s deployment/cinder
 
 # Pre-populate openstack
 source /root/openrc_admin

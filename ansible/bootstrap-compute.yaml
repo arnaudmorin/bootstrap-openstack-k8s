@@ -7,7 +7,7 @@
 
   - name: install some dependencies
     apt:
-      name: ["tcpdump", "ifupdown", "ccze", "tmux", "crudini"]
+      name: ["tcpdump", "ifupdown", "ccze", "tmux", "crudini", "nfs-common"]
       update_cache: yes
       state: latest
 
@@ -333,6 +333,20 @@
       - { section: null, option: "listen_tls", value: "0" }
       - { section: null, option: "listen_tcp", value: "1" }
       - { section: null, option: "auth_tcp", value: "\"none\"" }
+    notify:
+      - restart libvirt
+      - restart nova
+
+  # NOTE(arnaud) virt-aa-helper writes 'deny w' rules for read-only backing
+  # files, which later breaks the block-commit of an online cinder NFS snapshot
+  # delete (the deny wins over the rw rule added for the commit).
+  # This is ok for a dev env, but would need improvment on a prod...
+  - name: disable libvirt apparmor driver
+    ini_file:
+      path: /etc/libvirt/qemu.conf
+      section: null
+      option: security_driver
+      value: "\"none\""
     notify:
       - restart libvirt
       - restart nova
