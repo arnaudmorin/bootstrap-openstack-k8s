@@ -38,7 +38,8 @@ Address=172.22.0.5/16
 EOF
 
 wait_for_interfaces octavia storage
-systemctl restart systemd-networkd.service
+# NOTE(arnaud) reload, not restart: a restart drops DNS for a few seconds
+networkctl reload
 
 # Tune a little bit the number of open files
 # This is useful for stern
